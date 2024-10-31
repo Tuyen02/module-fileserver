@@ -14,6 +14,6 @@ if (!defined('NV_ADMIN')) {
 }
 
 if (defined('NV_IS_SPADMIN')) {
-    // $submenu['room_content'] = $lang_module['room_content'];
+    // $submenu['Test'] = $lang_module['test'];
 
 }

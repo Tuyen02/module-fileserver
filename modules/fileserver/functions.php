@@ -10,6 +10,6 @@
  */
 
 if (!defined('NV_SYSTEM')) {
-    exit('Stop!!!');
+    exit('Stop!!');
 }
 define('NV_IS_MOD_FILESERVER', true);
