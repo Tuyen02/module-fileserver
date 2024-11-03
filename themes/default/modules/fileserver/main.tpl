@@ -35,7 +35,9 @@
                 <td><a href="#">123</a></td>
                 <td>{ROW.uploaded_by}</td>
                 <td>
-                    <a href="{ROW.url_delete}" class="btn btn-sm btn-info delete"><i class="fa fa-trash-o"></i></a>
+                    <a href="javascript:void(0);" data-file-id="{ROW.file_id}" class="btn btn-sm btn-danger delete">
+                        <i class="fa fa-trash-o"></i>
+                    </a>
                     <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}" data-file-id="{ROW.file_id}"
                         data-toggle="modal" data-target="#renameModal">
                         <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
@@ -63,13 +65,13 @@
                     <div class="form-group">
                         <label for="type">Loại:</label>
                         <select class="form-control" id="type" name="type">
-                            <option value="folder">Thư mục</option>
-                            <option value="file">File</option>
+                            <option value="0">File</option>
+                            <option value="1">Thư mục</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="name">Tên:</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
+                        <input type="text" class="form-control" id="name_f" name="name_f" required>
                     </div>
                     <input type="hidden" name="create_action" value="create">
                 </form>
@@ -98,7 +100,6 @@
                     </div>
                     <input type="hidden" name="file_id" id="file_id" value="">
                     <input type="hidden" name="rename_action" value="rename">
-                    
                 </form>
             </div>
             <div class="modal-footer">
@@ -110,53 +111,34 @@
 </div>
 
 <script>
-    $(document).ready(function () {
-        $('.delete').click(function () {
-            return confirm("Xóa?");
-        });
-
-        // Sự kiện cho nút đổi tên
-        $('.rename').click(function () {
-            var fileName = $(this).data('file-name');
-            var fileId = $(this).data('file-id');
-            $('#new_name').val(fileName); 
-            $('#file_id').val(fileId); 
-        });
-
-        $('#createForm').submit(function (e) {
-            e.preventDefault();
-            submitCreateForm();
-        });
-    });
 
     function submitCreateForm() {
+        data = {
+            'action': 'create',
+            'name_f': $("#name_f").val(),
+            'type' : $("#type").val(),
+        }
         $.ajax({
             type: 'POST',
-            url: $('#createForm').attr('action'), 
-            data: $('#createForm').serialize(), 
-            success: function (response) {
-                alert('Tạo mục mới thành công!'); 
-                location.reload(); 
-            },
-            error: function () {
-                alert('Có lỗi xảy ra, vui lòng thử lại.');
+            url: "",
+            data: data,
+            success: function (res) {
+                if (res) {
+                    alert(res.mess);
+                    location.reload();
+                }
             }
         });
     }
-
-    function submitRenameForm() {
-        $.ajax({
-            type: 'POST',
-            url: $('#renameForm').attr('action'), 
-            data: $('#renameForm').serialize(), 
-            success: function (response) {
-                alert('Đổi tên thành công!'); 
-                location.reload(); 
-            },
-            error: function () {
-                alert('Có lỗi xảy ra, vui lòng thử lại.');
-            }
-        });
+    $(document).on('click', '.delete', function () {
+    const fileId = $(this).data('file-id');
+    if (confirm("Bạn có chắc chắn muốn xóa mục này?")) {
+        $.post(location.href, { action: "delete", file_id: fileId }, function (res) {
+            alert(res.success ? 'Xóa thành công.' : res.message);
+            if (res.success) location.reload();
+        }, 'json');
     }
+});
+   
 </script>
 <!-- END: main -->

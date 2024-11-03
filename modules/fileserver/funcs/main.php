@@ -13,54 +13,73 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
-if ($nv_Request->isset_request("action", "post,get")) {
-    $file_id = $nv_Request->get_int("file_id", "post,get", 0);
-    $checksess = $nv_Request->get_title("checksess", "post,get", 0);
+$dir = NV_ROOTDIR . '/themes/default/images/fileserver';
 
-    //delete
-    if ($file_id > 0 and $checksess == md5($file_id . NV_CHECK_SESSION)) {
-        $db->query("DELETE FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id=" . $file_id);
-    }
+$action = $nv_Request->get_title('action', 'post', '');
+if (!empty($action)) {
+
+    $status = 'error';
+    $mess = 'Lỗi hệ thống';
 
     //create
-    if ($nv_Request->get_title("create_action", "post") == 'create') {
-        $name = $nv_Request->get_title("name", "post", '');
-        $type = $nv_Request->get_title("type", "post", 'file'); // 'file' hoặc 'folder'
-        
-        if (!empty($name)) {
-            $is_folder = ($type == 'folder') ? 1 : 0;
-            $sql = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_files (file_name, is_folder, created_at) 
-                    VALUES (:name, :is_folder, NOW())";
+    if ($action == "create") {
+
+        $name_f = $nv_Request->get_title("name_f", "post", '');
+        $type = $nv_Request->get_int("type", "post", 0); //1 =  folder, 0 file
+
+        if (!empty($name_f)) {
+            $db->beginTransaction();
+
+            $file_path = $dir . '/' . $name_f;
+
+            $sql = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_files (file_name, file_path, uploaded_by, is_folder, created_at) 
+                    VALUES (:file_name, :file_path, :uploaded_by, :is_folder, :created_at)";
             $stmt = $db->prepare($sql);
-            $stmt->bindParam(':name', $name, PDO::PARAM_STR);
-            $stmt->bindParam(':is_folder', $is_folder, PDO::PARAM_INT);
-            $stmt->execute();
+            $stmt->bindParam(':file_name', $name_f, PDO::PARAM_STR);
+            $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
+            $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_STR);
+            $stmt->bindParam(':is_folder', $type, PDO::PARAM_INT);
+            $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
+            $exe = $stmt->execute();
+
+            if ($type == 1) {
+                //tao folder
+                $check_dir = nv_mkdir($dir, $name_f);
+                $status = $check_dir[0] == 1 ? 'success' : 'error';
+                $mess = $check_dir[1];
+            } else {
+                //tao file
+                $_dir = file_put_contents($file_path, '');
+                if (isset($_dir)) {
+                    $status = 'success';
+                    $mess = 'Tạo file ' . $name_f . ' thành công';
+                } else {
+                    $status = 'error';
+                    $mess = 'Lỗi không tạo được file';
+                }
+            }
+            if ($status == 'success') {
+                $db->commit();
+            } else {
+                $db->rollBack();
+            }
+            nv_jsonOutput([
+                'mess' => $mess
+            ]);
         }
     }
 
-    //rename
-    if ($nv_Request->isset_request("file_id", "get") && $nv_Request->isset_request("new_name", "post")) {
-        $file_id = $nv_Request->get_int("file_id", "get", 0);
-        $new_name = $nv_Request->get_title("new_name", "post", '');
-    
-        if ($file_id > 0 && !empty($new_name)) {
-            $stmt = $db->prepare("UPDATE " . NV_PREFIXLANG . "_fileserver_files SET file_name = :new_name WHERE file_id = :file_id");
-            $stmt->bindParam(':new_name', $new_name, PDO::PARAM_STR);
-            $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-            $stmt->execute();
-        }
-    }
-
-    // Thêm kiểm tra cho action rename
-    if ($nv_Request->isset_request("rename_action", "post")) {
-        $file_id = $nv_Request->get_int("file_id", "post", 0);
-        $new_name = $nv_Request->get_title("new_name", "post", '');
-
-        if ($file_id > 0 && !empty($new_name)) {
-            $stmt = $db->prepare("UPDATE " . NV_PREFIXLANG . "_fileserver_files SET file_name = :new_name WHERE file_id = :file_id");
-            $stmt->bindParam(':new_name', $new_name, PDO::PARAM_STR);
-            $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-            $stmt->execute();
+    if ($action == 'delete') {
+        $fileId = $nv_Request->get_int('file_id', 'post', 0);
+        if ($fileId > 0) {
+            $deleted = deleteFileOrFolderById($fileId);
+            if ($deleted) {
+                nv_jsonOutput(['success' => true]);
+            } else {
+                nv_jsonOutput(['success' => false, 'message' => 'Xóa thất bại.']);
+            }
+        } else {
+            nv_jsonOutput(['success' => false, 'message' => 'ID không hợp lệ.']);
         }
     }
 }
