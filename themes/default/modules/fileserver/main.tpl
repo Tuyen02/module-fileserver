@@ -110,6 +110,7 @@
     </div>
 </div>
 
+
 <script>
 
     function submitCreateForm() {
@@ -139,6 +140,38 @@
         }, 'json');
     }
 });
+
+function submitRenameForm() {
+    const data = {
+        action: 'rename',
+        new_name: $("#new_name").val(),
+        file_id: $("#file_id").val(),
+    };
+    $.ajax({
+        type: 'POST',
+        url: "", 
+        data: data,
+        success: function (res) {
+            alert(res.message);
+            if (res.success) {
+                location.reload();
+            }
+        },
+        error: function () {
+            alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+        }
+    });
+}
+
+// Xử lý sự kiện khi click vào nút đổi tên
+$(document).on('click', '.rename', function () {
+    const fileId = $(this).data('file-id');
+    const fileName = $(this).data('file-name');
+
+    $("#file_id").val(fileId);
+    $("#new_name").val(fileName);
+});
+
    
 </script>
 <!-- END: main -->

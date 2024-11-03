@@ -82,19 +82,50 @@ if (!empty($action)) {
             nv_jsonOutput(['success' => false, 'message' => 'ID không hợp lệ.']);
         }
     }
+    if ($action === 'rename') {
+        $fileId = intval($nv_Request->get_int('file_id', 'post', 0));
+        $newName = trim($nv_Request->get_title('new_name', 'post', ''));
+
+        $sql = "SELECT * FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = :file_id";
+        $stmt = $db->prepare($sql);
+        $stmt->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+        $stmt->execute();
+        $file = $stmt->fetch();
+
+        if ($file) {
+            $oldFilePath = $file['file_path'];
+            $newFilePath = dirname($oldFilePath) . '/' . $newName;
+
+            if (rename($oldFilePath, $newFilePath)) {
+                $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET file_name = :new_name, file_path = :new_path WHERE file_id = :file_id";
+                $stmtUpdate = $db->prepare($sqlUpdate);
+                $stmtUpdate->bindParam(':new_name', $newName);
+                $stmtUpdate->bindParam(':new_path', $newFilePath);
+                $stmtUpdate->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+                if ($stmtUpdate->execute()) {
+                    echo json_encode(['success' => true, 'message' => 'Đổi tên thành công.']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Không thể cập nhật cơ sở dữ liệu.']);
+                }
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Không thể đổi tên file.']);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'File không tồn tại.']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ.']);
+    }
 }
 
-// Truy vấn cơ sở dữ liệu để lấy danh sách file
 $sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, u.username AS uploaded_by
         FROM " . NV_PREFIXLANG . "_fileserver_files f
         LEFT JOIN " . NV_USERS_GLOBALTABLE . " u ON f.uploaded_by = u.userid";
 $result = $db->query($sql);
 
-// Khởi tạo XTemplate
 $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
 $xtpl->assign('LANG', $lang_module);
 
-// Xử lý từng file trong kết quả truy vấn
 while ($row = $result->fetch()) {
     $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / (1024 * 1024), 2) . ' MB' : '--';
     $row['created_at'] = date("d-m-Y", strtotime($row['created_at']));
@@ -106,12 +137,9 @@ while ($row = $result->fetch()) {
     $xtpl->parse('main.file_row');
 }
 
-// Render và hiển thị nội dung
 $xtpl->parse('main');
 $contents = $xtpl->text('main');
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);
 include NV_ROOTDIR . '/includes/footer.php';
-
-
