@@ -14,6 +14,7 @@ if (!defined('NV_SYSTEM')) {
 }
 define('NV_IS_MOD_FILESERVER', true);
 
+
 function deleteFileOrFolderById($fileId) {
     global $db;
 
@@ -27,12 +28,19 @@ function deleteFileOrFolderById($fileId) {
         $file_path = $file['file_path'];
 
         if ($file['is_folder']) {
-            // Xóa thư mục
             if (is_dir($file_path)) {
+                $files = array_diff(scandir($file_path), array('.', '..'));
+                foreach ($files as $f) {
+                    $fileToDelete = $file_path . '/' . $f;
+                    if (is_dir($fileToDelete)) {
+                        deleteFileOrFolderById($fileToDelete); 
+                    } else {
+                        unlink($fileToDelete); 
+                    }
+                }
                 rmdir($file_path);
             }
         } else {
-            // Xóa file
             if (file_exists($file_path)) {
                 unlink($file_path);
             }
