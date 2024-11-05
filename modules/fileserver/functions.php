@@ -1,56 +1,60 @@
 <?php
 
-/**
- * NukeViet Content Management System
- * @version 4.x
- * @author VINADES.,JSC <contact@vinades.vn>
- * @copyright (C) 2009-2021 VINADES.,JSC. All rights reserved
- * @license GNU/GPL version 2 or any later version
- * @see https://github.com/nukeviet The NukeViet CMS GitHub project
- */
-
 if (!defined('NV_SYSTEM')) {
     exit('Stop!!');
 }
 define('NV_IS_MOD_FILESERVER', true);
-
-
-function deleteFileOrFolderById($fileId) {
+if (!defined('NV_IS_USER')) {
+    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
+}
+function deleteFileOrFolder($fileId) {
     global $db;
 
     $sql = "SELECT * FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = :file_id";
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':file_id', $fileId, PDO::PARAM_INT);
     $stmt->execute();
-    $file = $stmt->fetch();
+    $row = $stmt->fetch();
 
-    if ($file) {
-        $file_path = $file['file_path'];
-
-        if ($file['is_folder']) {
-            if (is_dir($file_path)) {
-                $files = array_diff(scandir($file_path), array('.', '..'));
-                foreach ($files as $f) {
-                    $fileToDelete = $file_path . '/' . $f;
-                    if (is_dir($fileToDelete)) {
-                        deleteFileOrFolderById($fileToDelete); 
-                    } else {
-                        unlink($fileToDelete); 
-                    }
-                }
-                rmdir($file_path);
-            }
-        } else {
-            if (file_exists($file_path)) {
-                unlink($file_path);
-            }
-        }
-
-        $sqlDelete = "DELETE FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = :file_id";
-        $stmtDelete = $db->prepare($sqlDelete);
-        $stmtDelete->bindParam(':file_id', $fileId, PDO::PARAM_INT);
-        return $stmtDelete->execute();
+    if (empty($row)) {
+        return false; 
     }
 
-    return false; 
+    $filePath = $row['file_path'];
+
+    $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET status = 0 WHERE file_path LIKE :file_path";
+    $stmtUpdate = $db->prepare($sqlUpdate);
+    $stmtUpdate->bindValue(':file_path', $filePath . '%', PDO::PARAM_STR);
+    $stmtUpdate->execute();
+
+    if (is_dir($filePath)) {
+        deleteDirectory($filePath);
+    } else {
+        if (!unlink($filePath)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function deleteDirectory($dir) {
+    $files = scandir($dir);
+    foreach ($files as $file) {
+        if ($file !== '.' && $file !== '..') {
+            $filePath = $dir . '/' . $file;
+            if (is_dir($filePath)) {
+                deleteDirectory($filePath);
+            } else {
+                unlink($filePath); 
+            }
+        }
+    }
+    rmdir($dir);
+}
+
+
+
+function checkIfParentIsFolder($db, $lev) {
+    return $db->query("SELECT is_folder FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . intval($lev))->fetchColumn();
 }

@@ -7,6 +7,10 @@
         <input type="text" class="form-control" placeholder="Tìm kiếm file..." id="searchInput">
         <a href="#" class="btn btn-primary">Tải lên</a>
         <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">Tạo mục mới</a>
+        <a href="javascript:history.back();" class="btn btn-warning" id="backButton">
+            <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> Quay lại
+        </a>
+
     </form>
     <hr />
     <!-- File Table -->
@@ -25,7 +29,7 @@
             <!-- BEGIN: file_row -->
             <tr>
                 <td>
-                    <a href="#">
+                    <a href="{ROW.url_view}">
                         <i class="fa {ROW.icon_class}" aria-hidden="true"></i>
                         {ROW.file_name}
                     </a>
@@ -38,8 +42,8 @@
                     <a href="javascript:void(0);" data-file-id="{ROW.file_id}" class="btn btn-sm btn-danger delete">
                         <i class="fa fa-trash-o"></i>
                     </a>
-                    <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}" data-file-id="{ROW.file_id}"
-                        data-toggle="modal" data-target="#renameModal">
+                    <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}"
+                        data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal">
                         <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
                     </button>
                     <button class="btn btn-sm btn-info"><i class="fa fa-clone" aria-hidden="true"></i></button>
@@ -117,61 +121,69 @@
         data = {
             'action': 'create',
             'name_f': $("#name_f").val(),
-            'type' : $("#type").val(),
+            'type': $("#type").val(),
         }
         $.ajax({
             type: 'POST',
             url: "",
             data: data,
             success: function (res) {
-                if (res) {
-                    alert(res.mess);
-                    location.reload();
-                }
-            }
+                alert(res.message);
+                location.reload();
+            },
+            error: function () {
+                alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+            },
         });
     }
     $(document).on('click', '.delete', function () {
-    const fileId = $(this).data('file-id');
-    if (confirm("Bạn có chắc chắn muốn xóa mục này?")) {
-        $.post(location.href, { action: "delete", file_id: fileId }, function (res) {
-            alert(res.success ? 'Xóa thành công.' : res.message);
-            if (res.success) location.reload();
-        }, 'json');
-    }
-});
-
-function submitRenameForm() {
-    const data = {
-        action: 'rename',
-        new_name: $("#new_name").val(),
-        file_id: $("#file_id").val(),
-    };
-    $.ajax({
-        type: 'POST',
-        url: "", 
-        data: data,
-        success: function (res) {
-            alert(res.message);
-            if (res.success) {
+        const fileId = $(this).data('file-id');
+        if (confirm("Bạn có chắc chắn muốn xóa mục này?")) {
+            $.post(location.href, { action: "delete", file_id: fileId }, function (res) {
+                alert(res.message);
                 location.reload();
-            }
-        },
-        error: function () {
-            alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+                if (res.success)
+                    location.reload();
+            }, 'json');
         }
     });
-}
 
-// Xử lý sự kiện khi click vào nút đổi tên
-$(document).on('click', '.rename', function () {
-    const fileId = $(this).data('file-id');
-    const fileName = $(this).data('file-name');
+    function submitRenameForm() {
+        const data = {
+            action: 'rename',
+            new_name: $("#new_name").val(),
+            file_id: $("#file_id").val(),
+        };
+        $.ajax({
+            type: 'POST',
+            url: "",
+            data: data,
+            success: function (res) {
+                alert(res.message);
+                location.reload();
+            },
+            error: function () {
+                alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+            }
+        });
+    }
 
-    $("#file_id").val(fileId);
-    $("#new_name").val(fileName);
-});
+    // Xử lý sự kiện khi click vào nút đổi tên
+    $(document).on('click', '.rename', function () {
+        const fileId = $(this).data('file-id');
+        const fileName = $(this).data('file-name');
 
-   
+        $("#file_id").val(fileId);
+        $("#new_name").val(fileName);
+    });
+
+    $(document).ready(function () {
+
+        const currentUrl = window.location.href;
+        if (currentUrl === "{ROW.url_back}") {
+            $("#backButton").hide();
+        }
+    });
+
 </script>
 <!-- END: main -->

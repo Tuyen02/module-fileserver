@@ -2,44 +2,72 @@
 
 /**
  * NukeViet Content Management System
- * @version 4.x
- * @author VINADES.,JSC <contact@vinades.vn>
+ *
+ * @version       4.x
+ * @author        VINADES.,JSC <contact@vinades.vn>
  * @copyright (C) 2009-2021 VINADES.,JSC. All rights reserved
- * @license GNU/GPL version 2 or any later version
- * @see https://github.com/nukeviet The NukeViet CMS GitHub project
+ * @license       GNU/GPL version 2 or any later version
+ * @see           https://github.com/nukeviet The NukeViet CMS GitHub project
  */
 
 if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
+if (!defined('NV_IS_USER')) {
+    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
+}
 
-$dir = NV_ROOTDIR . '/themes/default/images/fileserver';
+$lev = $nv_Request->get_int("lev", "get,post", 0);
+$dir = NV_ROOTDIR . '/themes/default/images/fileserver/';
+
+$sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, u.username AS uploaded_by
+        FROM " . NV_PREFIXLANG . "_fileserver_files f
+        LEFT JOIN " . NV_USERS_GLOBALTABLE . " u ON f.uploaded_by = u.userid WHERE f.status = 1 AND lev = " . $lev . "
+        ORDER BY f.is_folder DESC, f.file_id ASC";
+$result = $db->query($sql);
+
+if ($lev > 0) {
+    $dir = $db->query("SELECT file_path FROM  " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $lev)->fetchColumn();
+}
 
 $action = $nv_Request->get_title('action', 'post', '');
 if (!empty($action)) {
-
     $status = 'error';
     $mess = 'Lỗi hệ thống';
 
     //create
     if ($action == "create") {
-
         $name_f = $nv_Request->get_title("name_f", "post", '');
         $type = $nv_Request->get_int("type", "post", 0); //1 =  folder, 0 file
+
+        if ($lev > 0) {
+            $parentFileType = checkIfParentIsFolder($db, $lev);
+
+            if ($type == 0 && $parentFileType == 0) {
+                nv_jsonOutput(['status' => 'error', 'message' => 'Không thể tạo file con trong file.']);
+                exit();
+            }
+
+            if ($type == 1 && $parentFileType == 0) {
+                nv_jsonOutput(['status' => 'error', 'message' => 'Không thể tạo folder con trong file.']);
+                exit();
+            }
+        }
 
         if (!empty($name_f)) {
             $db->beginTransaction();
 
             $file_path = $dir . '/' . $name_f;
 
-            $sql = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_files (file_name, file_path, uploaded_by, is_folder, created_at) 
-                    VALUES (:file_name, :file_path, :uploaded_by, :is_folder, :created_at)";
+            $sql = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
+                    VALUES (:file_name, :file_path, :uploaded_by, :is_folder, :created_at, :lev)";
             $stmt = $db->prepare($sql);
             $stmt->bindParam(':file_name', $name_f, PDO::PARAM_STR);
             $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
             $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_STR);
             $stmt->bindParam(':is_folder', $type, PDO::PARAM_INT);
             $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
+            $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
             $exe = $stmt->execute();
 
             if ($type == 1) {
@@ -48,14 +76,12 @@ if (!empty($action)) {
                 $status = $check_dir[0] == 1 ? 'success' : 'error';
                 $mess = $check_dir[1];
             } else {
+                $mess = 'Lỗi không tạo được file';
                 //tao file
                 $_dir = file_put_contents($file_path, '');
                 if (isset($_dir)) {
                     $status = 'success';
                     $mess = 'Tạo file ' . $name_f . ' thành công';
-                } else {
-                    $status = 'error';
-                    $mess = 'Lỗi không tạo được file';
                 }
             }
             if ($status == 'success') {
@@ -63,76 +89,67 @@ if (!empty($action)) {
             } else {
                 $db->rollBack();
             }
-            nv_jsonOutput([
-                'mess' => $mess
-            ]);
         }
     }
 
     if ($action == 'delete') {
         $fileId = $nv_Request->get_int('file_id', 'post', 0);
+        $mess =  'ID không hợp lệ.';
         if ($fileId > 0) {
-            $deleted = deleteFileOrFolderById($fileId);
+            $mess =  'Xóa thất bại.';
+            $deleted = deleteFileOrFolder($fileId);
             if ($deleted) {
-                nv_jsonOutput(['success' => true]);
-            } else {
-                nv_jsonOutput(['success' => false, 'message' => 'Xóa thất bại.']);
+                $status = 'success';
+                $mess = 'Xóa thành công.';
             }
-        } else {
-            nv_jsonOutput(['success' => false, 'message' => 'ID không hợp lệ.']);
         }
     }
+
     if ($action === 'rename') {
         $fileId = intval($nv_Request->get_int('file_id', 'post', 0));
         $newName = trim($nv_Request->get_title('new_name', 'post', ''));
 
-        $sql = "SELECT * FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = :file_id";
+        $sql = "SELECT * FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id =" . $fileId;
         $stmt = $db->prepare($sql);
-        $stmt->bindParam(':file_id', $fileId, PDO::PARAM_INT);
         $stmt->execute();
         $file = $stmt->fetch();
 
+        $mess = 'File không tồn tại.';
         if ($file) {
             $oldFilePath = $file['file_path'];
             $newFilePath = dirname($oldFilePath) . '/' . $newName;
+            $mess = 'Không thể đổi tên file.';
 
             if (rename($oldFilePath, $newFilePath)) {
-                $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET file_name = :new_name, file_path = :new_path WHERE file_id = :file_id";
+                $mess = 'Không thể cập nhật cơ sở dữ liệu.';
+                $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET file_name = :new_name, file_path = :new_path, updated_at = :updated_at WHERE file_id = :file_id";
                 $stmtUpdate = $db->prepare($sqlUpdate);
                 $stmtUpdate->bindParam(':new_name', $newName);
                 $stmtUpdate->bindParam(':new_path', $newFilePath);
                 $stmtUpdate->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+                $stmtUpdate->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 if ($stmtUpdate->execute()) {
-                    echo json_encode(['success' => true, 'message' => 'Đổi tên thành công.']);
-                } else {
-                    echo json_encode(['success' => false, 'message' => 'Không thể cập nhật cơ sở dữ liệu.']);
+                    $status = 'success';
+                    $mess = 'Đổi tên thành công.';
                 }
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Không thể đổi tên file.']);
             }
-        } else {
-            echo json_encode(['success' => false, 'message' => 'File không tồn tại.']);
         }
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ.']);
     }
-}
 
-$sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, u.username AS uploaded_by
-        FROM " . NV_PREFIXLANG . "_fileserver_files f
-        LEFT JOIN " . NV_USERS_GLOBALTABLE . " u ON f.uploaded_by = u.userid";
-$result = $db->query($sql);
+    nv_jsonOutput(['status' => $status, 'message' => $mess]);
+}
 
 $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
 $xtpl->assign('LANG', $lang_module);
 
 while ($row = $result->fetch()) {
     $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / (1024 * 1024), 2) . ' MB' : '--';
-    $row['created_at'] = date("d-m-Y", strtotime($row['created_at']));
+    $row['created_at'] = date("d/m/Y", $row['created_at']);
     $row['icon_class'] = $row['is_folder'] ? 'fa-folder-o' : 'fa-file-o';
     $row['uploaded_by'] = $row['uploaded_by'] ?? 'Unknown';
+    $row['url_main'] = NV_BASE_SITEURL . NV_LANG_DATA . '/' . $module_name . '/';
+    $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['file_id'];
     $row['url_delete'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . "&action=delete&checksess=" . md5($row['file_id'] . NV_CHECK_SESSION);
-    // Gán dữ liệu vào block file_row
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');
 }
