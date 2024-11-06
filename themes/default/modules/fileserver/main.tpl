@@ -2,18 +2,21 @@
 <div class="container mt-4 mb-5 pb-5">
     <h1 class="text-center">Module File Server</h1>
     <br>
-
     <form class="form-inline my-2 my-lg-0">
         <input type="text" class="form-control" placeholder="Tìm kiếm file..." id="searchInput">
-        <a href="#" class="btn btn-primary">Tải lên</a>
         <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">Tạo mục mới</a>
         <a href="javascript:history.back();" class="btn btn-warning" id="backButton">
             <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> Quay lại
         </a>
-
+        <hr />
     </form>
-    <hr />
-    <!-- File Table -->
+    <form action="{FORM_ACTION}" method="post" enctype="multipart/form-data">
+        <label for="uploadfile">Chọn file để tải lên:</label>
+        <input type="file" name="uploadfile" id="uploadfile" required>
+        <input type="hidden" name="submit_upload" value="1">
+        <button type="submit" name="submit">Tải lên</button>
+    </form>
+
     <table class="table table-hover">
         <thead class="thead-dark">
             <tr>
@@ -116,7 +119,6 @@
 
 
 <script>
-
     function submitCreateForm() {
         data = {
             'action': 'create',
@@ -128,6 +130,7 @@
             url: "",
             data: data,
             success: function (res) {
+                console.log(res);
                 alert(res.message);
                 location.reload();
             },
@@ -140,6 +143,7 @@
         const fileId = $(this).data('file-id');
         if (confirm("Bạn có chắc chắn muốn xóa mục này?")) {
             $.post(location.href, { action: "delete", file_id: fileId }, function (res) {
+                console.log(res);
                 alert(res.message);
                 location.reload();
                 if (res.success)
@@ -159,6 +163,7 @@
             url: "",
             data: data,
             success: function (res) {
+                console.log(res);
                 alert(res.message);
                 location.reload();
             },
@@ -168,7 +173,6 @@
         });
     }
 
-    // Xử lý sự kiện khi click vào nút đổi tên
     $(document).on('click', '.rename', function () {
         const fileId = $(this).data('file-id');
         const fileName = $(this).data('file-name');
@@ -183,6 +187,26 @@
         if (currentUrl === "{ROW.url_back}") {
             $("#backButton").hide();
         }
+    });
+
+    $('#uploadForm').on('submit', function (e) {
+        e.preventDefault(); 
+        const formData = new FormData(this);
+        $.ajax({
+            type: 'POST',
+            url: "{FORM_ACTION}",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (res) {
+                console.log(res);
+                alert(res.message);
+                location.reload();
+            },
+            error: function () {
+                alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+            }
+        });
     });
 
 </script>

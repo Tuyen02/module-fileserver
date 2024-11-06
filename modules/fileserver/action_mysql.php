@@ -23,14 +23,16 @@ $sql_create_module = $sql_drop_module;
 
 
 $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_files (
-    file_id INT PRIMARY KEY AUTO_INCREMENT,
-    file_name VARCHAR(255) NOT NULL,
-    file_path VARCHAR(255) NOT NULL,
-    file_size BIGINT,
-    uploaded_by INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    is_folder tinyint(2) NOT NULL DEFAULT 1
+  file_id int(11) NOT NULL,
+  file_name varchar(255) NOT NULL,
+  file_path varchar(255) NOT NULL,
+  file_size bigint(20) DEFAULT 0,
+  uploaded_by int(11) DEFAULT 0,
+  created_at int(11) NOT NULL DEFAULT 0,
+  updated_at int(11) NOT NULL DEFAULT 0,
+  is_folder tinyint(2) NOT NULL DEFAULT 1,
+  status tinyint(4) NOT NULL DEFAULT 1,
+  lev tinyint(4) NOT NULL DEFAULT 0
 )ENGINE=MyISAM';
 
 $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_permissions (

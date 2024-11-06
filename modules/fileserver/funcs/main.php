@@ -18,7 +18,7 @@ if (!defined('NV_IS_USER')) {
 }
 
 $lev = $nv_Request->get_int("lev", "get,post", 0);
-$dir = NV_ROOTDIR . '/themes/default/images/fileserver/';
+$dir = NV_ROOTDIR . '/uploads/fileserver';
 
 $sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, u.username AS uploaded_by
         FROM " . NV_PREFIXLANG . "_fileserver_files f
@@ -139,9 +139,50 @@ if (!empty($action)) {
     nv_jsonOutput(['status' => $status, 'message' => $mess]);
 }
 
+if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['uploadfile']) && is_uploaded_file($_FILES['uploadfile']['tmp_name'])) {
+    $upload = new NukeViet\Files\Upload(
+        $admin_info['allow_files_type'],
+        $global_config['forbid_extensions'],
+        $global_config['forbid_mimes'],
+        NV_UPLOAD_MAX_FILESIZE,
+        NV_MAX_WIDTH,
+        NV_MAX_HEIGHT
+    );
+    $upload->setLanguage($lang_global);
+
+    $upload_info = $upload->save_file($_FILES['uploadfile'], NV_UPLOADS_REAL_DIR . '/fileserver/', false, $global_config['nv_auto_resize']);
+
+    $mess = 'Lỗi upload.';
+    if ($upload_info['error'] == '') {
+        $file_name = $upload_info['basename'];
+        $file_path = $upload_info['name'];
+        $file_type = $upload_info['mime'];
+        $file_size = $upload_info['size'];
+
+        $lev = $nv_Request->get_int("lev", "get,post", 0);
+
+        $sql = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev) 
+                VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)";
+        $stmt = $db->prepare($sql);
+        $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
+        $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
+        $stmt->bindParam(':file_size', $file_size, PDO::PARAM_STR);
+        $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_STR);
+        $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
+        $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $status = 'success';
+        $mess = 'Upload thành công.';
+
+        nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA. NV_NAME_VARIABLE . '=' . $module_name);
+    }
+    nv_jsonOutput(['status' => $status, 'message' => $mess]);
+}
+
 $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
 $xtpl->assign('LANG', $lang_module);
-
+$xtpl->assign('FORM_ACTION', NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name);
 while ($row = $result->fetch()) {
     $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / (1024 * 1024), 2) . ' MB' : '--';
     $row['created_at'] = date("d/m/Y", $row['created_at']);
