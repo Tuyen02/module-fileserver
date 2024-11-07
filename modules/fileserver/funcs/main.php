@@ -19,6 +19,8 @@ if (!defined('NV_IS_USER')) {
 
 $lev = $nv_Request->get_int("lev", "get,post", 0);
 $dir = NV_ROOTDIR . '/uploads/fileserver';
+$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
+$page_url = $base_url;
 
 $sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, u.username AS uploaded_by
         FROM " . NV_PREFIXLANG . "_fileserver_files f
@@ -28,6 +30,7 @@ $result = $db->query($sql);
 
 if ($lev > 0) {
     $dir = $db->query("SELECT file_path FROM  " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $lev)->fetchColumn();
+    $page_url .= '&amp;lev=' . $lev;
 }
 
 $action = $nv_Request->get_title('action', 'post', '');
@@ -55,10 +58,18 @@ if (!empty($action)) {
         }
 
         if (!empty($name_f)) {
-            $db->beginTransaction();
 
             $file_path = $dir . '/' . $name_f;
-
+//            if (file_exists($file_path)) {
+//                $status = 'error';
+//                $mess = 'File hoặc folder đã tồn tại. Bạn có muốn tiếp tục không?';
+//                $i = 1;
+//                while (file_exists($file_path)) {
+//                    $name_f = pathinfo($name_f, PATHINFO_FILENAME) . "-$i";
+//                    $file_path = $dir . '/' . $name_f;
+//                    $i++;
+//                }
+//            }
             $sql = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
                     VALUES (:file_name, :file_path, :uploaded_by, :is_folder, :created_at, :lev)";
             $stmt = $db->prepare($sql);
@@ -68,7 +79,6 @@ if (!empty($action)) {
             $stmt->bindParam(':is_folder', $type, PDO::PARAM_INT);
             $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
-            $exe = $stmt->execute();
 
             if ($type == 1) {
                 //tao folder
@@ -85,17 +95,16 @@ if (!empty($action)) {
                 }
             }
             if ($status == 'success') {
-                $db->commit();
-            } else {
-                $db->rollBack();
+                $exe = $stmt->execute();
             }
         }
     }
 
     if ($action == 'delete') {
         $fileId = $nv_Request->get_int('file_id', 'post', 0);
+        $checksess = $nv_Request->get_title('checksess', 'post', '');
         $mess =  'ID không hợp lệ.';
-        if ($fileId > 0) {
+        if ($fileId > 0 && $checksess = md5($fileId . NV_CHECK_SESSION)) {
             $mess =  'Xóa thất bại.';
             $deleted = deleteFileOrFolder($fileId);
             if ($deleted) {
@@ -138,7 +147,8 @@ if (!empty($action)) {
 
     nv_jsonOutput(['status' => $status, 'message' => $mess]);
 }
-
+$error = '';
+$success = '';
 if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['uploadfile']) && is_uploaded_file($_FILES['uploadfile']['tmp_name'])) {
     $upload = new NukeViet\Files\Upload(
         $admin_info['allow_files_type'],
@@ -150,9 +160,8 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
     );
     $upload->setLanguage($lang_global);
 
-    $upload_info = $upload->save_file($_FILES['uploadfile'], NV_UPLOADS_REAL_DIR . '/fileserver/', false, $global_config['nv_auto_resize']);
+    $upload_info = $upload->save_file($_FILES['uploadfile'], $dir, false, $global_config['nv_auto_resize']);
 
-    $mess = 'Lỗi upload.';
     if ($upload_info['error'] == '') {
         $file_name = $upload_info['basename'];
         $file_path = $upload_info['name'];
@@ -171,18 +180,25 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
         $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
         $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
         $stmt->execute();
-
-        $status = 'success';
-        $mess = 'Upload thành công.';
-
-        nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA. NV_NAME_VARIABLE . '=' . $module_name);
+        nv_redirect_location($page_url);
+    } else {
+        $error = $upload_info['error'];
     }
-    nv_jsonOutput(['status' => $status, 'message' => $mess]);
 }
 
 $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
 $xtpl->assign('LANG', $lang_module);
-$xtpl->assign('FORM_ACTION', NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name);
+$xtpl->assign('FORM_ACTION', $page_url);
+
+if ($error != '') {
+    $xtpl->assign('ERROR', $error);
+    $xtpl->parse('main.error');
+}
+if ($success != '') {
+    $xtpl->assign('success', $success);
+    $xtpl->parse('main.success');
+}
+
 while ($row = $result->fetch()) {
     $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / (1024 * 1024), 2) . ' MB' : '--';
     $row['created_at'] = date("d/m/Y", $row['created_at']);

@@ -2,21 +2,21 @@
 <div class="container mt-4 mb-5 pb-5">
     <h1 class="text-center">Module File Server</h1>
     <br>
-    <form class="form-inline my-2 my-lg-0">
+        <!-- BEGIN: error -->
+        <div class="alert alert-warning">{ERROR}</div>
+        <!-- END: error -->
+    <form action="{FORM_ACTION}" method="post" enctype="multipart/form-data" id="uploadForm"
+        class="form-inline my-2 my-lg-0">
         <input type="text" class="form-control" placeholder="Tìm kiếm file..." id="searchInput">
         <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">Tạo mục mới</a>
         <a href="javascript:history.back();" class="btn btn-warning" id="backButton">
             <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> Quay lại
         </a>
-        <hr />
-    </form>
-    <form action="{FORM_ACTION}" method="post" enctype="multipart/form-data">
-        <label for="uploadfile">Chọn file để tải lên:</label>
-        <input type="file" name="uploadfile" id="uploadfile" required>
+        <button type="button" class="btn btn-primary" id="uploadButton">Tải lên</button>
+        <input type="file" name="uploadfile" id="uploadfile" required style="display: none;">
         <input type="hidden" name="submit_upload" value="1">
-        <button type="submit" name="submit">Tải lên</button>
     </form>
-
+    <hr />
     <table class="table table-hover">
         <thead class="thead-dark">
             <tr>
@@ -42,7 +42,7 @@
                 <td><a href="#">123</a></td>
                 <td>{ROW.uploaded_by}</td>
                 <td>
-                    <a href="javascript:void(0);" data-file-id="{ROW.file_id}" class="btn btn-sm btn-danger delete">
+                    <a href="{ROW.url_delete}" data-file-id="{ROW.file_id}" data-checksess="{CHECK_SESS}" class="btn btn-sm btn-danger delete">
                         <i class="fa fa-trash-o"></i>
                     </a>
                     <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}"
@@ -139,16 +139,36 @@
             },
         });
     }
-    $(document).on('click', '.delete', function () {
-        const fileId = $(this).data('file-id');
-        if (confirm("Bạn có chắc chắn muốn xóa mục này?")) {
-            $.post(location.href, { action: "delete", file_id: fileId }, function (res) {
+
+    function handleDelete(fileId, deleteUrl, checksess) {
+        const data = {
+            action: "delete",
+            file_id: fileId,
+            checksess: checksess
+        };
+
+        $.ajax({
+            type: 'POST',
+            url: deleteUrl,
+            data: data,
+            success: function (res) {
                 console.log(res);
                 alert(res.message);
                 location.reload();
-                if (res.success)
-                    location.reload();
-            }, 'json');
+            },
+            error: function () {
+                alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+            }
+        });
+    }
+
+    $(document).on('click', '.delete', function () {
+        const fileId = $(this).data('file-id');
+        const deleteUrl = $(this).attr('href');
+        const checksess = $(this).data('checksess');
+
+        if (confirm("Bạn có chắc chắn muốn xóa mục này?")) {
+            handleDelete(fileId, deleteUrl, checksess);
         }
     });
 
@@ -190,7 +210,7 @@
     });
 
     $('#uploadForm').on('submit', function (e) {
-        e.preventDefault(); 
+        e.preventDefault();
         const formData = new FormData(this);
         $.ajax({
             type: 'POST',
@@ -207,6 +227,14 @@
                 alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
             }
         });
+    });
+
+    document.getElementById('uploadButton').addEventListener('click', function () {
+        document.getElementById('uploadfile').click();
+    });
+
+    document.getElementById('uploadfile').addEventListener('change', function () {
+        document.getElementById('uploadForm').submit();
     });
 
 </script>
