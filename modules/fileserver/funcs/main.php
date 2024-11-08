@@ -102,9 +102,8 @@ if (!empty($action)) {
 
     if ($action == 'delete') {
         $fileId = $nv_Request->get_int('file_id', 'post', 0);
-        $checksess = $nv_Request->get_title('checksess', 'post', '');
-        $mess =  'ID không hợp lệ.';
-        if ($fileId > 0) {
+        $checksess = $nv_Request->get_title('checksess', 'get', '');
+        if ($fileId > 0 && $checksess == md5($fileId. NV_CHECK_SESSION)) {
             $deleted = deleteFileOrFolder($fileId);
             if ($deleted) {
                 $status = 'success';
@@ -142,6 +141,27 @@ if (!empty($action)) {
                     $status = 'success';
                     $mess = 'Đổi tên thành công.';
                 }
+                // if ($stmtUpdate->execute()) {
+                //     // Cập nhật file path của các thư mục con và cháu
+                //     $sqlUpdateChildren = "UPDATE " . NV_PREFIXLANG . "_fileserver_files 
+                //                           SET file_path = REPLACE(file_path, :old_path, :new_path), 
+                //                               updated_at = :updated_at 
+                //                           WHERE lev > :parent_lev AND file_path LIKE :old_path_like";
+                //     $stmtUpdateChildren = $db->prepare($sqlUpdateChildren);
+                //     $oldPathLike = $oldFilePath . '/%';  // Đảm bảo chỉ thay đổi các thư mục con
+                //     $stmtUpdateChildren->bindParam(':old_path', $oldFilePath);
+                //     $stmtUpdateChildren->bindParam(':new_path', $newFilePath);
+                //     $stmtUpdateChildren->bindParam(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+                //     $stmtUpdateChildren->bindValue(':parent_lev', $file['lev'], PDO::PARAM_INT);
+                //     $stmtUpdateChildren->bindParam(':old_path_like', $oldPathLike);
+    
+                //     if ($stmtUpdateChildren->execute()) {
+                //         $status = 'success';
+                //         $mess = 'Đổi tên thành công và các thư mục con đã được cập nhật.';
+                //     } else {
+                //         $mess = 'Không thể cập nhật các thư mục con.';
+                //     }
+                // }
             }
         }
     }
@@ -150,6 +170,7 @@ if (!empty($action)) {
 }
 $error = '';
 $success = '';
+$admin_info['allow_files_type'][] = 'text';
 if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['uploadfile']) && is_uploaded_file($_FILES['uploadfile']['tmp_name'])) {
     $upload = new NukeViet\Files\Upload(
         $admin_info['allow_files_type'],
@@ -205,9 +226,9 @@ while ($row = $result->fetch()) {
     $row['created_at'] = date("d/m/Y", $row['created_at']);
     $row['icon_class'] = $row['is_folder'] ? 'fa-folder-o' : 'fa-file-o';
     $row['uploaded_by'] = $row['uploaded_by'] ?? 'Unknown';
-    $row['url_main'] = NV_BASE_SITEURL . NV_LANG_DATA . '/' . $module_name . '/';
     $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['file_id'];
-    $row['url_delete'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . "&action=delete";
+    $row['url_edit'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=edit&amp;file_id=' . $row['file_id'];
+    $row['url_delete'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . "&action=delete&checksess=" . md5($row['file_id'] . NV_CHECK_SESSION);
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');
 }

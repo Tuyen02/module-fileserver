@@ -49,6 +49,9 @@
                         data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal">
                         <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
                     </button>
+                    <a href="{ROW.url_edit}"  class="btn btn-sm btn-info">
+                        <i class="fa fa-amazon"></i>
+                    </a>
                     <button class="btn btn-sm btn-info"><i class="fa fa-clone" aria-hidden="true"></i></button>
                     <button class="btn btn-sm btn-info"><i class="fa fa-link" aria-hidden="true"></i></button>
                     <button class="btn btn-sm btn-info"><i class="fa fa-download" aria-hidden="true"></i></button>

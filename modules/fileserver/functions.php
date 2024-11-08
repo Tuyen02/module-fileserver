@@ -21,14 +21,13 @@ function deleteFileOrFolder($fileId) {
     }
 
     $filePath = $row['file_path'];
-
     $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET status = 0 WHERE file_path = :file_path";
     $stmtUpdate = $db->prepare($sqlUpdate);
     $stmtUpdate->bindValue(':file_path', $filePath, PDO::PARAM_STR);
     $stmtUpdate->execute();
 
     if (is_dir($filePath)) {
-        deleteDirectory($filePath);
+        updateDirectoryStatus($filePath);
     } else {
         if (!unlink($filePath)) {
             return false;
@@ -38,14 +37,21 @@ function deleteFileOrFolder($fileId) {
     return true;
 }
 
-function deleteDirectory($dir) {
+function updateDirectoryStatus($dir) {
+    global $db;
+
     $files = scandir($dir);
     foreach ($files as $file) {
         if ($file !== '.' && $file !== '..') {
             $filePath = $dir . '/' . $file;
+            $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET status = 0 WHERE file_path = :file_path";
+            $stmtUpdate = $db->prepare($sqlUpdate);
+            $stmtUpdate->bindValue(':file_path', $filePath, PDO::PARAM_STR);
+            $stmtUpdate->execute();
+
             if (is_dir($filePath)) {
-                deleteDirectory($filePath);
-            } else {
+                updateDirectoryStatus($filePath);
+            }else {
                 unlink($filePath); 
             }
         }
