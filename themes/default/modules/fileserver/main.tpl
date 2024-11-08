@@ -144,7 +144,7 @@
         const data = {
             action: "delete",
             file_id: fileId,
-            checksess: checksess
+            checksess: checksess,
         };
 
         $.ajax({

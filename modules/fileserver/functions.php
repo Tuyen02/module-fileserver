@@ -22,9 +22,9 @@ function deleteFileOrFolder($fileId) {
 
     $filePath = $row['file_path'];
 
-    $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET status = 0 WHERE file_path LIKE :file_path";
+    $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET status = 0 WHERE file_path = :file_path";
     $stmtUpdate = $db->prepare($sqlUpdate);
-    $stmtUpdate->bindValue(':file_path', $filePath . '%', PDO::PARAM_STR);
+    $stmtUpdate->bindValue(':file_path', $filePath, PDO::PARAM_STR);
     $stmtUpdate->execute();
 
     if (is_dir($filePath)) {

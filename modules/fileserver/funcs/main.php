@@ -104,12 +104,13 @@ if (!empty($action)) {
         $fileId = $nv_Request->get_int('file_id', 'post', 0);
         $checksess = $nv_Request->get_title('checksess', 'post', '');
         $mess =  'ID không hợp lệ.';
-        if ($fileId > 0 && $checksess = md5($fileId . NV_CHECK_SESSION)) {
-            $mess =  'Xóa thất bại.';
+        if ($fileId > 0) {
             $deleted = deleteFileOrFolder($fileId);
             if ($deleted) {
                 $status = 'success';
                 $mess = 'Xóa thành công.';
+            }else{
+                $mess =  'Xóa thất bại.';
             }
         }
     }
@@ -206,7 +207,7 @@ while ($row = $result->fetch()) {
     $row['uploaded_by'] = $row['uploaded_by'] ?? 'Unknown';
     $row['url_main'] = NV_BASE_SITEURL . NV_LANG_DATA . '/' . $module_name . '/';
     $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['file_id'];
-    $row['url_delete'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . "&action=delete&checksess=" . md5($row['file_id'] . NV_CHECK_SESSION);
+    $row['url_delete'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . "&action=delete";
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');
 }
