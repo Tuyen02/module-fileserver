@@ -166,6 +166,34 @@ if (!empty($action)) {
         }
     }
 
+    if ($action === 'download') {
+        $file_id = $nv_Request->get_int('file_id', 'get', 0);
+        $sql = "SELECT file_path, file_name FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = :file_id";
+        $stmt = $db->prepare($sql);
+        $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+        $stmt->execute();
+        $file = $stmt->fetch();
+
+        if ($file) {
+            $file_path = $file['file_path'];
+            $file_name = $file['file_name'];
+
+            if (file_exists($file_path)) {
+                header('Content-Description: File Transfer');
+                header('Content-Type: application/octet-stream');
+                header('Content-Disposition: attachment; filename="' . basename($file_name) . '"');
+                header('Expires: 0');
+                header('Cache-Control: must-revalidate');
+                header('Pragma: public');
+                header('Content-Length: ' . filesize($file_path));
+                readfile($file_path);
+                exit;
+            } else {
+                nv_jsonOutput(['status' => 'error', 'message' => 'File không tồn tại.']);
+            }
+        }
+    }
+
     nv_jsonOutput(['status' => $status, 'message' => $mess]);
 }
 $error = '';
@@ -229,6 +257,7 @@ while ($row = $result->fetch()) {
     $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['file_id'];
     $row['url_edit'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=edit&amp;file_id=' . $row['file_id'];
     $row['url_delete'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . "&action=delete&checksess=" . md5($row['file_id'] . NV_CHECK_SESSION);
+    $row['url_download'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . "&action=download";
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');
 }

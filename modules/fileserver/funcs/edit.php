@@ -15,7 +15,7 @@ $row = $result->fetch();
 if (!$row) {
     exit('File not found');
 }
-
+$file_name = $row['file_name'];
 $file_path = $row['file_path'];
 $file_content = file_exists($file_path) ? file_get_contents($file_path) : '';
 
@@ -37,6 +37,7 @@ $xtpl = new XTemplate('edit.tpl', NV_ROOTDIR . '/themes/' . $global_config['modu
 $xtpl->assign('LANG', $lang_module);
 $xtpl->assign('FILE_CONTENT', htmlspecialchars($file_content));
 $xtpl->assign('FILE_ID', $file_id);
+$xtpl->assign('FILE_NAME', $file_name);
 $xtpl->assign('MESSAGE', isset($message) ? $message : '');
 
 $xtpl->parse('main');
