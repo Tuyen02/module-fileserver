@@ -24,9 +24,12 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
 
     file_put_contents($file_path, $file_content);
 
-    $sql = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET updated_at = :updated_at WHERE file_id = :file_id";
+    $file_size = filesize($file_path);
+
+    $sql = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET updated_at = :updated_at, file_size = :file_size WHERE file_id = :file_id";
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+    $stmt->bindValue(':file_size', $file_size, PDO::PARAM_INT); 
     $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
     $stmt->execute();
 

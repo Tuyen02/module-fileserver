@@ -15,7 +15,7 @@ if (!defined('NV_ADMIN') or !defined('NV_MAINFILE')) {
 
 $module_version = [
     'name' => 'FileServer',
-    'modfuncs' => 'main',
+    'modfuncs' => 'main,edit,clone',
     'is_sysmod' => 0,
     'virtual' => 1,
     'version' => '4.5.06',

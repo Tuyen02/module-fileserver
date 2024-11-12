@@ -52,7 +52,9 @@
                     <a href="{ROW.url_edit}"  class="btn btn-sm btn-info">
                         <i class="fa fa-amazon"></i>
                     </a>
-                    <button class="btn btn-sm btn-info"><i class="fa fa-clone" aria-hidden="true"></i></button>
+                    <a href="{ROW.url_clone}"  class="btn btn-sm btn-info">
+                        <i class="fa fa-clone"></i>
+                    </a>
                     <button class="btn btn-sm btn-info"><i class="fa fa-link" aria-hidden="true"></i></button>
                     <a href="{ROW.url_download}" class="btn btn-sm btn-success">
                         <i class="fa fa-download" aria-hidden="true"></i>
