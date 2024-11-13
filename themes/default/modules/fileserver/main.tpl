@@ -42,23 +42,27 @@
                 <td><a href="#">123</a></td>
                 <td>{ROW.uploaded_by}</td>
                 <td>
-                    <a href="{ROW.url_delete}" data-file-id="{ROW.file_id}" data-checksess="{CHECK_SESS}" class="btn btn-sm btn-danger delete">
+                    <a href="{ROW.url_delete}" data-file-id="{ROW.file_id}" data-checksess="{CHECK_SESS}" class="btn btn-sm btn-danger delete" title="Xóa">
                         <i class="fa fa-trash-o"></i>
                     </a>
                     <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}"
-                        data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal">
+                        data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal" title="Đổi tên">
                         <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
                     </button>
-                    <a href="{ROW.url_edit}"  class="btn btn-sm btn-info">
+                     <!-- BEGIN: edit -->
+                    <a href="{ROW.url_edit}"  class="btn btn-sm btn-info" title="Sửa">
                         <i class="fa fa-amazon"></i>
                     </a>
-                    <a href="{ROW.url_clone}"  class="btn btn-sm btn-info">
+                    <!-- END: edit -->
+                    <a href="{ROW.url_clone}"  class="btn btn-sm btn-info" title="Sao chép">
                         <i class="fa fa-clone"></i>
                     </a>
-                    <button class="btn btn-sm btn-info"><i class="fa fa-link" aria-hidden="true"></i></button>
-                    <a href="{ROW.url_download}" class="btn btn-sm btn-success">
+                    <button class="btn btn-sm btn-info"><i class="fa fa-link" aria-hidden="true" title="Chia sẻ"></i></button>
+                    <!-- BEGIN: download -->
+                    <a href="{DOWNLOAD}" class="btn btn-sm btn-success" title="Tải xuống">
                         <i class="fa fa-download" aria-hidden="true"></i>
                     </a>
+                    <!-- END: download -->
                 </td>
             </tr>
             <!-- END: file_row -->

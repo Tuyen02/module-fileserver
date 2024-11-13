@@ -4,45 +4,83 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 }
 
 $file_id = $nv_Request->get_int('file_id', 'get', 0);
+$rank = $nv_Request->get_int('rank', 'get', 0);
 $action = $nv_Request->get_string('action', 'post', '');
 $target_folder = $nv_Request->get_string('target_folder', 'post', '');
 
-$sql = "SELECT file_name, file_path FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $file_id;
+$sql = "SELECT file_name, file_path, lev FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $file_id;
 $result = $db->query($sql);
 $row = $result->fetch();
 
 if (!$row) {
-    die('File not found');
+    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=clone');
 }
+
+$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=clone' . '&amp;file_id=' . $file_id;
+
+$page_url = $base_url;
 
 $file_name = $row['file_name'];
 $file_path = $row['file_path'];
 $current_directory = dirname($file_path);
-
 $directories = [];
-foreach (scandir($current_directory) as $folder) {
-    if ($folder != '.' && $folder != '..' && is_dir($current_directory . '/' . $folder)) {
-        $directories[] = $folder;
+$lev = $row['lev'];
+if ($rank > 0) {
+    $lev = $rank;
+    $base_url .= '&amp;rank=' . $rank;
+}
+
+$directories = $db->query("SELECT file_id, file_name, file_path, lev FROM `nv4_vi_fileserver_files` WHERE `lev` = " . $lev . " AND is_folder = 1 AND status = 1 ORDER BY file_id ASC")->fetchAll();
+
+$message = '';
+
+$copy = $nv_Request->get_int('copy', 'get', 0);
+if ($copy == 1) {
+    $message = "Copy file thất bại";
+
+    $target_folder = $db->query("SELECT file_path, file_id FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $rank)->fetch();
+    $target_url = $target_folder['file_path'];
+    $lev = $target_folder['file_id'];
+    
+    if (copy($row['file_path'], $target_url . '/' . $row['file_name'])) {
+        $message = "Copy file thành công";
+
+        $new_file_name = $row['file_name'];
+        $new_file_path = $target_url . '/' . $new_file_name;
+
+        $sql_insert = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
+                           VALUES (:file_name, :file_path, :uploaded_by, 0, :created_at, :lev)";
+        $stmt = $db->prepare($sql_insert);
+        $stmt->bindParam(':file_name', $new_file_name);
+        $stmt->bindParam(':file_path', $new_file_path);
+        $stmt->bindParam(':uploaded_by', $user_info['userid']);
+        $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
+        $stmt->bindParam(':lev', $lev);
+        $stmt->execute();
     }
 }
 
-$message = ''; 
+$move = $nv_Request->get_int('move', 'get', 0);
+if ($move == 1) {
+    $message = "Move file thất bại";
 
-if (!empty($action)) {
-    $new_file_path = NV_ROOTDIR . '/' . $target_folder . '/' . basename($file_path);
+    $target_folder = $db->query("SELECT file_path, file_id FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $rank)->fetch();
+    $target_url = $target_folder['file_path'];
+    $lev = $target_folder['file_id'];
+    
+    if (rename($row['file_path'], $target_url . '/' . $row['file_name'])) {
+        $message = "Move file thành công";
 
-    if ($action == 'copy') {
-        if (copy($file_path, $new_file_path)) {
-            $message = 'File copied successfully';
-        } else {
-            $message = 'Failed to copy file';
-        }
-    } elseif ($action == 'move') {
-        if (rename($file_path, $new_file_path)) {
-            $message = 'File moved successfully';
-        } else {
-            $message = 'Failed to move file';
-        }
+        $new_file_path = $target_url . '/' . $new_file_name;
+
+        $new_file_path = $target_url . '/' . $row['file_name'];
+
+        $sql_update = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET file_path = :file_path, lev = :lev WHERE file_id = :file_id";
+        $stmt = $db->prepare($sql_update);
+        $stmt->bindParam(':file_path', $new_file_path);
+        $stmt->bindParam(':lev', $lev);
+        $stmt->bindParam(':file_id', $file_id);
+        $stmt->execute();
     }
 }
 
@@ -54,9 +92,21 @@ $xtpl->assign('FILE_PATH', $file_path);
 $xtpl->assign('MESSAGE', $message);
 
 foreach ($directories as $directory) {
+    $directory['url'] = $page_url . '&amp;rank=' . $directory['file_id'];
     $xtpl->assign('DIRECTORY', $directory);
     $xtpl->parse('main.directory_option');
 }
+
+if ($message != '') {
+    $xtpl->assign('MESSAGE', $message);
+    $xtpl->parse('main.message');
+}
+
+$url_copy = $base_url . '&amp;copy=1';
+$xtpl->assign('url_copy', $url_copy);
+
+$url_move = $base_url . '&amp;move=1';
+$xtpl->assign('url_move', $url_move);
 
 $xtpl->parse('main');
 $contents = $xtpl->text('main');

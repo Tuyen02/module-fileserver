@@ -251,6 +251,19 @@ while ($row = $result->fetch()) {
     $row['url_delete'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . "&action=delete&checksess=" . md5($row['file_id'] . NV_CHECK_SESSION);
     $row['url_download'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . "&download=1";
     $row['url_clone'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=clone&amp;file_id=' . $row['file_id'];
+
+    $fileInfo = pathinfo($row['file_name'],PATHINFO_EXTENSION);
+
+    if($fileInfo == 'txt'){
+        $xtpl->assign('EDIT',  $row['url_edit']);
+        $xtpl->parse('main.file_row.edit');
+    }
+
+    if($row['is_folder'] != 1){
+        $xtpl->assign('DOWNLOAD', $row['url_download']);
+        $xtpl->parse('main.file_row.download');
+    }
+
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');
 }
