@@ -41,7 +41,10 @@ $xtpl->assign('LANG', $lang_module);
 $xtpl->assign('FILE_CONTENT', htmlspecialchars($file_content));
 $xtpl->assign('FILE_ID', $file_id);
 $xtpl->assign('FILE_NAME', $file_name);
-$xtpl->assign('MESSAGE', isset($message) ? $message : '');
+if ($message != '') {
+    $xtpl->assign('MESSAGE', $message);
+    $xtpl->parse('main.message');
+}
 
 $xtpl->parse('main');
 $contents = $xtpl->text('main');

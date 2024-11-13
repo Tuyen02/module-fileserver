@@ -254,16 +254,21 @@ while ($row = $result->fetch()) {
 
     $fileInfo = pathinfo($row['file_name'],PATHINFO_EXTENSION);
 
-    if($fileInfo == 'txt'){
-        $xtpl->assign('EDIT',  $row['url_edit']);
-        $xtpl->parse('main.file_row.edit');
-    }
+    if($row['is_folder'] == 1){
+        $xtpl->assign('VIEW', $row['url_view']);
+        $xtpl->parse('main.file_row.view');
+    }else{
+        $xtpl->assign('VIEW', $row['url_edit']);
+        $xtpl->parse('main.file_row.view');
 
-    if($row['is_folder'] != 1){
         $xtpl->assign('DOWNLOAD', $row['url_download']);
         $xtpl->parse('main.file_row.download');
-    }
 
+        if($fileInfo == 'txt'){
+            $xtpl->assign('EDIT',  $row['url_edit']);
+            $xtpl->parse('main.file_row.edit');
+        }
+    }
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');
 }

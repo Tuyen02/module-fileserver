@@ -32,7 +32,7 @@
             <!-- BEGIN: file_row -->
             <tr>
                 <td>
-                    <a href="{ROW.url_view}">
+                    <a href="{VIEW}">
                         <i class="fa {ROW.icon_class}" aria-hidden="true"></i>
                         {ROW.file_name}
                     </a>
@@ -50,7 +50,7 @@
                         <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
                     </button>
                      <!-- BEGIN: edit -->
-                    <a href="{ROW.url_edit}"  class="btn btn-sm btn-info" title="Sửa">
+                    <a href="{EDIT}"  class="btn btn-sm btn-info" title="Sửa">
                         <i class="fa fa-amazon"></i>
                     </a>
                     <!-- END: edit -->

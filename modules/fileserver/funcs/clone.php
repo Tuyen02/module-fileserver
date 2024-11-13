@@ -71,8 +71,6 @@ if ($move == 1) {
     if (rename($row['file_path'], $target_url . '/' . $row['file_name'])) {
         $message = "Move file thành công";
 
-        $new_file_path = $target_url . '/' . $new_file_name;
-
         $new_file_path = $target_url . '/' . $row['file_name'];
 
         $sql_update = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET file_path = :file_path, lev = :lev WHERE file_id = :file_id";
