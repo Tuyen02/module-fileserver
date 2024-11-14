@@ -9,20 +9,24 @@
     <input type="hidden" name="file_id" value="{FILE_ID}">
 
 
-    <a href="{url_copy}" class="btn btn-sm btn-info">
+    <a href="{url_copy}" class="btn btn-info">
         <i class="fa fa-check-circle"></i> Copy
     </a>
-    <a href="{url_move}" class="btn btn-sm btn-info">
+    <a href="{url_move}" class="btn btn-info">
         <i class="fa fa-check-circle"></i> Move
     </a>
 
-    <button type="button" class="btn btn-danger" onclick="goBack()">
-        <i class="fa fa-times-circle"></i>Cancel
-    </button>
-    </p>
+    <a href="{url_view}" class="btn btn-danger">
+        <i class="fa fa-times-circle"></i> Move
+    </a>
 </form>
 
 <p>Chọn thư mục:</p>
+<div>
+    <a href="{url_previous}" class="btn btn-sm btn-info">
+        <i class="fa fa-chevron-left"></i>
+    </a>
+</div>
 
 <!-- BEGIN: directory_option -->
 <a href="{DIRECTORY.url}">
@@ -35,9 +39,6 @@
     function selectFolder(directory) {
         document.getElementsByName("target_folder")[0].value = directory;
         alert('Selected folder: ' + directory);
-    }
-    function goBack() {
-        window.history.back();
     }
 </script>
 <!-- END: main -->

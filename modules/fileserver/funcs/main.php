@@ -22,16 +22,16 @@ $dir = NV_ROOTDIR . '/uploads/fileserver';
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
 $page_url = $base_url;
 
+if ($lev > 0) {
+    $dir = $db->query("SELECT file_path FROM  " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $lev)->fetchColumn();
+    $page_url .= '&amp;lev=' . $lev;
+}
+
 $sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, u.username AS uploaded_by
         FROM " . NV_PREFIXLANG . "_fileserver_files f
         LEFT JOIN " . NV_USERS_GLOBALTABLE . " u ON f.uploaded_by = u.userid WHERE f.status = 1 AND lev = " . $lev . "
         ORDER BY f.is_folder DESC, f.file_id ASC";
 $result = $db->query($sql);
-
-if ($lev > 0) {
-    $dir = $db->query("SELECT file_path FROM  " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $lev)->fetchColumn();
-    $page_url .= '&amp;lev=' . $lev;
-}
 
 $action = $nv_Request->get_title('action', 'post', '');
 if (!empty($action)) {
@@ -60,16 +60,16 @@ if (!empty($action)) {
         if (!empty($name_f)) {
 
             $file_path = $dir . '/' . $name_f;
-//            if (file_exists($file_path)) {
-//                $status = 'error';
-//                $mess = 'File hoặc folder đã tồn tại. Bạn có muốn tiếp tục không?';
-//                $i = 1;
-//                while (file_exists($file_path)) {
-//                    $name_f = pathinfo($name_f, PATHINFO_FILENAME) . "-$i";
-//                    $file_path = $dir . '/' . $name_f;
-//                    $i++;
-//                }
-//            }
+            //            if (file_exists($file_path)) {
+            //                $status = 'error';
+            //                $mess = 'File hoặc folder đã tồn tại. Bạn có muốn tiếp tục không?';
+            //                $i = 1;
+            //                while (file_exists($file_path)) {
+            //                    $name_f = pathinfo($name_f, PATHINFO_FILENAME) . "-$i";
+            //                    $file_path = $dir . '/' . $name_f;
+            //                    $i++;
+            //                }
+            //            }
             $sql = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
                     VALUES (:file_name, :file_path, :uploaded_by, :is_folder, :created_at, :lev)";
             $stmt = $db->prepare($sql);
@@ -103,18 +103,18 @@ if (!empty($action)) {
     if ($action == 'delete') {
         $fileId = $nv_Request->get_int('file_id', 'post', 0);
         $checksess = $nv_Request->get_title('checksess', 'get', '');
-        if ($fileId > 0 && $checksess == md5($fileId. NV_CHECK_SESSION)) {
+        if ($fileId > 0 && $checksess == md5($fileId . NV_CHECK_SESSION)) {
             $deleted = deleteFileOrFolder($fileId);
             if ($deleted) {
                 $status = 'success';
                 $mess = 'Xóa thành công.';
-            }else{
+            } else {
                 $mess =  'Xóa thất bại.';
             }
         }
     }
 
-    if ($action === 'rename') {
+    if ($action == 'rename') {
         $fileId = intval($nv_Request->get_int('file_id', 'post', 0));
         $newName = trim($nv_Request->get_title('new_name', 'post', ''));
 
@@ -127,41 +127,26 @@ if (!empty($action)) {
         if ($file) {
             $oldFilePath = $file['file_path'];
             $newFilePath = dirname($oldFilePath) . '/' . $newName;
-            $mess = 'Không thể đổi tên file.';
 
-            if (rename($oldFilePath, $newFilePath)) {
-                $mess = 'Không thể cập nhật cơ sở dữ liệu.';
-                $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET file_name = :new_name, file_path = :new_path, updated_at = :updated_at WHERE file_id = :file_id";
-                $stmtUpdate = $db->prepare($sqlUpdate);
-                $stmtUpdate->bindParam(':new_name', $newName);
-                $stmtUpdate->bindParam(':new_path', $newFilePath);
-                $stmtUpdate->bindParam(':file_id', $fileId, PDO::PARAM_INT);
-                $stmtUpdate->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-                if ($stmtUpdate->execute()) {
-                    $status = 'success';
-                    $mess = 'Đổi tên thành công.';
+            $childCount = $db->query("SELECT COUNT(*) FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = " . $fileId)->fetchColumn();
+            if ($file['is_folder'] && $childCount > 0) {
+                $mess = 'Không thể đổi tên folder vì nó chứa file con.';
+            } else {
+                $mess = 'Không thể đổi tên file.';
+
+                if (rename($oldFilePath, $newFilePath)) {
+                    $mess = 'Không thể cập nhật cơ sở dữ liệu.';
+                    $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET file_name = :new_name, file_path = :new_path, updated_at = :updated_at WHERE file_id = :file_id";
+                    $stmtUpdate = $db->prepare($sqlUpdate);
+                    $stmtUpdate->bindParam(':new_name', $newName);
+                    $stmtUpdate->bindParam(':new_path', $newFilePath);
+                    $stmtUpdate->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+                    $stmtUpdate->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+                    if ($stmtUpdate->execute()) {
+                        $status = 'success';
+                        $mess = 'Đổi tên thành công.';
+                    }
                 }
-                // if ($stmtUpdate->execute()) {
-                //     // Cập nhật file path của các thư mục con và cháu
-                //     $sqlUpdateChildren = "UPDATE " . NV_PREFIXLANG . "_fileserver_files 
-                //                           SET file_path = REPLACE(file_path, :old_path, :new_path), 
-                //                               updated_at = :updated_at 
-                //                           WHERE lev > :parent_lev AND file_path LIKE :old_path_like";
-                //     $stmtUpdateChildren = $db->prepare($sqlUpdateChildren);
-                //     $oldPathLike = $oldFilePath . '/%';  // Đảm bảo chỉ thay đổi các thư mục con
-                //     $stmtUpdateChildren->bindParam(':old_path', $oldFilePath);
-                //     $stmtUpdateChildren->bindParam(':new_path', $newFilePath);
-                //     $stmtUpdateChildren->bindParam(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-                //     $stmtUpdateChildren->bindValue(':parent_lev', $file['lev'], PDO::PARAM_INT);
-                //     $stmtUpdateChildren->bindParam(':old_path_like', $oldPathLike);
-    
-                //     if ($stmtUpdateChildren->execute()) {
-                //         $status = 'success';
-                //         $mess = 'Đổi tên thành công và các thư mục con đã được cập nhật.';
-                //     } else {
-                //         $mess = 'Không thể cập nhật các thư mục con.';
-                //     }
-                // }
             }
         }
     }
@@ -176,13 +161,13 @@ if ($download == 1) {
     $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
     $stmt->execute();
     $file = $stmt->fetch();
-    
+
     if ($file) {
         $file_path = $file['file_path'];
         $file_name = $file['file_name'];
 
         if (file_exists($file_path)) {
-            $_download = new NukeViet\Files\Download($file_path,$dir, $file_name, true, 0);
+            $_download = new NukeViet\Files\Download($file_path, $dir, $file_name, true, 0);
             $_download->download_file();
         }
     }
@@ -251,20 +236,21 @@ while ($row = $result->fetch()) {
     $row['url_delete'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . "&action=delete&checksess=" . md5($row['file_id'] . NV_CHECK_SESSION);
     $row['url_download'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . "&download=1";
     $row['url_clone'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=clone&amp;file_id=' . $row['file_id'];
+    $row['url_rename'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=rename&amp;file_id=' . $row['file_id'];
 
-    $fileInfo = pathinfo($row['file_name'],PATHINFO_EXTENSION);
+    $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
 
-    if($row['is_folder'] == 1){
+    if ($row['is_folder'] == 1) {
         $xtpl->assign('VIEW', $row['url_view']);
         $xtpl->parse('main.file_row.view');
-    }else{
+    } else {
         $xtpl->assign('VIEW', $row['url_edit']);
         $xtpl->parse('main.file_row.view');
 
         $xtpl->assign('DOWNLOAD', $row['url_download']);
         $xtpl->parse('main.file_row.download');
 
-        if($fileInfo == 'txt'){
+        if ($fileInfo == 'txt') {
             $xtpl->assign('EDIT',  $row['url_edit']);
             $xtpl->parse('main.file_row.edit');
         }

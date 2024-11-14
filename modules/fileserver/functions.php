@@ -59,8 +59,6 @@ function updateDirectoryStatus($dir) {
     rmdir($dir);
 }
 
-
-
 function checkIfParentIsFolder($db, $lev) {
     return $db->query("SELECT is_folder FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . intval($lev))->fetchColumn();
 }

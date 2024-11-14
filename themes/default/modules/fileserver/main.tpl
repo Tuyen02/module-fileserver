@@ -9,9 +9,9 @@
         class="form-inline my-2 my-lg-0">
         <input type="text" class="form-control" placeholder="Tìm kiếm file..." id="searchInput">
         <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">Tạo mục mới</a>
-        <a href="javascript:history.back();" class="btn btn-warning" id="backButton">
+        <button type="button" class="btn btn-warning" id="backButton">
             <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> Quay lại
-        </a>
+        </button>
         <button type="button" class="btn btn-primary" id="uploadButton">Tải lên</button>
         <input type="file" name="uploadfile" id="uploadfile" required style="display: none;">
         <input type="hidden" name="submit_upload" value="1">
@@ -49,7 +49,7 @@
                         data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal" title="Đổi tên">
                         <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
                     </button>
-                     <!-- BEGIN: edit -->
+                    <!-- BEGIN: edit -->
                     <a href="{EDIT}"  class="btn btn-sm btn-info" title="Sửa">
                         <i class="fa fa-amazon"></i>
                     </a>
@@ -207,17 +207,12 @@
     $(document).on('click', '.rename', function () {
         const fileId = $(this).data('file-id');
         const fileName = $(this).data('file-name');
+        const renameUrl = $(this).attr('href');
 
         $("#file_id").val(fileId);
         $("#new_name").val(fileName);
-    });
 
-    $(document).ready(function () {
-
-        const currentUrl = window.location.href;
-        if (currentUrl === "{ROW.url_back}") {
-            $("#backButton").hide();
-        }
+        $("#renameForm").attr("action", renameUrl);
     });
 
     $('#uploadForm').on('submit', function (e) {
@@ -246,6 +241,14 @@
 
     document.getElementById('uploadfile').addEventListener('change', function () {
         document.getElementById('uploadForm').submit();
+    });
+
+    $(document).ready(function () {
+
+    $("#backButton").on("click", function (e) {
+        e.preventDefault();
+        window.history.back();
+    });
     });
 
 </script>
