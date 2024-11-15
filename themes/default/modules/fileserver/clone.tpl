@@ -17,7 +17,7 @@
     </a>
 
     <a href="{url_view}" class="btn btn-danger">
-        <i class="fa fa-times-circle"></i> Move
+        <i class="fa fa-times-circle"></i> Cancel
     </a>
 </form>
 

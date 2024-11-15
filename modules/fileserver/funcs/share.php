@@ -8,20 +8,44 @@ if (!defined('NV_IS_USER')) {
 
 $file_id = $nv_Request->get_int('file_id', 'get', 0);
 
-$sql = "SELECT file_name, file_path, lev FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $file_id;
+
+$sql = "SELECT file_name, file_path, view, share FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $file_id;
 $result = $db->query($sql);
 $row = $result->fetch();
-
-$view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['lev'];
 
 if (!$row) {
     exit('File not found');
 }
+$share = $row['share'];
+$message = '';
+if ($share == 0) {
+    $message = 'File khong chia se';
+    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $file_id);
+    exit();
+} elseif ($share == 1) {
+    $message = 'File chia se voi nguoi co tai khoan';
+    // nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=share&amp;file_id=' . $file_id);
+    // exit();
+} elseif ($share == 2) {
+    $message = 'File chia se voi moi nguoi';
+    // nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=share&amp;file_id=' . $file_id);
+    // exit();
+}
+
+
+if(!$nv_Request->isset_request($module_name . '-'.$file_id,'session')){
+    $nv_Request->set_Session($module_name . '-'.$file_id, NV_CURRENTTIME);
+    $sql = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET view = view + 1 WHERE file_id = :file_id";
+    $stmt = $db->prepare($sql);
+    $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+    $stmt->execute();
+}
+
 $file_name = $row['file_name'];
 $file_path = $row['file_path'];
+$view = $row['view'];
 $file_content = file_exists($file_path) ? file_get_contents($file_path) : '';
 
-$message='';
 if ($nv_Request->get_int('file_id', 'post') > 0) {
     $file_content = $nv_Request->get_string('file_content', 'post'); 
 
@@ -39,13 +63,12 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
     $message = 'File content has been updated successfully.';
 }
 
-$xtpl = new XTemplate('edit.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
+$xtpl = new XTemplate('share.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
 $xtpl->assign('LANG', $lang_module);
 $xtpl->assign('FILE_CONTENT', htmlspecialchars($file_content));
 $xtpl->assign('FILE_ID', $file_id);
 $xtpl->assign('FILE_NAME', $file_name);
-$xtpl->assign('url_view', $view_url);
-
+$xtpl->assign('VIEW', $view);
 if ($message != '') {
     $xtpl->assign('MESSAGE', $message);
     $xtpl->parse('main.message');

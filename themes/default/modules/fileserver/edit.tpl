@@ -35,9 +35,9 @@
                 style="width: 500px; height: 300px;">{FILE_CONTENT}</textarea>
             <input type="hidden" name="file_id" value="{FILE_ID}">
         </div>
-        <button type="button" class="btn btn-warning" id="backButton">
-            <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> Quay lại
-        </button>
+        <a href="{url_view}" class="btn btn-warning">
+            <i class="fa fa-chevron-circle-left"></i> Quay lại
+        </a>
         <button type="submit" class="btn btn-primary">Lưu</button>
     </form>
 </div>

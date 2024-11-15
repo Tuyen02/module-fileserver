@@ -22,18 +22,19 @@ $dir = NV_ROOTDIR . '/uploads/fileserver';
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
 $page_url = $base_url;
 
-if ($lev > 0) {
-    $dir = $db->query("SELECT file_path FROM  " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $lev)->fetchColumn();
-    $page_url .= '&amp;lev=' . $lev;
-}
-
 $sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, u.username AS uploaded_by
         FROM " . NV_PREFIXLANG . "_fileserver_files f
         LEFT JOIN " . NV_USERS_GLOBALTABLE . " u ON f.uploaded_by = u.userid WHERE f.status = 1 AND lev = " . $lev . "
         ORDER BY f.is_folder DESC, f.file_id ASC";
 $result = $db->query($sql);
 
+if ($lev > 0) {
+    $dir = $db->query("SELECT file_path FROM  " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $lev)->fetchColumn();
+    $page_url .= '&amp;lev=' . $lev;
+}
+
 $action = $nv_Request->get_title('action', 'post', '');
+
 if (!empty($action)) {
     $status = 'error';
     $mess = 'Lỗi hệ thống';
@@ -150,6 +151,27 @@ if (!empty($action)) {
             }
         }
     }
+
+    if ($action == 'share') {
+        $fileId = $nv_Request->get_int('file_id', 'post', 0);
+        $share_option = $nv_Request->get_int('share_option', 'post', 0);
+
+        if ($fileId > 0) {
+            $sql = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET share = :share_option WHERE file_id = :file_id";
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam(':share_option', $share_option, PDO::PARAM_INT);
+            $stmt->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+
+            if ($stmt->execute()) {
+                $status = 'success';
+                $mess = 'Cập nhật trạng thái chia sẻ thành công.';
+            } else {
+                $status = 'error';
+                $mess = 'Không thể cập nhật trạng thái chia sẻ.';
+            }
+        }
+    }
+
     nv_jsonOutput(['status' => $status, 'message' => $mess]);
 }
 
@@ -176,6 +198,7 @@ if ($download == 1) {
 $error = '';
 $success = '';
 $admin_info['allow_files_type'][] = 'text';
+
 if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['uploadfile']) && is_uploaded_file($_FILES['uploadfile']['tmp_name'])) {
     $upload = new NukeViet\Files\Upload(
         $admin_info['allow_files_type'],
@@ -237,6 +260,10 @@ while ($row = $result->fetch()) {
     $row['url_download'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . "&download=1";
     $row['url_clone'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=clone&amp;file_id=' . $row['file_id'];
     $row['url_rename'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=rename&amp;file_id=' . $row['file_id'];
+    $url_share = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=share&amp;file_id=' . $row['file_id'];
+
+    $row['url_share'] = $url_share;
+
 
     $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
 
@@ -244,6 +271,9 @@ while ($row = $result->fetch()) {
         $xtpl->assign('VIEW', $row['url_view']);
         $xtpl->parse('main.file_row.view');
     } else {
+        $xtpl->assign('SHARE', $row['url_share']);
+        $xtpl->parse('main.file_row.share');
+
         $xtpl->assign('VIEW', $row['url_edit']);
         $xtpl->parse('main.file_row.view');
 

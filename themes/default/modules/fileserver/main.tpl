@@ -2,12 +2,13 @@
 <div class="container mt-4 mb-5 pb-5">
     <h1 class="text-center">Module File Server</h1>
     <br>
-        <!-- BEGIN: error -->
-        <div class="alert alert-warning">{ERROR}</div>
-        <!-- END: error -->
-    <form action="{FORM_ACTION}" method="post" enctype="multipart/form-data" id="uploadForm"
+    <!-- BEGIN: error -->
+    <div class="alert alert-warning">{ERROR}</div>
+    <!-- END: error -->
+    <form action="{FORM_ACTION}" method="get" enctype="multipart/form-data" id="uploadForm"
         class="form-inline my-2 my-lg-0">
-        <input type="text" class="form-control" placeholder="Tìm kiếm file..." id="searchInput">
+        <input type="text" class="form-control" placeholder="Tìm kiếm file..." id="searchInput" name="search"
+            value="{SEARCH_TERM}">
         <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">Tạo mục mới</a>
         <button type="button" class="btn btn-warning" id="backButton">
             <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> Quay lại
@@ -42,7 +43,8 @@
                 <td><a href="#">123</a></td>
                 <td>{ROW.uploaded_by}</td>
                 <td>
-                    <a href="{ROW.url_delete}" data-file-id="{ROW.file_id}" data-checksess="{CHECK_SESS}" class="btn btn-sm btn-danger delete" title="Xóa">
+                    <a href="{ROW.url_delete}" data-file-id="{ROW.file_id}" data-checksess="{CHECK_SESS}"
+                        class="btn btn-sm btn-danger delete" title="Xóa">
                         <i class="fa fa-trash-o"></i>
                     </a>
                     <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}"
@@ -50,14 +52,17 @@
                         <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
                     </button>
                     <!-- BEGIN: edit -->
-                    <a href="{EDIT}"  class="btn btn-sm btn-info" title="Sửa">
+                    <a href="{EDIT}" class="btn btn-sm btn-info" title="Sửa">
                         <i class="fa fa-amazon"></i>
                     </a>
                     <!-- END: edit -->
-                    <a href="{ROW.url_clone}"  class="btn btn-sm btn-info" title="Sao chép">
+                    <a href="{ROW.url_clone}" class="btn btn-sm btn-info" title="Sao chép">
                         <i class="fa fa-clone"></i>
                     </a>
-                    <button class="btn btn-sm btn-info"><i class="fa fa-link" aria-hidden="true" title="Chia sẻ"></i></button>
+                    <button class="btn btn-sm btn-info share" data-file-id="{ROW.file_id}" data-toggle="modal"
+                    data-target="#shareModal" title="Chia sẻ">
+                        <i class="fa fa-link" aria-hidden="true"></i>
+                    </button>
                     <!-- BEGIN: download -->
                     <a href="{DOWNLOAD}" class="btn btn-sm btn-success" title="Tải xuống">
                         <i class="fa fa-download" aria-hidden="true"></i>
@@ -123,6 +128,35 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
                 <button type="button" class="btn btn-primary" onclick="submitRenameForm();">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Chia Sẻ -->
+<div class="modal fade" id="shareModal" tabindex="-1" role="dialog" aria-labelledby="shareModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header row">
+                <h3 class="modal-title col-lg-11" id="shareModalLabel">Chia sẻ file</h3>
+            </div>
+            <div class="modal-body">
+                <form id="shareForm" method="post" action="">
+                    <div class="form-group">
+                        <label for="share_option">Chọn tùy chọn chia sẻ:</label>
+                        <select class="form-control" id="share_option" name="share_option" required>
+                            <option value="0">Không chia sẻ</option>
+                            <option value="1">Chia sẻ với người có tài khoản</option>
+                            <option value="2">Chia sẻ với tất cả mọi người</option>
+                        </select>
+                    </div>
+                    <input type="hidden" name="file_id" id="share_file_id" value="">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" onclick="submitShareForm();">Chia sẻ</button>
             </div>
         </div>
     </div>
@@ -220,7 +254,7 @@
         const formData = new FormData(this);
         $.ajax({
             type: 'POST',
-            url: "{FORM_ACTION}",
+            url: "",
             data: formData,
             processData: false,
             contentType: false,
@@ -244,11 +278,37 @@
     });
 
     $(document).ready(function () {
-
-    $("#backButton").on("click", function (e) {
-        e.preventDefault();
-        window.history.back();
+        $("#backButton").on("click", function (e) {
+            e.preventDefault();
+            window.history.back();
+        });
     });
+
+    function submitShareForm() {
+        const data = {
+            action: 'share',
+            file_id: $("#share_file_id").val(),
+            share_option: $("#share_option").val()
+        };
+        console.log("File ID being sent:", data.file_id);
+        $.ajax({
+            type: 'POST',
+            url: "{FORM_ACTION}",
+            data: data,
+            success: function (res) {
+                console.log(res);
+                alert(res.message);
+                window.location.href = "{ROW.url_share}";
+            },
+            error: function () {
+                alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+            }
+        });
+    }
+
+    $(document).on('click', '.share', function () {
+        const fileId = $(this).data('file-id');
+        $("#share_file_id").val(fileId);
     });
 
 </script>
