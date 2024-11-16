@@ -16,20 +16,35 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 if (!defined('NV_IS_USER')) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
 }
+$search_term = $nv_Request->get_title('search', 'post', '');
 
 $lev = $nv_Request->get_int("lev", "get,post", 0);
-$dir = NV_ROOTDIR . '/uploads/fileserver';
+$base_dir = '/uploads/fileserver';
+$full_dir = NV_ROOTDIR . $base_dir;
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
 $page_url = $base_url;
 
 $sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, u.username AS uploaded_by
         FROM " . NV_PREFIXLANG . "_fileserver_files f
-        LEFT JOIN " . NV_USERS_GLOBALTABLE . " u ON f.uploaded_by = u.userid WHERE f.status = 1 AND lev = " . $lev . "
-        ORDER BY f.is_folder DESC, f.file_id ASC";
-$result = $db->query($sql);
+        LEFT JOIN " . NV_USERS_GLOBALTABLE . " u ON f.uploaded_by = u.userid
+        WHERE f.status = 1 AND lev = :lev";
+
+if (!empty($search_term)) {
+    $sql .= " AND f.file_name LIKE :search_term";
+}
+
+$sql .= " ORDER BY f.is_folder DESC, f.file_id ASC";
+$stmt = $db->prepare($sql);
+$stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
+if (!empty($search_term)) {
+    $stmt->bindValue(':search_term', '%' . $search_term . '%', PDO::PARAM_STR);
+}
+$stmt->execute();
+$result = $stmt->fetchAll();
 
 if ($lev > 0) {
-    $dir = $db->query("SELECT file_path FROM  " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $lev)->fetchColumn();
+    $base_dir = $db->query("SELECT file_path FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $lev)->fetchColumn();
+    $full_dir = NV_ROOTDIR . $base_dir;
     $page_url .= '&amp;lev=' . $lev;
 }
 
@@ -60,7 +75,7 @@ if (!empty($action)) {
 
         if (!empty($name_f)) {
 
-            $file_path = $dir . '/' . $name_f;
+            $file_path = $base_dir . '/' . $name_f;
             //            if (file_exists($file_path)) {
             //                $status = 'error';
             //                $mess = 'File hoặc folder đã tồn tại. Bạn có muốn tiếp tục không?';
@@ -83,13 +98,13 @@ if (!empty($action)) {
 
             if ($type == 1) {
                 //tao folder
-                $check_dir = nv_mkdir($dir, $name_f);
+                $check_dir = nv_mkdir($full_dir, $name_f);
                 $status = $check_dir[0] == 1 ? 'success' : 'error';
                 $mess = $check_dir[1];
             } else {
                 $mess = 'Lỗi không tạo được file';
                 //tao file
-                $_dir = file_put_contents($file_path, '');
+                $_dir = file_put_contents($full_dir, '');
                 if (isset($_dir)) {
                     $status = 'success';
                     $mess = 'Tạo file ' . $name_f . ' thành công';
@@ -127,7 +142,10 @@ if (!empty($action)) {
         $mess = 'File không tồn tại.';
         if ($file) {
             $oldFilePath = $file['file_path'];
+            $oldFullPath = NV_ROOTDIR . '/' . $oldFilePath;
+
             $newFilePath = dirname($oldFilePath) . '/' . $newName;
+            $newFullPath = NV_ROOTDIR . '/' . $newFilePath;
 
             $childCount = $db->query("SELECT COUNT(*) FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = " . $fileId)->fetchColumn();
             if ($file['is_folder'] && $childCount > 0) {
@@ -135,7 +153,7 @@ if (!empty($action)) {
             } else {
                 $mess = 'Không thể đổi tên file.';
 
-                if (rename($oldFilePath, $newFilePath)) {
+                if (rename($oldFullPath, $newFullPath)) {
                     $mess = 'Không thể cập nhật cơ sở dữ liệu.';
                     $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET file_name = :new_name, file_path = :new_path, updated_at = :updated_at WHERE file_id = :file_id";
                     $stmtUpdate = $db->prepare($sqlUpdate);
@@ -185,11 +203,11 @@ if ($download == 1) {
     $file = $stmt->fetch();
 
     if ($file) {
-        $file_path = $file['file_path'];
+        $file_path = NV_ROOTDIR . $file['file_path'];
         $file_name = $file['file_name'];
 
         if (file_exists($file_path)) {
-            $_download = new NukeViet\Files\Download($file_path, $dir, $file_name, true, 0);
+            $_download = new NukeViet\Files\Download($file_path, $full_dir, $file_name, true, 0);
             $_download->download_file();
         }
     }
@@ -210,7 +228,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
     );
     $upload->setLanguage($lang_global);
 
-    $upload_info = $upload->save_file($_FILES['uploadfile'], $dir, false, $global_config['nv_auto_resize']);
+    $upload_info = $upload->save_file($_FILES['uploadfile'], $full_dir, false, $global_config['nv_auto_resize']);
 
     if ($upload_info['error'] == '') {
         $file_name = $upload_info['basename'];
@@ -239,6 +257,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
 $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
 $xtpl->assign('LANG', $lang_module);
 $xtpl->assign('FORM_ACTION', $page_url);
+$xtpl->assign('SEARCH_TERM', $search_term);
 
 if ($error != '') {
     $xtpl->assign('ERROR', $error);
@@ -249,7 +268,7 @@ if ($success != '') {
     $xtpl->parse('main.success');
 }
 
-while ($row = $result->fetch()) {
+foreach ($result as $row) {
     $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / (1024 * 1024), 2) . ' MB' : '--';
     $row['created_at'] = date("d/m/Y", $row['created_at']);
     $row['icon_class'] = $row['is_folder'] ? 'fa-folder-o' : 'fa-file-o';

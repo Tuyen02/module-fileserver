@@ -22,7 +22,8 @@ $view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DA
 
 $file_name = $row['file_name'];
 $file_path = $row['file_path'];
-$current_directory = dirname($file_path);
+$full_path = NV_ROOTDIR. $file_path;
+$current_directory = dirname($full_path);
 $directories = [];
 $lev = $row['lev'];
 
@@ -57,7 +58,7 @@ if ($copy == 1) {
     if ($existingFile > 0) {
         $message = "File đã tồn tại trong thư mục đích.";
     } else {
-        if (copy($row['file_path'], $target_url . '/' . $row['file_name'])) {
+        if (copy(NV_ROOTDIR . '/'. $row['file_path'], NV_ROOTDIR . '/' . $target_url . '/' . $row['file_name'])) {
             $message = "Copy file thành công";
             $new_file_name = $row['file_name'];
             $new_file_path = $target_url . '/' . $new_file_name;
@@ -92,7 +93,7 @@ if ($move == 1) {
     if ($existingFile > 0) {
         $message = "File đã tồn tại trong thư mục đích.";
     } else {
-        if (rename($row['file_path'], $target_url . '/' . $row['file_name'])) {
+        if (rename(NV_ROOTDIR . '/' . $row['file_path'], NV_ROOTDIR . '/' . $target_url . '/' . $row['file_name'])) {
             $message = "Move file thành công";
             $new_file_path = $target_url . '/' . $row['file_name'];
 

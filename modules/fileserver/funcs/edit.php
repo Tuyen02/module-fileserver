@@ -19,15 +19,16 @@ if (!$row) {
 }
 $file_name = $row['file_name'];
 $file_path = $row['file_path'];
-$file_content = file_exists($file_path) ? file_get_contents($file_path) : '';
+$full_path = NV_ROOTDIR. $file_path;
+$file_content = file_exists($full_path) ? file_get_contents($full_path) : '';
 
 $message='';
 if ($nv_Request->get_int('file_id', 'post') > 0) {
     $file_content = $nv_Request->get_string('file_content', 'post'); 
 
-    file_put_contents($file_path, $file_content);
+    file_put_contents($full_path, $file_content);
 
-    $file_size = filesize($file_path);
+    $file_size = filesize($full_path);
 
     $sql = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET updated_at = :updated_at, file_size = :file_size WHERE file_id = :file_id";
     $stmt = $db->prepare($sql);

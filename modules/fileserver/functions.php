@@ -21,15 +21,17 @@ function deleteFileOrFolder($fileId) {
     }
 
     $filePath = $row['file_path'];
+    $full_dir = NV_ROOTDIR . $filePath;
+
     $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET status = 0 WHERE file_path = :file_path";
     $stmtUpdate = $db->prepare($sqlUpdate);
     $stmtUpdate->bindValue(':file_path', $filePath, PDO::PARAM_STR);
     $stmtUpdate->execute();
 
-    if (is_dir($filePath)) {
+    if (is_dir($full_dir)) {
         updateDirectoryStatus($filePath);
     } else {
-        if (!unlink($filePath)) {
+        if (!unlink($full_dir)) {
             return false;
         }
     }
@@ -39,24 +41,26 @@ function deleteFileOrFolder($fileId) {
 
 function updateDirectoryStatus($dir) {
     global $db;
+    $full_dir = NV_ROOTDIR . '/' . $dir;
 
-    $files = scandir($dir);
+    $files = scandir($full_dir);
     foreach ($files as $file) {
         if ($file !== '.' && $file !== '..') {
             $filePath = $dir . '/' . $file;
+            $fullFilePath = NV_ROOTDIR . '/' . $filePath;
             $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET status = 0 WHERE file_path = :file_path";
             $stmtUpdate = $db->prepare($sqlUpdate);
             $stmtUpdate->bindValue(':file_path', $filePath, PDO::PARAM_STR);
             $stmtUpdate->execute();
 
-            if (is_dir($filePath)) {
+            if (is_dir($fullFilePath)) {
                 updateDirectoryStatus($filePath);
             }else {
-                unlink($filePath); 
+                unlink($fullFilePath); 
             }
         }
     }
-    rmdir($dir);
+    rmdir($full_dir);
 }
 
 function checkIfParentIsFolder($db, $lev) {

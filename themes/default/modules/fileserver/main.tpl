@@ -5,10 +5,11 @@
     <!-- BEGIN: error -->
     <div class="alert alert-warning">{ERROR}</div>
     <!-- END: error -->
-    <form action="{FORM_ACTION}" method="get" enctype="multipart/form-data" id="uploadForm"
+    <form action="{FORM_ACTION}" method="post" enctype="multipart/form-data" id="uploadForm"
         class="form-inline my-2 my-lg-0">
         <input type="text" class="form-control" placeholder="Tìm kiếm file..." id="searchInput" name="search"
             value="{SEARCH_TERM}">
+        <button type="submit" class="btn btn-primary">Tìm kiếm</button>
         <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">Tạo mục mới</a>
         <button type="button" class="btn btn-warning" id="backButton">
             <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> Quay lại
@@ -60,7 +61,7 @@
                         <i class="fa fa-clone"></i>
                     </a>
                     <button class="btn btn-sm btn-info share" data-file-id="{ROW.file_id}" data-toggle="modal"
-                    data-target="#shareModal" title="Chia sẻ">
+                        data-target="#shareModal" title="Chia sẻ">
                         <i class="fa fa-link" aria-hidden="true"></i>
                     </button>
                     <!-- BEGIN: download -->
