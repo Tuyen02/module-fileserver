@@ -5,11 +5,16 @@
     <!-- BEGIN: error -->
     <div class="alert alert-warning">{ERROR}</div>
     <!-- END: error -->
-    <form action="{FORM_ACTION}" method="post" enctype="multipart/form-data" id="uploadForm"
-        class="form-inline my-2 my-lg-0">
+
+    <form action="{FORM_ACTION}" method="post" id="searchForm" class="form-inline my-2 my-lg-0">
         <input type="text" class="form-control" placeholder="Tìm kiếm file..." id="searchInput" name="search"
             value="{SEARCH_TERM}">
         <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+    </form>
+
+    <p></p>
+    <form action="{FORM_ACTION}" method="post" enctype="multipart/form-data" id="uploadForm"
+        class="form-inline my-2 my-lg-0">
         <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">Tạo mục mới</a>
         <button type="button" class="btn btn-warning" id="backButton">
             <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> Quay lại

@@ -104,7 +104,7 @@ if (!empty($action)) {
             } else {
                 $mess = 'Lỗi không tạo được file';
                 //tao file
-                $_dir = file_put_contents($full_dir, '');
+                $_dir = file_put_contents($full_dir.'/'.$name_f, '');
                 if (isset($_dir)) {
                     $status = 'success';
                     $mess = 'Tạo file ' . $name_f . ' thành công';
@@ -148,11 +148,10 @@ if (!empty($action)) {
             $newFullPath = NV_ROOTDIR . '/' . $newFilePath;
 
             $childCount = $db->query("SELECT COUNT(*) FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = " . $fileId)->fetchColumn();
-            if ($file['is_folder'] && $childCount > 0) {
+            if ($file['is_folder']==1 && $childCount > 0) {
                 $mess = 'Không thể đổi tên folder vì nó chứa file con.';
             } else {
                 $mess = 'Không thể đổi tên file.';
-
                 if (rename($oldFullPath, $newFullPath)) {
                     $mess = 'Không thể cập nhật cơ sở dữ liệu.';
                     $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET file_name = :new_name, file_path = :new_path, updated_at = :updated_at WHERE file_id = :file_id";
@@ -231,9 +230,11 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
     $upload_info = $upload->save_file($_FILES['uploadfile'], $full_dir, false, $global_config['nv_auto_resize']);
 
     if ($upload_info['error'] == '') {
+        $full_path = $upload_info['name'];
+
+        $relative_path = str_replace(NV_ROOTDIR , '', $full_path);
+
         $file_name = $upload_info['basename'];
-        $file_path = $upload_info['name'];
-        $file_type = $upload_info['mime'];
         $file_size = $upload_info['size'];
 
         $lev = $nv_Request->get_int("lev", "get,post", 0);
@@ -242,12 +243,13 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
                 VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)";
         $stmt = $db->prepare($sql);
         $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
-        $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
+        $stmt->bindParam(':file_path', $relative_path, PDO::PARAM_STR);
         $stmt->bindParam(':file_size', $file_size, PDO::PARAM_STR);
         $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_STR);
         $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
         $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
         $stmt->execute();
+
         nv_redirect_location($page_url);
     } else {
         $error = $upload_info['error'];

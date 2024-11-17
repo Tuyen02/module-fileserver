@@ -44,20 +44,24 @@ function updateDirectoryStatus($dir) {
     $full_dir = NV_ROOTDIR . '/' . $dir;
 
     $files = scandir($full_dir);
+
     foreach ($files as $file) {
         if ($file !== '.' && $file !== '..') {
             $filePath = $dir . '/' . $file;
             $fullFilePath = NV_ROOTDIR . '/' . $filePath;
-            $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET status = 0 WHERE file_path = :file_path";
-            $stmtUpdate = $db->prepare($sqlUpdate);
-            $stmtUpdate->bindValue(':file_path', $filePath, PDO::PARAM_STR);
-            $stmtUpdate->execute();
 
             if (is_dir($fullFilePath)) {
                 updateDirectoryStatus($filePath);
             }else {
                 unlink($fullFilePath); 
             }
+
+            $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET status = 0 WHERE file_path = :file_path";
+            $stmtUpdate = $db->prepare($sqlUpdate);
+            $stmtUpdate->bindValue(':file_path', $filePath, PDO::PARAM_STR);
+            $stmtUpdate->execute();
+
+    
         }
     }
     rmdir($full_dir);
