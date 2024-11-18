@@ -16,7 +16,8 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 if (!defined('NV_IS_USER')) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
 }
-$search_term = $nv_Request->get_title('search', 'post', '');
+$search_term = $nv_Request->get_title('search', 'get', '');
+$search_type = $nv_Request->get_title('search_type', 'get', 'all');
 
 $lev = $nv_Request->get_int("lev", "get,post", 0);
 $base_dir = '/uploads/fileserver';
@@ -24,13 +25,21 @@ $full_dir = NV_ROOTDIR . $base_dir;
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
 $page_url = $base_url;
 
-$sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, u.username AS uploaded_by
+$sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, f.share, u.username AS uploaded_by
         FROM " . NV_PREFIXLANG . "_fileserver_files f
         LEFT JOIN " . NV_USERS_GLOBALTABLE . " u ON f.uploaded_by = u.userid
         WHERE f.status = 1 AND lev = :lev";
 
 if (!empty($search_term)) {
     $sql .= " AND f.file_name LIKE :search_term";
+}
+
+if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
+    if ($search_type === 'file') {
+        $sql .= " AND f.is_folder = 0"; 
+    } elseif ($search_type === 'folder') {
+        $sql .= " AND f.is_folder = 1"; 
+    }
 }
 
 $sql .= " ORDER BY f.is_folder DESC, f.file_id ASC";
@@ -271,10 +280,10 @@ if ($success != '') {
 }
 
 foreach ($result as $row) {
-    $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / (1024 * 1024), 2) . ' MB' : '--';
     $row['created_at'] = date("d/m/Y", $row['created_at']);
     $row['icon_class'] = $row['is_folder'] ? 'fa-folder-o' : 'fa-file-o';
     $row['uploaded_by'] = $row['uploaded_by'] ?? 'Unknown';
+    $row['share_text'] = $row['share'] == 0 ? 'No one' : ($row['share'] == 1 ? 'Users' : 'Every one');
     $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['file_id'];
     $row['url_edit'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=edit&amp;file_id=' . $row['file_id'];
     $row['url_delete'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . "&action=delete&checksess=" . md5($row['file_id'] . NV_CHECK_SESSION);
@@ -282,16 +291,16 @@ foreach ($result as $row) {
     $row['url_clone'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=clone&amp;file_id=' . $row['file_id'];
     $row['url_rename'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=rename&amp;file_id=' . $row['file_id'];
     $url_share = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=share&amp;file_id=' . $row['file_id'];
-
     $row['url_share'] = $url_share;
-
 
     $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
 
     if ($row['is_folder'] == 1) {
+        $row['file_size'] = 'Folder';
         $xtpl->assign('VIEW', $row['url_view']);
         $xtpl->parse('main.file_row.view');
     } else {
+        $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / (1024 * 1024), 2) . ' MB' : '--';
         $xtpl->assign('SHARE', $row['url_share']);
         $xtpl->parse('main.file_row.share');
 

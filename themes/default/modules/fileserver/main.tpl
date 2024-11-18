@@ -5,20 +5,25 @@
     <!-- BEGIN: error -->
     <div class="alert alert-warning">{ERROR}</div>
     <!-- END: error -->
+    <form action="{FORM_ACTION}" method="get" id="searchForm" class="form-inline my-2 my-lg-0">
 
-    <form action="{FORM_ACTION}" method="post" id="searchForm" class="form-inline my-2 my-lg-0">
-        <input type="text" class="form-control" placeholder="Tìm kiếm file..." id="searchInput" name="search"
+        <input type="text" class="form-control" placeholder="Tìm kiếm ..." id="searchInput" name="search"
             value="{SEARCH_TERM}">
-        <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+        <select class="form-control ml-2" name="search_type">
+            <option value="all">Tất cả</option>
+            <option value="file">File</option>
+            <option value="folder">Folder</option>
+        </select>
+        <button type="submit" class="btn btn-primary ml-2">Tìm kiếm</button>
     </form>
 
     <p></p>
     <form action="{FORM_ACTION}" method="post" enctype="multipart/form-data" id="uploadForm"
         class="form-inline my-2 my-lg-0">
-        <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">Tạo mục mới</a>
         <button type="button" class="btn btn-warning" id="backButton">
             <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> Quay lại
         </button>
+        <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">Tạo mục mới</a>
         <button type="button" class="btn btn-primary" id="uploadButton">Tải lên</button>
         <input type="file" name="uploadfile" id="uploadfile" required style="display: none;">
         <input type="hidden" name="submit_upload" value="1">
@@ -27,6 +32,7 @@
     <table class="table table-hover">
         <thead class="thead-dark">
             <tr>
+                <th scope="col"><input class="form-check-input" type="checkbox" value="" id="defaultCheck1"></th>
                 <th scope="col">Tên</th>
                 <th scope="col">Kích thước</th>
                 <th scope="col">Ngày tải lên</th>
@@ -38,6 +44,7 @@
         <tbody>
             <!-- BEGIN: file_row -->
             <tr>
+                <td><input class="form-check-input" type="checkbox" value="" id="defaultCheck1"></td>
                 <td>
                     <a href="{VIEW}">
                         <i class="fa {ROW.icon_class}" aria-hidden="true"></i>
@@ -46,7 +53,12 @@
                 </td>
                 <td>{ROW.file_size}</td>
                 <td>{ROW.created_at}</td>
-                <td><a href="#">123</a></td>
+                <td>
+                    <a href="javascript:void(0);" class="share text-info" data-file-id="{ROW.file_id}"
+                        data-toggle="modal" data-target="#shareModal" title="Chia sẻ">
+                        {ROW.share_text}</i>
+                    </a>
+                </td>
                 <td>{ROW.uploaded_by}</td>
                 <td>
                     <a href="{ROW.url_delete}" data-file-id="{ROW.file_id}" data-checksess="{CHECK_SESS}"
@@ -62,13 +74,13 @@
                         <i class="fa fa-amazon"></i>
                     </a>
                     <!-- END: edit -->
+                    <!-- <button class="btn btn-sm btn-info share" data-file-id="{ROW.file_id}" data-toggle="modal"
+                    data-target="#shareModal" title="Chia sẻ">
+                    <i class="fa fa-link" aria-hidden="true"></i>
+                </button> -->
                     <a href="{ROW.url_clone}" class="btn btn-sm btn-info" title="Sao chép">
                         <i class="fa fa-clone"></i>
                     </a>
-                    <button class="btn btn-sm btn-info share" data-file-id="{ROW.file_id}" data-toggle="modal"
-                        data-target="#shareModal" title="Chia sẻ">
-                        <i class="fa fa-link" aria-hidden="true"></i>
-                    </button>
                     <!-- BEGIN: download -->
                     <a href="{DOWNLOAD}" class="btn btn-sm btn-success" title="Tải xuống">
                         <i class="fa fa-download" aria-hidden="true"></i>
@@ -304,7 +316,7 @@
             success: function (res) {
                 console.log(res);
                 alert(res.message);
-                window.location.href = "{ROW.url_share}";
+                location.reload();
             },
             error: function () {
                 alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
