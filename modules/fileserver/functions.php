@@ -3,6 +3,7 @@
 if (!defined('NV_SYSTEM')) {
     exit('Stop!!');
 }
+
 define('NV_IS_MOD_FILESERVER', true);
 if (!defined('NV_IS_USER')) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
@@ -69,4 +70,39 @@ function updateDirectoryStatus($dir) {
 
 function checkIfParentIsFolder($db, $lev) {
     return $db->query("SELECT is_folder FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . intval($lev))->fetchColumn();
+}
+
+function compressFiles($files, $zipFilePath) {
+    global $db;
+
+    $zip = new PclZip($zipFilePath);
+
+    $sql = "SELECT file_path, file_name FROM " . NV_PREFIXLANG . "_fileserver_files 
+            WHERE file_id IN (" . implode(',', array_map('intval', $files)) . ")";
+    $result = $db->query($sql);
+    
+    if ($result->rowCount() == 0) {
+        return ['status' => 'error', 'message' => 'Không tìm thấy file nào.'];
+    }
+
+    $filePaths = [];
+    while ($row = $result->fetch()) {
+        $realPath = NV_ROOTDIR . $row['file_path'];
+        if (file_exists($realPath)) {
+            $filePaths[] = $realPath;
+        } else {
+            error_log("File không tồn tại " . $realPath);
+        }
+    }
+
+    if (count($filePaths) > 0) {
+        $return = $zip->add($filePaths, PCLZIP_OPT_REMOVE_PATH, NV_ROOTDIR);
+
+        if ($return == 0) {
+            return ['status' => 'error', 'message' => 'Failed to create ZIP archive.'];
+        }
+        return ['status' => 'success', 'message' => count($filePaths) . ' files successfully added to the ZIP.'];
+    } else {
+        return ['status' => 'error', 'message' => 'No valid files to add to the ZIP.'];
+    }
 }

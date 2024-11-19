@@ -17,7 +17,7 @@
         <button type="submit" class="btn btn-primary ml-2">Tìm kiếm</button>
     </form>
 
-    <p></p>
+    <br>
     <form action="{FORM_ACTION}" method="post" enctype="multipart/form-data" id="uploadForm"
         class="form-inline my-2 my-lg-0">
         <button type="button" class="btn btn-warning" id="backButton">
@@ -28,7 +28,8 @@
         <input type="file" name="uploadfile" id="uploadfile" required style="display: none;">
         <input type="hidden" name="submit_upload" value="1">
     </form>
-    <hr />
+
+    <hr>
     <table class="table table-hover">
         <thead class="thead-dark">
             <tr>
@@ -44,7 +45,7 @@
         <tbody>
             <!-- BEGIN: file_row -->
             <tr>
-                <td><input class="form-check-input" type="checkbox" value="" id="defaultCheck1"></td>
+                <td><input type="checkbox" name="files[]" value="{ROW.file_path}"></td>
                 <td>
                     <a href="{VIEW}">
                         <i class="fa {ROW.icon_class}" aria-hidden="true"></i>
@@ -91,7 +92,11 @@
             <!-- END: file_row -->
         </tbody>
     </table>
+    <hr>
+    <button type="submit" name="compress" class="btn btn-primary mt-2" id="compressButton">Zip
+        Files</button>
 </div>
+<br>
 
 <!-- Modal Tạo Mới -->
 <div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="createModalLabel"
@@ -327,6 +332,39 @@
     $(document).on('click', '.share', function () {
         const fileId = $(this).data('file-id');
         $("#share_file_id").val(fileId);
+    });
+
+    document.querySelector('[name="compress"]').addEventListener('click', function (e) {
+        e.preventDefault();
+
+        const selectedFiles = [];
+        document.querySelectorAll('input[name="files[]"]:checked').forEach(input => {
+            selectedFiles.push(input.value);
+        });
+
+        if (selectedFiles.length == 0) {
+            alert("Vui lòng chọn ít nhất một file để nén!");
+            return;
+        }
+
+        console.log(selectedFiles);
+
+        $.ajax({
+            type: 'POST',
+            url: '',
+            data: {
+                action: 'compress',
+                files: selectedFiles
+            },
+            success: function (res) {
+                console.log(res);
+                alert(res.message);
+                location.reload();
+            },
+            error: function () {
+                alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+            }
+        });
     });
 
 </script>

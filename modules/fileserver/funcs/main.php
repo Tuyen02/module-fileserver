@@ -25,7 +25,7 @@ $full_dir = NV_ROOTDIR . $base_dir;
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
 $page_url = $base_url;
 
-$sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, f.share, u.username AS uploaded_by
+$sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, f.share,f.compressed, u.username AS uploaded_by
         FROM " . NV_PREFIXLANG . "_fileserver_files f
         LEFT JOIN " . NV_USERS_GLOBALTABLE . " u ON f.uploaded_by = u.userid
         WHERE f.status = 1 AND lev = :lev";
@@ -60,6 +60,7 @@ if ($lev > 0) {
 $action = $nv_Request->get_title('action', 'post', '');
 
 if (!empty($action)) {
+
     $status = 'error';
     $mess = 'Lỗi hệ thống';
 
@@ -198,6 +199,40 @@ if (!empty($action)) {
         }
     }
 
+    if ($action =='compress') {
+        $files = $nv_Request->get_array('files', 'post', []);
+
+        if (empty($files)) {
+            $status = 'error';
+            $mess = 'Không có file nào được chọn';
+        }
+        $zipFileName = 'compressed_' . NV_CURRENTTIME . '.zip';
+        $zipFilePath = $base_dir.'/'. $zipFileName;
+        $zipFullPath = $full_dir . $zipFilePath;
+
+        if (compressFiles($files, $zipFullPath)) {
+            if (!is_dir($full_dir)) {
+                nv_mkdir($full_dir,$zipFileName);
+            }
+            $sqlInsert = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_files (file_name, file_path, uploaded_by, is_folder, created_at, lev, compressed) 
+                          VALUES (:file_name, :file_path, :uploaded_by, 1, :created_at, :lev, 1)";
+            $stmtInsert = $db->prepare($sqlInsert);
+            $stmtInsert->bindParam(':file_name', $zipFileName, PDO::PARAM_STR);
+            $stmtInsert->bindParam(':file_path', $zipFilePath, PDO::PARAM_STR);
+            $stmtInsert->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_STR);
+            $stmtInsert->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
+            $stmtInsert->bindValue(':lev', $lev, PDO::PARAM_INT);
+            $stmtInsert->execute();
+
+            $status = 'success';
+            $mess = 'Nén file thành công!';
+            nv_jsonOutput(['status' => $status, 'message' => $mess]);
+        } else {
+            $status = 'error';
+            $mess = 'Không thể tạo file ZIP.';
+        }
+    }
+    
     nv_jsonOutput(['status' => $status, 'message' => $mess]);
 }
 
@@ -281,7 +316,11 @@ if ($success != '') {
 
 foreach ($result as $row) {
     $row['created_at'] = date("d/m/Y", $row['created_at']);
-    $row['icon_class'] = $row['is_folder'] ? 'fa-folder-o' : 'fa-file-o';
+    if ($row['compressed'] == 1 ) {
+        $row['icon_class'] = 'fa-file-archive-o';
+    } else {
+        $row['icon_class'] = $row['is_folder'] ? 'fa-folder-o' : 'fa-file-o';
+    }
     $row['uploaded_by'] = $row['uploaded_by'] ?? 'Unknown';
     $row['share_text'] = $row['share'] == 0 ? 'No one' : ($row['share'] == 1 ? 'Users' : 'Every one');
     $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['file_id'];
@@ -314,6 +353,9 @@ foreach ($result as $row) {
             $xtpl->assign('EDIT',  $row['url_edit']);
             $xtpl->parse('main.file_row.edit');
         }
+    }
+    if ($row['compressed'] == 1) {
+        $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['file_id'];;
     }
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');
