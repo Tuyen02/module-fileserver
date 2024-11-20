@@ -69,7 +69,13 @@ function updateDirectoryStatus($dir) {
 }
 
 function checkIfParentIsFolder($db, $lev) {
-    return $db->query("SELECT is_folder FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . intval($lev))->fetchColumn();
+    $stmt = $db->query("SELECT is_folder FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . intval($lev));
+    if ($stmt) {
+        return $stmt->fetchColumn();
+    } else {
+        error_log("Lỗi truy vấn trong checkIfParentIsFolder với lev: " . intval($lev));
+        return null;
+    }
 }
 
 function compressFiles($files, $zipFilePath) {
@@ -77,13 +83,16 @@ function compressFiles($files, $zipFilePath) {
 
     $zip = new PclZip($zipFilePath);
 
+    $filePaths = [];
+    $errors = [];
+
     if (!is_array($files) || empty($files)) {
         return ['status' => 'error', 'message' => 'Danh sách file không hợp lệ.' . $files];
     }
 
-    $filePlaceholders = implode(',', array_fill(0, count($files), '?')); // '?' placeholders cho câu lệnh SQL
+    $filePlaceholders = implode(',', array_fill(0, count($files), '?'));
     $sql = "SELECT file_path, file_name FROM " . NV_PREFIXLANG . "_fileserver_files 
-            WHERE file_path IN ($filePlaceholders)";
+            WHERE file_path IN ($filePlaceholders) AND status = 1";
     $stmt = $db->prepare($sql);
     $stmt->execute($files);
 
@@ -91,8 +100,6 @@ function compressFiles($files, $zipFilePath) {
         return ['status' => 'error', 'message' => 'Không tìm thấy file nào.'];
     }
 
-    $filePaths = [];
-    $errors = [];
     while ($row = $stmt->fetch()) {
         $realPath = NV_ROOTDIR . $row['file_path'];
         if (file_exists($realPath)) {

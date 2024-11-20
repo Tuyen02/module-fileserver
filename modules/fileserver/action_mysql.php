@@ -23,32 +23,34 @@ $sql_create_module = $sql_drop_module;
 
 
 $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_files (
-  file_id int(11) NOT NULL AUTO_INCREMENT,
-  file_name varchar(255) NOT NULL,
-  file_path varchar(255) NOT NULL,
-  file_size bigint(20) DEFAULT 0,
-  uploaded_by int(11) DEFAULT 0,
-  created_at int(11) NOT NULL DEFAULT 0,
-  updated_at int(11) NOT NULL DEFAULT 0,
-  is_folder tinyint(2) NOT NULL DEFAULT 1,
-  status tinyint(4) NOT NULL DEFAULT 1,
-  lev tinyint(4) NOT NULL DEFAULT 0,
-  view int(11) NOT NULL DEFAULT 0,
-  share tinyint(4) NOT NULL DEFAULT 0
+  file_id INT(11) NOT NULL AUTO_INCREMENT,
+  file_name VARCHAR(255) NOT NULL,
+  file_path VARCHAR(255) NOT NULL,
+  file_size BIGINT(20) DEFAULT 0,
+  uploaded_by INT(11) DEFAULT 0,
+  created_at INT(11) NOT NULL DEFAULT 0,
+  updated_at INT(11) NOT NULL DEFAULT 0,
+  is_folder TINYINT(2) NOT NULL DEFAULT 1,
+  status TINYINT(4) NOT NULL DEFAULT 1,
+  lev TINYINT(4) NOT NULL DEFAULT 0,
+  view INT(11) NOT NULL DEFAULT 0,
+  share TINYINT(3) NOT NULL DEFAULT 0,
+  compressed TINYINT(3) NOT NULL DEFAULT 0,
+  PRIMARY KEY (file_id)
 )ENGINE=MyISAM';
 
-// $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_permissions (
-//     permission_id INT PRIMARY KEY AUTO_INCREMENT,
-//     file_id INT NOT NULL,
-//     user_id INT NOT NULL,
-//     access_level tinyint(3) DEFAULT 1,
-//     granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-// )ENGINE=MyISAM';
+$sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_permissions (
+    permission_id INT PRIMARY KEY AUTO_INCREMENT,
+    file_id INT NOT NULL,
+    user_id INT NOT NULL,
+    access_level tinyint(3) DEFAULT 1,
+    granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)ENGINE=MyISAM';
 
-// $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_logs (
-//     log_id INT PRIMARY KEY AUTO_INCREMENT,
-//     user_id INT,
-//     file_id INT,
-//     action tinyint(4) NOT NULL,
-//     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-// )ENGINE=MyISAM';
+$sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_logs (
+    log_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT,
+    file_id INT,
+    action tinyint(4) NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)ENGINE=MyISAM';

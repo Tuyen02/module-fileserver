@@ -68,10 +68,8 @@ if (!empty($action)) {
     if ($action == "create") {
         $name_f = $nv_Request->get_title("name_f", "post", '');
         $type = $nv_Request->get_int("type", "post", 0); //1 =  folder, 0 file
-
         if ($lev > 0) {
             $parentFileType = checkIfParentIsFolder($db, $lev);
-
             if ($type == 0 && $parentFileType == 0) {
                 nv_jsonOutput(['status' => 'error', 'message' => 'Không thể tạo file con trong file.']);
                 exit();
@@ -86,16 +84,16 @@ if (!empty($action)) {
         if (!empty($name_f)) {
 
             $file_path = $base_dir . '/' . $name_f;
-            //            if (file_exists($file_path)) {
-            //                $status = 'error';
-            //                $mess = 'File hoặc folder đã tồn tại. Bạn có muốn tiếp tục không?';
-            //                $i = 1;
-            //                while (file_exists($file_path)) {
-            //                    $name_f = pathinfo($name_f, PATHINFO_FILENAME) . "-$i";
-            //                    $file_path = $dir . '/' . $name_f;
-            //                    $i++;
-            //                }
-            //            }
+            if (file_exists($file_path)) {
+                $status = 'error';
+                $mess = 'File hoặc folder đã tồn tại. Bạn có muốn tiếp tục không?';
+                $i = 1;
+                while (file_exists($file_path)) {
+                    $name_f = pathinfo($name_f, PATHINFO_FILENAME) . "-$i";
+                    $file_path = $dir . '/' . $name_f;
+                    $i++;
+                }
+            }
             $sql = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
                     VALUES (:file_name, :file_path, :uploaded_by, :is_folder, :created_at, :lev)";
             $stmt = $db->prepare($sql);
@@ -327,10 +325,11 @@ foreach ($result as $row) {
     $row['url_share'] = $url_share;
 
     $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
-    if($row['compressed'] == 1){
-        $xtpl->assign('VIEW',$row['url_compress']);
+    if ($row['compressed'] == 1) {
+        $xtpl->assign('VIEW', $row['url_compress']);
         $xtpl->parse('main.file_row.view');
-    }else if ($row['is_folder'] == 1) {
+    } else 
+    if ($row['is_folder'] == 1) {
         $row['file_size'] = 'Folder';
         $xtpl->assign('VIEW', $row['url_view']);
         $xtpl->parse('main.file_row.view');
