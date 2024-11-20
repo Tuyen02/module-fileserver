@@ -36,9 +36,9 @@ if (!empty($search_term)) {
 
 if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
     if ($search_type === 'file') {
-        $sql .= " AND f.is_folder = 0"; 
+        $sql .= " AND f.is_folder = 0";
     } elseif ($search_type === 'folder') {
-        $sql .= " AND f.is_folder = 1"; 
+        $sql .= " AND f.is_folder = 1";
     }
 }
 
@@ -114,7 +114,7 @@ if (!empty($action)) {
             } else {
                 $mess = 'Lỗi không tạo được file';
                 //tao file
-                $_dir = file_put_contents($full_dir.'/'.$name_f, '');
+                $_dir = file_put_contents($full_dir . '/' . $name_f, '');
                 if (isset($_dir)) {
                     $status = 'success';
                     $mess = 'Tạo file ' . $name_f . ' thành công';
@@ -158,7 +158,7 @@ if (!empty($action)) {
             $newFullPath = NV_ROOTDIR . '/' . $newFilePath;
 
             $childCount = $db->query("SELECT COUNT(*) FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = " . $fileId)->fetchColumn();
-            if ($file['is_folder']==1 && $childCount > 0) {
+            if ($file['is_folder'] == 1 && $childCount > 0) {
                 $mess = 'Không thể đổi tên folder vì nó chứa file con.';
             } else {
                 $mess = 'Không thể đổi tên file.';
@@ -199,23 +199,21 @@ if (!empty($action)) {
         }
     }
 
-    if ($action =='compress') {
+    if ($action == 'compress') {
         $files = $nv_Request->get_array('files', 'post', []);
-
         if (empty($files)) {
             $status = 'error';
             $mess = 'Không có file nào được chọn';
         }
-        $zipFileName = 'compressed_' . NV_CURRENTTIME . '.zip';
-        $zipFilePath = $base_dir.'/'. $zipFileName;
-        $zipFullPath = $full_dir . $zipFilePath;
 
-        if (compressFiles($files, $zipFullPath)) {
-            if (!is_dir($full_dir)) {
-                nv_mkdir($full_dir,$zipFileName);
-            }
+        $zipFileName = 'compressed_' . NV_CURRENTTIME . '.zip';
+        $zipFilePath = $base_dir . '/' . $zipFileName;
+        $zipFullPath = NV_ROOTDIR . $zipFilePath;
+
+        $compressResult = compressFiles($files, $zipFullPath);
+        if ($compressResult['status'] === 'success') {
             $sqlInsert = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_files (file_name, file_path, uploaded_by, is_folder, created_at, lev, compressed) 
-                          VALUES (:file_name, :file_path, :uploaded_by, 1, :created_at, :lev, 1)";
+                          VALUES (:file_name, :file_path, :uploaded_by, 0, :created_at, :lev, 1)";
             $stmtInsert = $db->prepare($sqlInsert);
             $stmtInsert->bindParam(':file_name', $zipFileName, PDO::PARAM_STR);
             $stmtInsert->bindParam(':file_path', $zipFilePath, PDO::PARAM_STR);
@@ -224,15 +222,10 @@ if (!empty($action)) {
             $stmtInsert->bindValue(':lev', $lev, PDO::PARAM_INT);
             $stmtInsert->execute();
 
-            $status = 'success';
-            $mess = 'Nén file thành công!';
-            nv_jsonOutput(['status' => $status, 'message' => $mess]);
-        } else {
-            $status = 'error';
-            $mess = 'Không thể tạo file ZIP.';
+            $mess = $compressResult['message'];
         }
     }
-    
+
     nv_jsonOutput(['status' => $status, 'message' => $mess]);
 }
 
@@ -276,7 +269,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
     if ($upload_info['error'] == '') {
         $full_path = $upload_info['name'];
 
-        $relative_path = str_replace(NV_ROOTDIR , '', $full_path);
+        $relative_path = str_replace(NV_ROOTDIR, '', $full_path);
 
         $file_name = $upload_info['basename'];
         $file_size = $upload_info['size'];
@@ -316,7 +309,7 @@ if ($success != '') {
 
 foreach ($result as $row) {
     $row['created_at'] = date("d/m/Y", $row['created_at']);
-    if ($row['compressed'] == 1 ) {
+    if ($row['compressed'] == 1) {
         $row['icon_class'] = 'fa-file-archive-o';
     } else {
         $row['icon_class'] = $row['is_folder'] ? 'fa-folder-o' : 'fa-file-o';
@@ -330,11 +323,14 @@ foreach ($result as $row) {
     $row['url_clone'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=clone&amp;file_id=' . $row['file_id'];
     $row['url_rename'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=rename&amp;file_id=' . $row['file_id'];
     $url_share = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=share&amp;file_id=' . $row['file_id'];
+    $row['url_compress'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=compress&amp;file_id=' . $row['file_id'];
     $row['url_share'] = $url_share;
 
     $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
-
-    if ($row['is_folder'] == 1) {
+    if($row['compressed'] == 1){
+        $xtpl->assign('VIEW',$row['url_compress']);
+        $xtpl->parse('main.file_row.view');
+    }else if ($row['is_folder'] == 1) {
         $row['file_size'] = 'Folder';
         $xtpl->assign('VIEW', $row['url_view']);
         $xtpl->parse('main.file_row.view');
@@ -354,9 +350,7 @@ foreach ($result as $row) {
             $xtpl->parse('main.file_row.edit');
         }
     }
-    if ($row['compressed'] == 1) {
-        $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['file_id'];;
-    }
+
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');
 }

@@ -77,32 +77,42 @@ function compressFiles($files, $zipFilePath) {
 
     $zip = new PclZip($zipFilePath);
 
+    if (!is_array($files) || empty($files)) {
+        return ['status' => 'error', 'message' => 'Danh sách file không hợp lệ.' . $files];
+    }
+
+    $filePlaceholders = implode(',', array_fill(0, count($files), '?')); // '?' placeholders cho câu lệnh SQL
     $sql = "SELECT file_path, file_name FROM " . NV_PREFIXLANG . "_fileserver_files 
-            WHERE file_id IN (" . implode(',', array_map('intval', $files)) . ")";
-    $result = $db->query($sql);
-    
-    if ($result->rowCount() == 0) {
+            WHERE file_path IN ($filePlaceholders)";
+    $stmt = $db->prepare($sql);
+    $stmt->execute($files);
+
+    if ($stmt->rowCount() == 0) {
         return ['status' => 'error', 'message' => 'Không tìm thấy file nào.'];
     }
 
     $filePaths = [];
-    while ($row = $result->fetch()) {
+    $errors = [];
+    while ($row = $stmt->fetch()) {
         $realPath = NV_ROOTDIR . $row['file_path'];
         if (file_exists($realPath)) {
             $filePaths[] = $realPath;
         } else {
-            error_log("File không tồn tại " . $realPath);
+            $errors[] = "File không tồn tại: " . $realPath;
         }
+    }
+
+    foreach ($errors as $error) {
+        error_log($error);
     }
 
     if (count($filePaths) > 0) {
         $return = $zip->add($filePaths, PCLZIP_OPT_REMOVE_PATH, NV_ROOTDIR);
-
         if ($return == 0) {
-            return ['status' => 'error', 'message' => 'Failed to create ZIP archive.'];
+            return ['status' => 'error', 'message' => 'Có lỗi khi nén file: ' . $zip->errorInfo(true)];
         }
-        return ['status' => 'success', 'message' => count($filePaths) . ' files successfully added to the ZIP.'];
+        return ['status' => 'success', 'message' => count($filePaths) . ' file đã được nén thành công'];
     } else {
-        return ['status' => 'error', 'message' => 'No valid files to add to the ZIP.'];
+        return ['status' => 'error', 'message' => 'Không có file hợp lệ để nén'];
     }
 }
