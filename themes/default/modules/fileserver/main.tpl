@@ -55,9 +55,7 @@
                 <td>{ROW.file_size}</td>
                 <td>{ROW.created_at}</td>
                 <td>
-                    <a href="javascript:void(0);" class="share text-info" data-file-id="{ROW.file_id}"
-                        data-toggle="modal" data-target="#shareModal" title="Chia sẻ">
-                        {ROW.share_text}</i>
+                    <a href="{ROW.url_perm}">{ROW.permissions}</i>
                     </a>
                 </td>
                 <td>{ROW.uploaded_by}</td>
@@ -75,10 +73,10 @@
                         <i class="fa fa-amazon"></i>
                     </a>
                     <!-- END: edit -->
-                    <!-- <button class="btn btn-sm btn-info share" data-file-id="{ROW.file_id}" data-toggle="modal"
-                    data-target="#shareModal" title="Chia sẻ">
-                    <i class="fa fa-link" aria-hidden="true"></i>
-                </button> -->
+                    <button class="btn btn-sm btn-info share" data-file-id="{ROW.file_id}" data-toggle="modal"
+                        data-target="#shareModal" title="Chia sẻ">
+                        <i class="fa fa-link" aria-hidden="true"></i>
+                    </button>
                     <a href="{ROW.url_clone}" class="btn btn-sm btn-info" title="Sao chép">
                         <i class="fa fa-clone"></i>
                     </a>

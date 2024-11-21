@@ -25,7 +25,7 @@ $full_dir = NV_ROOTDIR . $base_dir;
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
 $page_url = $base_url;
 
-$sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, f.share,f.compressed, u.username AS uploaded_by
+$sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, f.share,f.compressed ,f.permissions, u.username AS uploaded_by
         FROM " . NV_PREFIXLANG . "_fileserver_files f
         LEFT JOIN " . NV_USERS_GLOBALTABLE . " u ON f.uploaded_by = u.userid
         WHERE f.status = 1 AND lev = :lev";
@@ -313,8 +313,8 @@ foreach ($result as $row) {
         $row['icon_class'] = $row['is_folder'] ? 'fa-folder-o' : 'fa-file-o';
     }
     $row['uploaded_by'] = $row['uploaded_by'] ?? 'Unknown';
-    $row['share_text'] = $row['share'] == 0 ? 'No one' : ($row['share'] == 1 ? 'Users' : 'Every one');
     $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['file_id'];
+    $row['url_perm'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=perm&amp;file_id=' . $row['file_id'];
     $row['url_edit'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=edit&amp;file_id=' . $row['file_id'];
     $row['url_delete'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . "&action=delete&checksess=" . md5($row['file_id'] . NV_CHECK_SESSION);
     $row['url_download'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . "&download=1";

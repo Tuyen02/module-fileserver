@@ -14,8 +14,8 @@
         <tbody>
             <!-- BEGIN: file -->
             <tr>
-                <td><i class="fa {CONTENT.TYPE}"></i> {CONTENT.FILENAME}</td>
-                <td>{CONTENT.SIZE}</td>
+                <td><i class="fa {FILE.file_type}"></i> {FILE.file_name}</td>
+                <td>{FILE.file_size}</td>
             </tr>
             <!-- END: file -->
         </tbody>

@@ -114,7 +114,7 @@ function compressFiles($files, $zipFilePath) {
     }
 
     if (count($filePaths) > 0) {
-        $return = $zip->add($filePaths, PCLZIP_OPT_REMOVE_PATH, NV_ROOTDIR);
+        $return = $zip->add($filePaths, PCLZIP_OPT_REMOVE_PATH, NV_ROOTDIR . '/uploads/fileserver');
         if ($return == 0) {
             return ['status' => 'error', 'message' => 'Có lỗi khi nén file: ' . $zip->errorInfo(true)];
         }
