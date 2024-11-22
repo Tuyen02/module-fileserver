@@ -1,21 +1,9 @@
 <?php
 
-/**
- * NukeViet Content Management System
- *
- * @version       4.x
- * @author        VINADES.,JSC <contact@vinades.vn>
- * @copyright (C) 2009-2021 VINADES.,JSC. All rights reserved
- * @license       GNU/GPL version 2 or any later version
- * @see           https://github.com/nukeviet The NukeViet CMS GitHub project
- */
-
 if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
-if (!defined('NV_IS_USER')) {
-    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
-}
+
 $search_term = $nv_Request->get_title('search', 'get', '');
 $search_type = $nv_Request->get_title('search_type', 'get', 'all');
 
@@ -25,9 +13,10 @@ $full_dir = NV_ROOTDIR . $base_dir;
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
 $page_url = $base_url;
 
-$sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, f.share,f.compressed ,f.permissions, u.username AS uploaded_by
+$sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, f.share, f.compressed ,p.owner, p.group, p.other, u.username AS uploaded_by
         FROM " . NV_PREFIXLANG . "_fileserver_files f
         LEFT JOIN " . NV_USERS_GLOBALTABLE . " u ON f.uploaded_by = u.userid
+        JOIN ". NV_PREFIXLANG . "_fileserver_permissions p ON f.file_id = p.file_id
         WHERE f.status = 1 AND lev = :lev";
 
 if (!empty($search_term)) {
@@ -103,6 +92,14 @@ if (!empty($action)) {
             $stmt->bindParam(':is_folder', $type, PDO::PARAM_INT);
             $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
+
+            // $sql = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_permissions 
+            // (file_id, user_id, owner, `group`, other, update_at) 
+            // VALUES (:file_id, :user_id, 1, 3, 3, :update_at)";
+            // $stmt = $db->prepare($sql);
+            // $stmt->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+            // $stmt->bindParam(':user_id', $uploadedBy, PDO::PARAM_INT);
+            // $stmt->bindParam(':update_at', $currentTime, PDO::PARAM_INT);
 
             if ($type == 1) {
                 //tao folder
@@ -230,19 +227,23 @@ if (!empty($action)) {
 $download = $nv_Request->get_int('download', 'get', '');
 if ($download == 1) {
     $file_id = $nv_Request->get_int('file_id', 'get', 0);
-    $sql = "SELECT file_path, file_name FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = :file_id";
-    $stmt = $db->prepare($sql);
-    $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-    $stmt->execute();
-    $file = $stmt->fetch();
+    if (!checkPermissions($file_id, 'download', $user_info['userid'])) {
+        $mess = 'Bạn không có quyền tải xuống file này.';
+    } else {
+        // Thực hiện tải xuống file
+        $sql = "SELECT file_path, file_name FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = :file_id";
+        $stmt = $db->prepare($sql);
+        $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+        $stmt->execute();
+        $file = $stmt->fetch();
 
-    if ($file) {
-        $file_path = NV_ROOTDIR . $file['file_path'];
-        $file_name = $file['file_name'];
-
-        if (file_exists($file_path)) {
-            $_download = new NukeViet\Files\Download($file_path, $full_dir, $file_name, true, 0);
-            $_download->download_file();
+        if ($file) {
+            $file_path = NV_ROOTDIR . $file['file_path'];
+            $file_name = $file['file_name'];
+            if (file_exists($file_path)) {
+                $_download = new NukeViet\Files\Download($file_path, $full_dir, $file_name, true, 0);
+                $_download->download_file();
+            }
         }
     }
 }
@@ -312,6 +313,7 @@ foreach ($result as $row) {
     } else {
         $row['icon_class'] = $row['is_folder'] ? 'fa-folder-o' : 'fa-file-o';
     }
+    $row['permissions'] = $row['owner'].$row['group'].$row['other'];
     $row['uploaded_by'] = $row['uploaded_by'] ?? 'Unknown';
     $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['file_id'];
     $row['url_perm'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=perm&amp;file_id=' . $row['file_id'];

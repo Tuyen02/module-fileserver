@@ -123,3 +123,6 @@ function compressFiles($files, $zipFilePath) {
         return ['status' => 'error', 'message' => 'Không có file hợp lệ để nén'];
     }
 }
+
+
+

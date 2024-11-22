@@ -5,78 +5,95 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 }
 
 $file_id = $nv_Request->get_int('file_id', 'get,post', 0);
+
+$sql = "SELECT f.file_name, f.file_path, p.owner, p.`group`, p.other
+        FROM " . NV_PREFIXLANG . "_fileserver_files f
+        LEFT JOIN " . NV_PREFIXLANG . "_fileserver_permissions p ON f.file_id = p.file_id
+        WHERE f.file_id = :file_id";
+
+$stmt = $db->prepare($sql);
+$stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+$stmt->execute();
+$row = $stmt->fetch();
+
 $message = '';
 
-$message = '1'.$nv_Request->get_string('submit', 'post', '');
-if ($nv_Request->get_string('submit', 'post', '')) {
-
+if ($nv_Request->isset_request('submit', 'post')) {
     $owner_read = $nv_Request->get_int('owner_read', 'post', 0);
     $owner_write = $nv_Request->get_int('owner_write', 'post', 0);
     $owner_execute = $nv_Request->get_int('owner_execute', 'post', 0);
-
     $group_read = $nv_Request->get_int('group_read', 'post', 0);
     $group_write = $nv_Request->get_int('group_write', 'post', 0);
     $group_execute = $nv_Request->get_int('group_execute', 'post', 0);
-
     $other_read = $nv_Request->get_int('other_read', 'post', 0);
     $other_write = $nv_Request->get_int('other_write', 'post', 0);
     $other_execute = $nv_Request->get_int('other_execute', 'post', 0);
 
+    $owner_permissions = $owner_read * 4 + $owner_write * 2 + $owner_execute;
+    $group_permissions = $group_read * 4 + $group_write * 2 + $group_execute;
+    $other_permissions = $other_read * 4 + $other_write * 2 + $other_execute;
 
-    $permissions = ($owner_read * 4 + $owner_write * 2 + $owner_execute) .
-                   ($group_read * 4 + $group_write * 2 + $group_execute) .
-                   ($other_read * 4 + $other_write * 2 + $other_execute);
+    $permissions = [
+        'owner' => $owner_permissions,
+        'group' => $group_permissions,
+        'other' => $other_permissions,
+    ];
 
-    $sql = 'UPDATE ' .NV_PREFIXLANG . '_fileserver_files
-            SET permissions = :permissions, updated_at = :updated_at 
-            WHERE file_id = :file_id';
-    $stmt = $db->prepare($sql);
-    $stmt->bindParam(':permissions', $permissions, PDO::PARAM_STR);
-    $stmt->bindParam(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+    $sql_check = "SELECT permission_id FROM " . NV_PREFIXLANG . "_fileserver_permissions WHERE file_id = :file_id";
+    $check_stmt = $db->prepare($sql_check);
+    $check_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+    $check_stmt->execute();
+
+    if ($check_stmt->rowCount() > 0) {
+        $sql_update = "UPDATE " . NV_PREFIXLANG . "_fileserver_permissions 
+                       SET owner = :owner, `group` = :group, other = :other, updated_at = :updated_at 
+                       WHERE file_id = :file_id";
+        $update_stmt = $db->prepare($sql_update);
+        $update_stmt->bindParam(':owner', $permissions['owner']);
+        $update_stmt->bindParam(':group', $permissions['group']);
+        $update_stmt->bindParam(':other', $permissions['other']);
+        $update_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+        $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+        $update_stmt->execute();
+    } else {
+        $sql_insert = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_permissions 
+                       (file_id, owner, `group`, other, updated_at) 
+                       VALUES (:file_id, :owner, :group, :other, :updated_at)";
+        $insert_stmt = $db->prepare($sql_insert);
+        $insert_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+        $insert_stmt->bindParam(':owner', $permissions['owner']);
+        $insert_stmt->bindParam(':group', $permissions['group']);
+        $insert_stmt->bindParam(':other', $permissions['other']);
+        $insert_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+        $insert_stmt->execute();
+    }
+    $message = 'Permissions updated successfully!';
+    $stmt = $db->prepare("SELECT f.file_name, f.file_path, p.owner, p.`group`, p.other
+                          FROM " . NV_PREFIXLANG . "_fileserver_files f
+                          LEFT JOIN " . NV_PREFIXLANG . "_fileserver_permissions p 
+                          ON f.file_id = p.file_id WHERE f.file_id = :file_id");
     $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
     $stmt->execute();
-
-    $file_path = $file_data['file_path']; 
-
-    $chmod_value = octdec($permissions);
-
-    if (chmod($file_path, $chmod_value)) {
-        $message = 'File permissions updated successfully.';
-    } else {
-        $message = 'Failed to change file permissions on the server.';
-    }
-}
-
-$sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = :file_id';
-$stmt = $db->prepare($sql);
-$stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-$stmt->execute();
-$file_data = $stmt->fetch();
-
-if (!$file_data) {
-    $message = 'File does not exist.';
+    $row = $stmt->fetch();
 }
 
 $xtpl = new XTemplate('perm.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
 $xtpl->assign('FILE_ID', $file_id);
-$xtpl->assign('FILE_NAME', $file_data['file_name']);
-$xtpl->assign('FILE_PATH', $file_data['file_path']);
-$xtpl->assign('CURRENT_PERMISSIONS', $file_data['permissions']);
-$xtpl->assign('LANG', $lang_module);
-$xtpl->assign('FORM_ACTION', NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=perm&amp;file_id=' . $file_id);
+$xtpl->assign('FILE_NAME', htmlspecialchars($row['file_name']));
+$xtpl->assign('FILE_PATH', htmlspecialchars($row['file_path']));
 
-$current_permissions = str_split($file_data['permissions']);
-$xtpl->assign('OWNER_READ', $current_permissions[0] & 4 ? 'checked' : '');
-$xtpl->assign('OWNER_WRITE', $current_permissions[0] & 2 ? 'checked' : '');
-$xtpl->assign('OWNER_EXECUTE', $current_permissions[0] & 1 ? 'checked' : '');
+$permissions = [
+    'owner' => $row['owner'],
+    'group' => $row['group'],
+    'other' => $row['other'],
+];
 
-$xtpl->assign('GROUP_READ', $current_permissions[1] & 4 ? 'checked' : '');
-$xtpl->assign('GROUP_WRITE', $current_permissions[1] & 2 ? 'checked' : '');
-$xtpl->assign('GROUP_EXECUTE', $current_permissions[1] & 1 ? 'checked' : '');
-
-$xtpl->assign('OTHER_READ', $current_permissions[2] & 4 ? 'checked' : '');
-$xtpl->assign('OTHER_WRITE', $current_permissions[2] & 2 ? 'checked' : '');
-$xtpl->assign('OTHER_EXECUTE', $current_permissions[2] & 1 ? 'checked' : '');
+foreach (['owner', 'group', 'other'] as $type) {
+    foreach (['read', 'write', 'execute'] as $perm) {
+        $perm_value = ${$type} . '_' . $perm;
+        $xtpl->assign(strtoupper($type . '_' . $perm . '_CHECKED'), ($permissions[$type] & (4 * ($perm == 'read') + 2 * ($perm == 'write') + 1 * ($perm == 'execute'))) ? 'checked' : '');
+    }
+}
 
 if ($message != '') {
     $xtpl->assign('MESSAGE', $message);
