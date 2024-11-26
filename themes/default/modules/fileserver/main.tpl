@@ -1,30 +1,30 @@
 <!-- BEGIN: main -->
 <div class="container mt-4 mb-5 pb-5">
-    <h1 class="text-center">Module File Server</h1>
+    <h1 class="text-center">{LANG.module_title}</h1>
     <br>
     <!-- BEGIN: error -->
     <div class="alert alert-warning">{ERROR}</div>
     <!-- END: error -->
     <form action="{FORM_ACTION}" method="get" id="searchForm" class="form-inline my-2 my-lg-0">
 
-        <input type="text" class="form-control" placeholder="Tìm kiếm ..." id="searchInput" name="search"
+        <input type="text" class="form-control" placeholder="{LANG.search}" id="searchInput" name="search"
             value="{SEARCH_TERM}">
         <select class="form-control ml-2" name="search_type">
-            <option value="all">Tất cả</option>
-            <option value="file">File</option>
-            <option value="folder">Folder</option>
+            <option value="all">{LANG.all}</option>
+            <option value="file">{LANG.file}</option>
+            <option value="folder">{LANG.folder}</option>
         </select>
-        <button type="submit" class="btn btn-primary ml-2">Tìm kiếm</button>
+        <button type="submit" class="btn btn-primary ml-2">{LANG.search_btn}</button>
     </form>
 
     <br>
     <form action="{FORM_ACTION}" method="post" enctype="multipart/form-data" id="uploadForm"
         class="form-inline my-2 my-lg-0">
         <button type="button" class="btn btn-warning" id="backButton">
-            <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> Quay lại
+            <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
         </button>
-        <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">Tạo mục mới</a>
-        <button type="button" class="btn btn-primary" id="uploadButton">Tải lên</button>
+        <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">{LANG.create_btn}</a>
+        <button type="button" class="btn btn-primary" id="uploadButton">{LANG.upload_btn}</button>
         <input type="file" name="uploadfile" id="uploadfile" required style="display: none;">
         <input type="hidden" name="submit_upload" value="1">
     </form>
@@ -34,12 +34,12 @@
         <thead class="thead-dark">
             <tr>
                 <th scope="col"><input class="form-check-input" type="checkbox" value="" id="defaultCheck1"></th>
-                <th scope="col">Tên</th>
-                <th scope="col">Kích thước</th>
-                <th scope="col">Ngày tải lên</th>
-                <th scope="col">Quyền</th>
-                <th scope="col">Tác giả</th>
-                <th scope="col">Tùy chọn</th>
+                <th scope="col">{LANG.f_name}</th>
+                <th scope="col">{LANG.f_size}</th>
+                <th scope="col">{LANG.created_at}</th>
+                <!-- <th scope="col">{LANG.module_title}</th>
+                <th scope="col">{LANG.module_title}</th> -->
+                <th scope="col">{LANG.option}</th>
             </tr>
         </thead>
         <tbody>
@@ -54,34 +54,37 @@
                 </td>
                 <td>{ROW.file_size}</td>
                 <td>{ROW.created_at}</td>
-                <td>
+                <!-- <td>
                     <a href="{ROW.url_perm}">{ROW.permissions}</i>
                     </a>
                 </td>
-                <td>{ROW.uploaded_by}</td>
+                <td>{ROW.username} {ROW.uploaded_by}</td> -->
                 <td>
                     <a href="{ROW.url_delete}" data-file-id="{ROW.file_id}" data-checksess="{CHECK_SESS}"
-                        class="btn btn-sm btn-danger delete" title="Xóa">
+                        class="btn btn-sm btn-danger delete" title="{LANG.delete_btn}">
                         <i class="fa fa-trash-o"></i>
                     </a>
                     <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}"
-                        data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal" title="Đổi tên">
+                        data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal" title="{LANG.rename_btn}">
                         <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
                     </button>
                     <!-- BEGIN: edit -->
-                    <a href="{EDIT}" class="btn btn-sm btn-info" title="Sửa">
-                        <i class="fa fa-amazon"></i>
+                    <a href="{EDIT}" class="btn btn-sm btn-info" title="{LANG.edit_btn}">
+                        <i class="fa fa-pencil-square"></i>
                     </a>
                     <!-- END: edit -->
-                    <button class="btn btn-sm btn-info share" data-file-id="{ROW.file_id}" data-toggle="modal"
-                        data-target="#shareModal" title="Chia sẻ">
+                    <!-- <button class="btn btn-sm btn-info share" data-file-id="{ROW.file_id}" data-toggle="modal"
+                        data-target="#shareModal" title="{LANG.share_btn}">
                         <i class="fa fa-link" aria-hidden="true"></i>
-                    </button>
-                    <a href="{ROW.url_clone}" class="btn btn-sm btn-info" title="Sao chép">
-                        <i class="fa fa-clone"></i>
+                    </button> -->
+                    <a href="{EDIT}" class="btn btn-sm btn-info" title="{LANG.edit_btn}">
+                        <i class="fa fa-amazon"></i>
+                    </a>
+                    <a href="{ROW.url_perm}" class="btn btn-sm btn-info share" title="{LANG.perm_btn}">
+                        <i class="fa fa-link"></i>
                     </a>
                     <!-- BEGIN: download -->
-                    <a href="{DOWNLOAD}" class="btn btn-sm btn-success" title="Tải xuống">
+                    <a href="{DOWNLOAD}" class="btn btn-sm btn-success" title="{LANG.download_btn}">
                         <i class="fa fa-download" aria-hidden="true"></i>
                     </a>
                     <!-- END: download -->
@@ -91,55 +94,52 @@
         </tbody>
     </table>
     <hr>
-    <button type="submit" name="compress" class="btn btn-primary mt-2" id="compressButton">Zip
-        Files</button>
+    <button type="submit" name="compress" class="btn btn-primary mt-2" id="compressButton">{LANG.zip_btn}</button>
 </div>
 <br>
 
-<!-- Modal Tạo Mới -->
 <div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="createModalLabel"
     aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header row">
-                <h3 class="modal-title col-lg-11" id="createModalLabel">Tạo mục mới</h3>
+                <h3 class="modal-title col-lg-11" id="createModalLabel">{LANG.create_btn}</h3>
             </div>
             <div class="modal-body">
                 <form id="createForm" method="post" action="">
                     <div class="form-group">
-                        <label for="type">Loại:</label>
+                        <label for="type">{LANG.type}:</label>
                         <select class="form-control" id="type" name="type">
-                            <option value="0">File</option>
-                            <option value="1">Thư mục</option>
+                            <option value="0">{LANG.file}</option>
+                            <option value="1">{LANG.folder}</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="name">Tên:</label>
+                        <label for="name">{LANG.f_name}:</label>
                         <input type="text" class="form-control" id="name_f" name="name_f" required>
                     </div>
                     <input type="hidden" name="create_action" value="create">
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-primary" onclick="submitCreateForm();">Tạo</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">{LANG.close_btn}</button>
+                <button type="button" class="btn btn-primary" onclick="submitCreateForm();">{LANG.create_btn}</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal Đổi Tên -->
 <div class="modal fade" id="renameModal" tabindex="-1" role="dialog" aria-labelledby="renameModalLabel"
     aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header row">
-                <h3 class="modal-title col-lg-11" id="renameModalLabel">Đổi tên mục</h3>
+                <h3 class="modal-title col-lg-11" id="renameModalLabel">{LANG.rename_btn}</h3>
             </div>
             <div class="modal-body">
                 <form id="renameForm" method="post" action="">
                     <div class="form-group">
-                        <label for="new_name">Tên mới:</label>
+                        <label for="new_name">{LANG.new_name}:</label>
                         <input type="text" class="form-control" id="new_name" name="new_name" required>
                     </div>
                     <input type="hidden" name="file_id" id="file_id" value="">
@@ -147,20 +147,19 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-primary" onclick="submitRenameForm();">Xác nhận</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">{LANG.close_btn}</button>
+                <button type="button" class="btn btn-primary" onclick="submitRenameForm();">{LANG.submit_btn}</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal Chia Sẻ -->
 <div class="modal fade" id="shareModal" tabindex="-1" role="dialog" aria-labelledby="shareModalLabel"
     aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header row">
-                <h3 class="modal-title col-lg-11" id="shareModalLabel">Chia sẻ file</h3>
+                <h3 class="modal-title col-lg-11" id="shareModalLabel">{LANG.share_btn}</h3>
             </div>
             <div class="modal-body">
                 <form id="shareForm" method="post" action="">
@@ -364,6 +363,28 @@
             }
         });
     });
+    document.addEventListener("DOMContentLoaded", function () {
+    // Lấy checkbox chính
+    const mainCheckbox = document.getElementById("defaultCheck1");
+
+    // Lấy tất cả các checkbox trong danh sách
+    const fileCheckboxes = document.querySelectorAll('input[type="checkbox"][name="files[]"]');
+
+    // Gắn sự kiện click cho checkbox chính
+    mainCheckbox.addEventListener("change", function () {
+        // Lặp qua danh sách các checkbox và thiết lập trạng thái
+        fileCheckboxes.forEach(function (checkbox) {
+            checkbox.checked = mainCheckbox.checked;
+        });
+    });
+
+    // Cập nhật trạng thái của checkbox chính nếu người dùng chọn/deselect từng checkbox nhỏ
+    fileCheckboxes.forEach(function (checkbox) {
+        checkbox.addEventListener("change", function () {
+            mainCheckbox.checked = Array.from(fileCheckboxes).every((cb) => cb.checked);
+        });
+    });
+});
 
 </script>
 <!-- END: main -->

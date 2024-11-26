@@ -20,7 +20,18 @@
             <!-- END: file -->
         </tbody>
     </table>
+    <button type="button" class="btn btn-secondary" id="backButton">
+        <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
+    </button>
     <button type="submit" name="action" value="unzip" class="btn btn-primary">Giải nén</button>
 </form>
 <p></p>
+<script>
+    $(document).ready(function () {
+    $("#backButton").on("click", function (e) {
+        e.preventDefault();
+        window.history.back();
+    });
+});
+</script>
 <!-- END: main-->

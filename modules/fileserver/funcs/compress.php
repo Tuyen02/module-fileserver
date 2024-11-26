@@ -19,56 +19,37 @@ if (!$row) {
     $zipFilePath = NV_ROOTDIR . $row['file_path'];
     $extractTo = NV_ROOTDIR . '/uploads/fileserver/' . pathinfo($row['file_name'], PATHINFO_FILENAME);
     
+    if (!is_dir($extractTo)) {
+        mkdir($extractTo, 0777, true);
+    }
+
     $zip = new PclZip($zipFilePath);
     $list = $zip->extract(PCLZIP_OPT_PATH, $extractTo);
 
+    $file_size_zip = file_exists($zipFilePath) ? filesize($zipFilePath) : 0;
+
     if ($action === 'unzip' && $row['compressed'] == 1) {
         if ($list) {
-            $update_sql = 'UPDATE ' . NV_PREFIXLANG . '_fileserver_files 
-                           SET is_folder = 1, compressed = 0, file_name = :new_name, file_path = :new_path 
-                           WHERE file_id = :file_id';
-            $update_stmt = $db->prepare($update_sql);
-            $new_name = pathinfo($row['file_name'], PATHINFO_FILENAME);
-            $new_path = '/uploads/fileserver/' . $new_name;
-            $update_stmt->bindParam(':new_name', $new_name, PDO::PARAM_INT);
-            $update_stmt->bindParam(':new_path', $new_path, PDO::PARAM_INT);
-            $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-            $update_stmt->execute();
+            addToDatabase($list, $file_id, $db);
 
-             function addToDatabase($files, $parent_id, $basePath, $level, $db, $file_id)
-            {
-                foreach ($files as $file) {
-                    $isFolder = ($file['folder'] == 1) ? 1 : 0;
-                    $filePath = str_replace(NV_ROOTDIR, '', $file['filename']);
-
-                    $insert_sql = 'INSERT INTO ' . NV_PREFIXLANG . '_fileserver_files 
-                                   (file_name, file_path, is_folder, lev, compressed) 
-                                   VALUES (:file_name, :file_path, :is_folder, :lev, 0)';
-                    $insert_stmt = $db->prepare($insert_sql);
-                    $insert_stmt->execute([
-                        ':file_name' => basename($file['filename']),
-                        ':file_path' => $filePath,
-                        ':is_folder' => $isFolder,
-                        ':lev' => $file_id,
-                    ]);
-                }
+            if (nv_deletefile($zipFilePath)) {
+                $message = 'Giải nén thành công.';
+            } else {
+                $message = 'Giải nén thành công nhưng không thể xóa file zip.';
             }
-
-            addToDatabase($list, $file_id, $extractTo, 1, $db, $file_id);
-            @nv_deletefile($zipFilePath);
-
             $update_sql = 'UPDATE ' . NV_PREFIXLANG . '_fileserver_files 
-                           SET is_folder = 1, compressed = 0, file_name = :new_name, file_path = :new_path 
+                           SET is_folder = 1, compressed = 0, file_name = :new_name, file_path = :new_path, file_size = :file_size 
                            WHERE file_id = :file_id';
             $update_stmt = $db->prepare($update_sql);
             $new_name = pathinfo($row['file_name'], PATHINFO_FILENAME);
             $new_path = '/uploads/fileserver/' . $new_name;
-            $update_stmt->bindParam(':new_name', $new_name, PDO::PARAM_INT);
-            $update_stmt->bindParam(':new_path', $new_path, PDO::PARAM_INT);
+            $update_stmt->bindParam(':new_name', $new_name, PDO::PARAM_STR);
+            $update_stmt->bindParam(':new_path', $new_path, PDO::PARAM_STR);
+            $update_stmt->bindParam(':file_size', $file_size_zip, PDO::PARAM_INT);
             $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
             $update_stmt->execute();
-
-            $message = 'Giải nén thành công.';
+        } else {
+            $message = 'Không thể giải nén file zip.';
         }
     }
 }
@@ -77,13 +58,18 @@ $xtpl = new XTemplate('compress.tpl', NV_ROOTDIR . '/themes/' . $global_config['
 $xtpl->assign('LANG', $lang_module);
 $xtpl->assign('FILE_ID', $file_id);
 
+if ($file_size_zip > 0) {
+    $xtpl->assign('ZIP_FILE_SIZE', nv_convertfromBytes($file_size_zip));
+    $xtpl->parse('main.zip_file_size');
+}
+
 if (!empty($list)) {
     foreach ($list as $file) {
         $file['file_name'] = basename($file['filename']);
-        $file['file_size'] = $file['folder'] ? '-' : nv_convertfromBytes($file['size']);
+        $file['file_size'] = $file['folder'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
         $file['file_type'] = $file['folder'] ? 'fa-folder-o' : 'fa-file-o';
-        $xtpl->assign('FILE', $file); 
-        $xtpl->parse('main.file'); 
+        $xtpl->assign('FILE', $file);
+        $xtpl->parse('main.file');
     }
 }
 

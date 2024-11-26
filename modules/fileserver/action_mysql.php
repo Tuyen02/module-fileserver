@@ -36,17 +36,14 @@ $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_
   view INT(11) NOT NULL DEFAULT 0,
   share TINYINT(3) NOT NULL DEFAULT 0,
   compressed TINYINT(3) NOT NULL DEFAULT 0,
-  permissions VARCHAR(255) NOT NULL DEFAULT 0,
   PRIMARY KEY (file_id)
 )ENGINE=MyISAM';
 
 $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_permissions (
     permission_id INT PRIMARY KEY AUTO_INCREMENT,
     file_id INT NOT NULL,
-    user_id INT NOT NULL,
-    owner TINYINT(3) DEFAULT 1, 
-    group TINYINT(3) DEFAULT 3,
-    other TINYINT(3) DEFAULT 3,
+    group TINYINT(3) DEFAULT 1,
+    other TINYINT(3) DEFAULT 1,
     update_at INT(11) NOT NULL DEFAULT 0
 )ENGINE=MyISAM';
 

@@ -2,8 +2,8 @@
 if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
-
 $file_id = $nv_Request->get_int('file_id', 'get', 0);
+
 
 $sql = "SELECT file_name, file_path, lev FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $file_id;
 $result = $db->query($sql);
@@ -20,21 +20,25 @@ $full_path = NV_ROOTDIR. $file_path;
 $file_content = file_exists($full_path) ? file_get_contents($full_path) : '';
 
 $message='';
-if ($nv_Request->get_int('file_id', 'post') > 0) {
-    $file_content = $nv_Request->get_string('file_content', 'post'); 
+if (defined('NV_IS_SPADMIN')) {
+    if ($nv_Request->get_int('file_id', 'post') > 0) {
+        $file_content = $nv_Request->get_string('file_content', 'post'); 
 
-    file_put_contents($full_path, $file_content);
+        file_put_contents($full_path, $file_content);
 
-    $file_size = filesize($full_path);
+        $file_size = filesize($full_path);
 
-    $sql = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET updated_at = :updated_at, file_size = :file_size WHERE file_id = :file_id";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-    $stmt->bindValue(':file_size', $file_size, PDO::PARAM_INT); 
-    $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-    $stmt->execute();
+        $sql = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET updated_at = :updated_at, file_size = :file_size WHERE file_id = :file_id";
+        $stmt = $db->prepare($sql);
+        $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+        $stmt->bindValue(':file_size', $file_size, PDO::PARAM_INT); 
+        $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+        $stmt->execute();
 
-    $message = 'File content has been updated successfully.';
+        $message = 'File content has been updated successfully.';
+    }
+} else {
+    $message = 'Bạn không có quyền sửa file này.';
 }
 
 $xtpl = new XTemplate('edit.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);

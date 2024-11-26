@@ -5,10 +5,24 @@ if (!defined('NV_SYSTEM')) {
 }
 
 define('NV_IS_MOD_FILESERVER', true);
+
+
 if (!defined('NV_IS_USER')) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
 }
-function deleteFileOrFolder($fileId) {
+
+//13: id của group
+//kiểm tra xem user này có trong group hay không?
+if (in_array(13, $user_info['in_groups'])) {
+    //nếu có thì lấy id những file mà quản trị cho phép xem hoặc sửa
+    $arr_per = array_column($db->query("SELECT p_group, file_id FROM `nv4_vi_fileserver_permissions` WHERE p_group > 1")->fetchAll(),'p_group','file_id');
+} else {
+    //nếu không có thì chuyển hướng ra bên ngoài
+    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
+}
+
+function deleteFileOrFolder($fileId)
+{
     global $db;
 
     $sql = "SELECT * FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = :file_id";
@@ -18,7 +32,7 @@ function deleteFileOrFolder($fileId) {
     $row = $stmt->fetch();
 
     if (empty($row)) {
-        return false; 
+        return false;
     }
 
     $filePath = $row['file_path'];
@@ -40,7 +54,8 @@ function deleteFileOrFolder($fileId) {
     return true;
 }
 
-function updateDirectoryStatus($dir) {
+function updateDirectoryStatus($dir)
+{
     global $db;
     $full_dir = NV_ROOTDIR . '/' . $dir;
 
@@ -53,22 +68,21 @@ function updateDirectoryStatus($dir) {
 
             if (is_dir($fullFilePath)) {
                 updateDirectoryStatus($filePath);
-            }else {
-                unlink($fullFilePath); 
+            } else {
+                unlink($fullFilePath);
             }
 
             $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET status = 0 WHERE file_path = :file_path";
             $stmtUpdate = $db->prepare($sqlUpdate);
             $stmtUpdate->bindValue(':file_path', $filePath, PDO::PARAM_STR);
             $stmtUpdate->execute();
-
-    
         }
     }
     rmdir($full_dir);
 }
 
-function checkIfParentIsFolder($db, $lev) {
+function checkIfParentIsFolder($db, $lev)
+{
     $stmt = $db->query("SELECT is_folder FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . intval($lev));
     if ($stmt) {
         return $stmt->fetchColumn();
@@ -78,7 +92,8 @@ function checkIfParentIsFolder($db, $lev) {
     }
 }
 
-function compressFiles($files, $zipFilePath) {
+function compressFiles($files, $zipFilePath)
+{
     global $db;
 
     $zip = new PclZip($zipFilePath);
@@ -124,5 +139,41 @@ function compressFiles($files, $zipFilePath) {
     }
 }
 
+function addToDatabase($files, $parent_id, $db) {
+    foreach ($files as $file) {
+        $isFolder = ($file['folder'] == 1) ? 1 : 0;
+        $filePath = str_replace(NV_ROOTDIR, '', $file['filename']);
 
+        $insert_sql = 'INSERT INTO ' . NV_PREFIXLANG . '_fileserver_files 
+                       (file_name, file_path, file_size, is_folder, lev, compressed) 
+                       VALUES (:file_name, :file_path, :file_size, :is_folder, :lev, 0)';
+        $insert_stmt = $db->prepare($insert_sql);
+        $file_name = basename($file['filename']);
+        $insert_stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
+        $insert_stmt->bindParam(':file_path', $filePath, PDO::PARAM_STR);
+        $insert_stmt->bindParam(':file_size', $file['size'], PDO::PARAM_INT);
+        $insert_stmt->bindParam(':is_folder', $isFolder, PDO::PARAM_INT);
+        $insert_stmt->bindParam(':lev', $parent_id, PDO::PARAM_INT);
+        $insert_stmt->execute();
+    }
+}
 
+function calculateFolderSize($db, $folderId) {
+    $totalSize = 0;
+
+    $sql = "SELECT file_id, is_folder, file_size FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = :lev";
+    $stmt = $db->prepare($sql);
+    $stmt->bindParam(':lev', $folderId, PDO::PARAM_INT);
+    $stmt->execute();
+    $files = $stmt->fetchAll();
+
+    foreach ($files as $file) {
+        if ($file['is_folder'] == 1) {
+            $totalSize += calculateFolderSize($db, $file['file_id']);
+        } else {
+            $totalSize += $file['file_size'];
+        }
+    }
+
+    return $totalSize;
+}
