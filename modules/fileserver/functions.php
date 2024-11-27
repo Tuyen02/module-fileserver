@@ -92,27 +92,26 @@ function checkIfParentIsFolder($db, $lev)
     }
 }
 
-function compressFiles($files, $zipFilePath)
+function compressFiles($fileIds, $zipFilePath)
 {
     global $db;
 
-    $zip = new PclZip($zipFilePath);
+    if (!is_array($fileIds) || empty($fileIds)) {
+        return ['status' => 'error', 'message' => 'Danh sách file không hợp lệ: '];
+    }
 
+    $zip = new PclZip($zipFilePath);
     $filePaths = [];
     $errors = [];
 
-    if (!is_array($files) || empty($files)) {
-        return ['status' => 'error', 'message' => 'Danh sách file không hợp lệ.' . $files];
-    }
-
-    $filePlaceholders = implode(',', array_fill(0, count($files), '?'));
+    $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
     $sql = "SELECT file_path, file_name FROM " . NV_PREFIXLANG . "_fileserver_files 
-            WHERE file_path IN ($filePlaceholders) AND status = 1";
+            WHERE file_id IN ($placeholders) AND status = 1";
     $stmt = $db->prepare($sql);
-    $stmt->execute($files);
+    $stmt->execute($fileIds);
 
     if ($stmt->rowCount() == 0) {
-        return ['status' => 'error', 'message' => 'Không tìm thấy file nào.'];
+        return ['status' => 'error', 'message' => 'Không tìm thấy file nào hợp lệ với file_id đã chọn.'];
     }
 
     while ($row = $stmt->fetch()) {
@@ -133,11 +132,12 @@ function compressFiles($files, $zipFilePath)
         if ($return == 0) {
             return ['status' => 'error', 'message' => 'Có lỗi khi nén file: ' . $zip->errorInfo(true)];
         }
-        return ['status' => 'success', 'message' => count($filePaths) . ' file đã được nén thành công'];
+        return ['status' => 'success', 'message' => count($filePaths) . ' file đã được nén thành công.'];
     } else {
-        return ['status' => 'error', 'message' => 'Không có file hợp lệ để nén'];
+        return ['status' => 'error', 'message' => 'Không có file hợp lệ để nén.'];
     }
 }
+
 
 function addToDatabase($files, $parent_id, $db) {
     foreach ($files as $file) {
@@ -176,4 +176,46 @@ function calculateFolderSize($db, $folderId) {
     }
 
     return $totalSize;
+}
+
+function updatePermissions($file_id, $permissions) {
+    global $db;
+
+    $sql_update = "UPDATE " . NV_PREFIXLANG . "_fileserver_permissions 
+                   SET `p_group` = :p_group, p_other = :p_other, updated_at = :updated_at 
+                   WHERE file_id = :file_id";
+    $update_stmt = $db->prepare($sql_update);
+    $update_stmt->bindParam(':p_group', $permissions['p_group']);
+    $update_stmt->bindParam(':p_other', $permissions['p_other']);
+    $update_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+    $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+    $update_stmt->execute();
+
+    $sql_children = "SELECT file_id FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = :file_id";
+    $children_stmt = $db->prepare($sql_children);
+    $children_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+    $children_stmt->execute();
+    $children = $children_stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    foreach ($children as $child_id) {
+        $sql_check = "SELECT permission_id FROM " . NV_PREFIXLANG . "_fileserver_permissions WHERE file_id = :file_id";
+        $check_stmt = $db->prepare($sql_check);
+        $check_stmt->bindParam(':file_id', $child_id, PDO::PARAM_INT);
+        $check_stmt->execute();
+
+        if ($check_stmt->rowCount() > 0) {
+            $update_stmt->bindParam(':file_id', $child_id, PDO::PARAM_INT);
+            $update_stmt->execute();
+        } else {
+            $sql_insert = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_permissions 
+                           (file_id, `p_group`, p_other, updated_at) 
+                           VALUES (:file_id, :p_group, :p_other, :updated_at)";
+            $insert_stmt = $db->prepare($sql_insert);
+            $insert_stmt->bindParam(':file_id', $child_id, PDO::PARAM_INT);
+            $insert_stmt->bindParam(':p_group', $permissions['p_group']);
+            $insert_stmt->bindParam(':p_other', $permissions['p_other']);
+            $insert_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+            $insert_stmt->execute();
+        }
+    }
 }

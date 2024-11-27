@@ -13,7 +13,6 @@ $full_dir = NV_ROOTDIR . $base_dir;
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
 $page_url = $base_url;
 
-
 //13: id của group
 //kiểm tra xem user này có trong group hay không?
 if (in_array(13, $user_info['in_groups'])) {
@@ -78,8 +77,8 @@ $action = $nv_Request->get_title('action', 'post', '');
 
 if (!empty($action)) {
 
-    $status = 'error';
-    $mess = 'Lỗi hệ thống';
+    $status = $lang_module['error'];
+    $mess = $lang_module['sys_err'];
 
     //create
     if ($action == "create") {
@@ -147,7 +146,7 @@ if (!empty($action)) {
 
     if ($action == 'delete') {
         if (!defined('NV_IS_SPADMIN')) {
-            nv_jsonOutput(['status' => $status, 'message' => "Không có quyền thao tác"]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_thing_to_do']]);
         }
         $fileId = $nv_Request->get_int('file_id', 'post', 0);
         $checksess = $nv_Request->get_title('checksess', 'get', '');
@@ -155,16 +154,41 @@ if (!empty($action)) {
             $deleted = deleteFileOrFolder($fileId);
             if ($deleted) {
                 $status = 'success';
-                $mess = 'Xóa thành công.';
+                $mess = $lang_module['delete_ok'];
             } else {
-                $mess =  'Xóa thất bại.';
+                $mess =  $lang_module['delete_false'];
             }
         }
     }
 
+    if ($action == 'deleteAll') {
+        if (!defined('NV_IS_SPADMIN')) {
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_thing_to_do']]);
+        }
+    
+        $fileIds = $nv_Request->get_array('files', 'post', []);
+        //$checksess = $nv_Request->get_title('checksess', 'get', '');
+        
+        if (empty($fileIds)) {
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
+        }
+        //&& $checksess == md5($fileId . NV_CHECK_SESSION)
+        foreach ($fileIds as $fileId) {
+            if ($fileId > 0) {
+                $deleted = deleteFileOrFolder($fileId);
+                if ($deleted) {
+                    $mess = $lang_module['delete_ok'];
+                } else {
+                    $mess = $lang_module['delete_false'];
+                }
+            }
+        }
+        
+    }
+
     if ($action == 'rename') {
         if (!defined('NV_IS_SPADMIN')) {
-            nv_jsonOutput(['status' => $status, 'message' => "Không có quyền thao tác"]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_thing_to_do']]);
         }
         $fileId = intval($nv_Request->get_int('file_id', 'post', 0));
         $newName = trim($nv_Request->get_title('new_name', 'post', ''));
@@ -174,7 +198,7 @@ if (!empty($action)) {
         $stmt->execute();
         $file = $stmt->fetch();
 
-        $mess = 'File không tồn tại.';
+        $mess = $lang_module['f_has_exit'];
         if ($file) {
             $oldFilePath = $file['file_path'];
             $oldFullPath = NV_ROOTDIR . '/' . $oldFilePath;
@@ -184,11 +208,11 @@ if (!empty($action)) {
 
             $childCount = $db->query("SELECT COUNT(*) FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = " . $fileId)->fetchColumn();
             if ($file['is_folder'] == 1 && $childCount > 0) {
-                $mess = 'Không thể đổi tên folder vì nó chứa file con.';
+                $mess = $lang_module['cannot_rename_file'];
             } else {
-                $mess = 'Không thể đổi tên file.';
+                $mess = $lang_module['cannot_rename_file'];
                 if (rename($oldFullPath, $newFullPath)) {
-                    $mess = 'Không thể cập nhật cơ sở dữ liệu.';
+                    $mess = $lang_module['cannot_update_db'];
                     $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET file_name = :new_name, file_path = :new_path, updated_at = :updated_at WHERE file_id = :file_id";
                     $stmtUpdate = $db->prepare($sqlUpdate);
                     $stmtUpdate->bindParam(':new_name', $newName);
@@ -196,8 +220,8 @@ if (!empty($action)) {
                     $stmtUpdate->bindParam(':file_id', $fileId, PDO::PARAM_INT);
                     $stmtUpdate->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                     if ($stmtUpdate->execute()) {
-                        $status = 'success';
-                        $mess = 'Đổi tên thành công.';
+                        $status = $lang_module['success'];
+                        $mess = $lang_module['rename_ok'];
                     }
                 }
             }
@@ -206,7 +230,7 @@ if (!empty($action)) {
 
     if ($action == 'share') {
         if (!defined('NV_IS_SPADMIN')) {
-            nv_jsonOutput(['status' => $status, 'message' => "Không có quyền thao tác"]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_thing_to_do']]);
         }
         $fileId = $nv_Request->get_int('file_id', 'post', 0);
         $share_option = $nv_Request->get_int('share_option', 'post', 0);
@@ -218,33 +242,35 @@ if (!empty($action)) {
             $stmt->bindParam(':file_id', $fileId, PDO::PARAM_INT);
 
             if ($stmt->execute()) {
-                $status = 'success';
-                $mess = 'Cập nhật trạng thái chia sẻ thành công.';
+                $status = $lang_module['success'];
+                $mess = $lang_module['share_ok'];
             } else {
-                $status = 'error';
-                $mess = 'Không thể cập nhật trạng thái chia sẻ.';
+                $status = $lang_module['error'];
+                $mess = $lang_module['share_false'];
             }
         }
     }
 
     if ($action == 'compress') {
         if (!defined('NV_IS_SPADMIN')) {
-            nv_jsonOutput(['status' => $status, 'message' => "Không có quyền thao tác"]);
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_thing_to_do']]);
         }
-        $files = $nv_Request->get_array('files', 'post', []);
-        if (empty($files)) {
-            $status = 'error';
-            $mess = 'Không có file nào được chọn';
+    
+        $fileIds = $nv_Request->get_array('files', 'post', []);
+        
+        if (empty($fileIds)) {
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
         }
-
+    
         $zipFileName = 'compressed_' . NV_CURRENTTIME . '.zip';
         $zipFilePath = $base_dir . '/' . $zipFileName;
         $zipFullPath = NV_ROOTDIR . $zipFilePath;
-
-        $compressResult = compressFiles($files, $zipFullPath);
+    
+        $compressResult = compressFiles($fileIds, $zipFullPath);
+        
         if ($compressResult['status'] === 'success') {
             $sqlInsert = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev, compressed) 
-                          VALUES (:file_name, :file_path,:file_size, :uploaded_by, 0, :created_at, :lev, 1)";
+                          VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, 1)";
             $stmtInsert = $db->prepare($sqlInsert);
             $stmtInsert->bindParam(':file_name', $zipFileName, PDO::PARAM_STR);
             $stmtInsert->bindParam(':file_path', $zipFilePath, PDO::PARAM_STR);
@@ -253,11 +279,9 @@ if (!empty($action)) {
             $stmtInsert->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmtInsert->bindValue(':lev', $lev, PDO::PARAM_INT);
             $stmtInsert->execute();
-
             $mess = $compressResult['message'];
-        }
+        } 
     }
-
     nv_jsonOutput(['status' => $status, 'message' => $mess]);
 }
 
@@ -287,7 +311,7 @@ $admin_info['allow_files_type'][] = 'text';
 
 if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['uploadfile']) && is_uploaded_file($_FILES['uploadfile']['tmp_name'])) {
     if (!defined('NV_IS_SPADMIN')) {
-        $error = $upload_info['Không có quyền thao tác'];
+        $error = $upload_info[$lang_module['not_thing_to_do']];
     }
     $upload = new NukeViet\Files\Upload(
         $admin_info['allow_files_type'],
@@ -378,17 +402,18 @@ foreach ($result as $row) {
     $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
 
     if ($row['compressed'] == 1) {
-        $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
+
         $xtpl->assign('VIEW', $row['url_compress']);
         $xtpl->parse('main.file_row.view');
+
+        $xtpl->assign('DOWNLOAD', $row['url_download']);
+        $xtpl->parse('main.file_row.download');
     } else 
     if ($row['is_folder'] == 1) {
         $row['file_size'] = calculateFolderSize($db, $row['file_id']);
-        $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
         $xtpl->assign('VIEW', $row['url_view']);
         $xtpl->parse('main.file_row.view');
     } else {
-        $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
         $xtpl->assign('SHARE', $row['url_share']);
         $xtpl->parse('main.file_row.share');
 
@@ -398,11 +423,15 @@ foreach ($result as $row) {
         $xtpl->assign('DOWNLOAD', $row['url_download']);
         $xtpl->parse('main.file_row.download');
 
+        $xtpl->assign('COPY', $row['url_clone']);
+        $xtpl->parse('main.file_row.copy');
+
         if ($fileInfo == 'txt') {
             $xtpl->assign('EDIT',  $row['url_edit']);
             $xtpl->parse('main.file_row.edit');
         }
     }
+    $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
 
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');

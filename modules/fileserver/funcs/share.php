@@ -11,20 +11,20 @@ $result = $db->query($sql);
 $row = $result->fetch();
 
 if (!$row) {
-    exit('File not found');
+    $message= $lang_module('f_has_exit');
 }
 $share = $row['share'];
 $message = '';
 if ($share == 0) {
-    $message = 'File khong chia se';
+    $message= $lang_module('no_share');
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $file_id);
     exit();
 } elseif ($share == 1) {
-    $message = 'File chia se voi nguoi co tai khoan';
+    $message = $lang_module('share_w_user');
     // nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=share&amp;file_id=' . $file_id);
     // exit();
 } elseif ($share == 2) {
-    $message = 'File chia se voi moi nguoi';
+    $message = $lang_module('share_w_everyone');
     // nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=share&amp;file_id=' . $file_id);
     // exit();
 }
@@ -59,7 +59,7 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
     $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
     $stmt->execute();
 
-    $message = 'File content has been updated successfully.';
+    $message = $lang_module('update_ok');
 }
 $view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['lev'];
 

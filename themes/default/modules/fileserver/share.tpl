@@ -38,7 +38,7 @@
             <input type="hidden" name="file_id" value="{FILE_ID}">
         </div>
         <a href="{url_view}" class="btn btn-warning">
-            <i class="fa fa-chevron-circle-left"></i> Quay lại
+            <i class="fa fa-chevron-circle-left"></i> {LANG.back_btn}
         </a>
     </form>
 </div>

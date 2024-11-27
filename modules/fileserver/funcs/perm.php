@@ -21,7 +21,7 @@ $group_write_checked = ($row['p_group'] & 2) ? 'checked' : '';
 $other_read_checked = ($row['p_other'] & 1) ? 'checked' : '';
 $other_write_checked = ($row['p_other'] & 2) ? 'checked' : '';
 
- if(defined('NV_IS_SPADMIN')){
+if (defined('NV_IS_SPADMIN')) {
     if ($nv_Request->isset_request('submit', 'post')) {
     
         $group_read = $nv_Request->get_int('group_read', 'post', 0);
@@ -30,41 +30,17 @@ $other_write_checked = ($row['p_other'] & 2) ? 'checked' : '';
         $other_read = $nv_Request->get_int('other_read', 'post', 0);
         $other_write = $nv_Request->get_int('other_write', 'post', 0);
     
-        $group_permissions = $group_read  + $group_write ;
-        $other_permissions = $other_read  + $other_write ;
+        $group_permissions = $group_read + $group_write;
+        $other_permissions = $other_read + $other_write;
     
         $permissions = [
             'p_group' => $group_permissions,
             'p_other' => $other_permissions,
         ];
-    
-        $sql_check = "SELECT permission_id FROM " . NV_PREFIXLANG . "_fileserver_permissions WHERE file_id = :file_id";
-        $check_stmt = $db->prepare($sql_check);
-        $check_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-        $check_stmt->execute();
-    
-        if ($check_stmt->rowCount() > 0) {
-            $sql_update = "UPDATE " . NV_PREFIXLANG . "_fileserver_permissions 
-                           SET  `p_group` = :p_group, p_other = :p_other, updated_at = :updated_at 
-                           WHERE file_id = :file_id";
-            $update_stmt = $db->prepare($sql_update);
-            $update_stmt->bindParam(':p_group', $permissions['p_group']);
-            $update_stmt->bindParam(':p_other', $permissions['p_other']);
-            $update_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-            $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-            $update_stmt->execute();
-        } else {
-            $sql_insert = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_permissions 
-                           (file_id, `p_group`, p_other, updated_at) 
-                           VALUES (:file_id, :p_group, :p_other, :updated_at)";
-            $insert_stmt = $db->prepare($sql_insert);
-            $insert_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-            $insert_stmt->bindParam(':p_group', $permissions['p_group']);
-            $insert_stmt->bindParam(':p_other', $permissions['p_other']);
-            $insert_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-            $insert_stmt->execute();
-        }
-        $message = 'Permissions updated successfully!';
+
+        updatePermissions($file_id, $permissions);
+
+        $message = 'Cập nhật thành công.';
         $stmt = $db->prepare("SELECT f.file_name, f.file_path, p.`p_group`, p.p_other
                               FROM " . NV_PREFIXLANG . "_fileserver_files f
                               LEFT JOIN " . NV_PREFIXLANG . "_fileserver_permissions p 
@@ -73,7 +49,7 @@ $other_write_checked = ($row['p_other'] & 2) ? 'checked' : '';
         $stmt->execute();
         $row = $stmt->fetch();
     }
-}else{
+} else {
     $message = 'Không có quyền thao tác.';
 }
 
@@ -94,7 +70,7 @@ $permissions = [
 
 foreach (['p_group', 'p_other'] as $type) {
     foreach (['read', 'write'] as $perm) {
-        $perm_value = ($perm == 'read') ? 1 : 2; // Quyền đọc là 1, quyền sửa là 2
+        $perm_value = ($perm == 'read') ? 1 : 2;
         $checked = ($permissions[$type] & $perm_value) == $perm_value ? 'checked' : '';
         $xtpl->assign(strtoupper($type . '_' . $perm . '_CHECKED'), $checked);
     }

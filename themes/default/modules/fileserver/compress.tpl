@@ -2,7 +2,7 @@
 <!-- BEGIN: message -->
 <div class="alert alert-warning">{MESSAGE}</div>
 <!-- END: message -->
-<h1>Nội dung file nén</h1>
+<h1>Nội dung file nén </h1>
 <form method="post">
     <table class="table table-bordered">
         <thead>
@@ -23,7 +23,7 @@
     <button type="button" class="btn btn-secondary" id="backButton">
         <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
     </button>
-    <button type="submit" name="action" value="unzip" class="btn btn-primary">Giải nén</button>
+    <button type="submit" name="action" value="unzip" class="btn btn-primary">{LANG.unzip}</button>
 </form>
 <p></p>
 <script>

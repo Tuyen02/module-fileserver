@@ -45,7 +45,7 @@
         <tbody>
             <!-- BEGIN: file_row -->
             <tr>
-                <td><input type="checkbox" name="files[]" value="{ROW.file_path}"></td>
+                <td><input type="checkbox" name="files[]" value="{ROW.file_id}"></td>
                 <td>
                     <a href="{VIEW}">
                         <i class="fa {ROW.icon_class}" aria-hidden="true"></i>
@@ -77,9 +77,11 @@
                         data-target="#shareModal" title="{LANG.share_btn}">
                         <i class="fa fa-link" aria-hidden="true"></i>
                     </button> -->
-                    <a href="{EDIT}" class="btn btn-sm btn-info" title="{LANG.edit_btn}">
-                        <i class="fa fa-amazon"></i>
+                    <!-- BEGIN: copy -->
+                    <a href="{COPY}" class="btn btn-sm btn-info" title="{LANG.copy}">
+                        <i class="fa fa-clone"></i>
                     </a>
+                    <!-- END: copy -->
                     <a href="{ROW.url_perm}" class="btn btn-sm btn-info share" title="{LANG.perm_btn}">
                         <i class="fa fa-link"></i>
                     </a>
@@ -94,7 +96,8 @@
         </tbody>
     </table>
     <hr>
-    <button type="submit" name="compress" class="btn btn-primary mt-2" id="compressButton">{LANG.zip_btn}</button>
+    <button type="submit" name="compress" class="btn btn-primary mt-2 " id="compressButton" ><i class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}</button>
+    <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll" data-checksess="{CHECK_SESS}"><i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}</button>
 </div>
 <br>
 
@@ -154,7 +157,7 @@
     </div>
 </div>
 
-<div class="modal fade" id="shareModal" tabindex="-1" role="dialog" aria-labelledby="shareModalLabel"
+<!-- <div class="modal fade" id="shareModal" tabindex="-1" role="dialog" aria-labelledby="shareModalLabel"
     aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -180,7 +183,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
 
 <script>
@@ -363,28 +366,63 @@
             }
         });
     });
+
     document.addEventListener("DOMContentLoaded", function () {
-    // Lấy checkbox chính
-    const mainCheckbox = document.getElementById("defaultCheck1");
+        const mainCheckbox = document.getElementById("defaultCheck1");
 
-    // Lấy tất cả các checkbox trong danh sách
-    const fileCheckboxes = document.querySelectorAll('input[type="checkbox"][name="files[]"]');
+        const fileCheckboxes = document.querySelectorAll('input[type="checkbox"][name="files[]"]');
 
-    // Gắn sự kiện click cho checkbox chính
-    mainCheckbox.addEventListener("change", function () {
-        // Lặp qua danh sách các checkbox và thiết lập trạng thái
+        mainCheckbox.addEventListener("change", function () {
+            fileCheckboxes.forEach(function (checkbox) {
+                checkbox.checked = mainCheckbox.checked;
+            });
+        });
+
         fileCheckboxes.forEach(function (checkbox) {
-            checkbox.checked = mainCheckbox.checked;
+            checkbox.addEventListener("change", function () {
+                mainCheckbox.checked = Array.from(fileCheckboxes).every((cb) => cb.checked);
+            });
         });
     });
 
-    // Cập nhật trạng thái của checkbox chính nếu người dùng chọn/deselect từng checkbox nhỏ
-    fileCheckboxes.forEach(function (checkbox) {
-        checkbox.addEventListener("change", function () {
-            mainCheckbox.checked = Array.from(fileCheckboxes).every((cb) => cb.checked);
+    document.querySelector('[name="deleteAll"]').addEventListener('click', function (e) {
+        e.preventDefault();
+
+        const selectedFiles = [];
+        document.querySelectorAll('input[name="files[]"]:checked').forEach(input => {
+            selectedFiles.push(input.value);
+        });
+
+        if (selectedFiles.length == 0) {
+            alert("Vui lòng chọn ít nhất một file để xóa!");
+            return;
+        }
+        if (!confirm("Bạn có chắc chắn muốn xóa tất cả các file đã chọn?")) {
+        return; 
+        }
+
+        const checksess = document.querySelector('[name="deleteAll"]').getAttribute('data-checksess');
+        console.log(selectedFiles);
+        console.log(checksess);
+
+        $.ajax({
+            type: 'POST',
+            url: '',
+            data: {
+                action: 'deleteAll',
+                files: selectedFiles,
+                checksess: checksess 
+            },
+            success: function (res) {
+                console.log(res);
+                alert(res.message);
+                location.reload();
+            },
+            error: function () {
+                alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+            }
         });
     });
-});
 
 </script>
 <!-- END: main -->

@@ -6,7 +6,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 $file_id = $nv_Request->get_int('file_id', 'get', 0);
 $action = $nv_Request->get_title('action', 'post', '');
 
-$sql = 'SELECT file_name, file_path, compressed FROM ' . NV_PREFIXLANG . '_fileserver_files WHERE file_id = :file_id';
+$sql = 'SELECT file_name, file_size, file_path, compressed FROM ' . NV_PREFIXLANG . '_fileserver_files WHERE file_id = :file_id';
 $stmt = $db->prepare($sql);
 $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
 $stmt->execute();
@@ -14,7 +14,7 @@ $row = $stmt->fetch();
 
 $message = '';
 if (!$row) {
-    $message = 'File không tồn tại.';
+    $message = $lang_module['f_has_exit'];
 } else {
     $zipFilePath = NV_ROOTDIR . $row['file_path'];
     $extractTo = NV_ROOTDIR . '/uploads/fileserver/' . pathinfo($row['file_name'], PATHINFO_FILENAME);
@@ -33,9 +33,9 @@ if (!$row) {
             addToDatabase($list, $file_id, $db);
 
             if (nv_deletefile($zipFilePath)) {
-                $message = 'Giải nén thành công.';
+                $message = $lang_module['unzip_ok'];
             } else {
-                $message = 'Giải nén thành công nhưng không thể xóa file zip.';
+                $message = $lang_module['unzip_ok_cant_delete'];
             }
             $update_sql = 'UPDATE ' . NV_PREFIXLANG . '_fileserver_files 
                            SET is_folder = 1, compressed = 0, file_name = :new_name, file_path = :new_path, file_size = :file_size 
@@ -49,7 +49,7 @@ if (!$row) {
             $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
             $update_stmt->execute();
         } else {
-            $message = 'Không thể giải nén file zip.';
+            $message = $lang_module['unzip_false'];
         }
     }
 }
@@ -66,7 +66,7 @@ if ($file_size_zip > 0) {
 if (!empty($list)) {
     foreach ($list as $file) {
         $file['file_name'] = basename($file['filename']);
-        $file['file_size'] = $file['folder'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
+        $file['file_size'] = $file['folder'] ? '-' : nv_convertfromBytes($file['size']);
         $file['file_type'] = $file['folder'] ? 'fa-folder-o' : 'fa-file-o';
         $xtpl->assign('FILE', $file);
         $xtpl->parse('main.file');

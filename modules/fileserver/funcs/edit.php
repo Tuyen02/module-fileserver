@@ -12,7 +12,7 @@ $row = $result->fetch();
 $view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['lev'];
 
 if (!$row) {
-    exit('File not found');
+    $message= $lang_module('f_has_exit');
 }
 $file_name = $row['file_name'];
 $file_path = $row['file_path'];
@@ -35,10 +35,10 @@ if (defined('NV_IS_SPADMIN')) {
         $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
         $stmt->execute();
 
-        $message = 'File content has been updated successfully.';
+        $message = 'Cập nhật thành công.';
     }
 } else {
-    $message = 'Bạn không có quyền sửa file này.';
+    $message = $lang_module('not_thing_to_do');
 }
 
 $xtpl = new XTemplate('edit.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
