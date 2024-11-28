@@ -7,9 +7,10 @@ $message = '';
 
 $file_id = $nv_Request->get_int('file_id', 'get,post', 0);
 
-$sql = "SELECT f.file_name, f.file_path, p.`p_group`, p.p_other
+$sql = "SELECT f.file_name, f.file_path,
+        (SELECT p.p_group FROM " . NV_PREFIXLANG . "_fileserver_permissions p WHERE p.file_id = f.file_id) AS p_group,
+        (SELECT p.p_other FROM " . NV_PREFIXLANG . "_fileserver_permissions p WHERE p.file_id = f.file_id) AS p_other
         FROM " . NV_PREFIXLANG . "_fileserver_files f
-        LEFT JOIN " . NV_PREFIXLANG . "_fileserver_permissions p ON f.file_id = p.file_id
         WHERE f.file_id = :file_id";
 $stmt = $db->prepare($sql);
 $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);

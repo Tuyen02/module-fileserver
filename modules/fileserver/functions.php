@@ -177,4 +177,3 @@ function calculateFolderSize($db, $folderId) {
 
     return $totalSize;
 }
-

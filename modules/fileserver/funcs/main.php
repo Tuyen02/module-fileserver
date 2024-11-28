@@ -26,9 +26,8 @@ $file_ids = array_keys($arr_per);
 
 $file_ids_placeholder = [];
 
-$sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, f.share, f.compressed, u.username AS uploaded_by
+$sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, f.share, f.compressed
         FROM " . NV_PREFIXLANG . "_fileserver_files f
-        LEFT JOIN " . NV_USERS_GLOBALTABLE . " u ON f.uploaded_by = u.userid
         WHERE f.status = 1 AND lev = :lev";
 
 if (!defined('NV_IS_SPADMIN') && !empty($arr_per)){
@@ -134,10 +133,9 @@ if (!empty($action)) {
                 $_dir = file_put_contents($full_dir . '/' . $name_f, '');
                 if (isset($_dir)) {
                     $status = 'success';
-                    $mess = 'Tạo file ' . $name_f . ' thành công' . $perm_stmt;
+                    $mess = 'Tạo file ' . $name_f . ' thành công';
                 }
             }
-
             if ($status == 'success') {
                 $exe = $stmt->execute();
             }
