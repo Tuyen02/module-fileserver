@@ -5,8 +5,8 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 
 $file_id = $nv_Request->get_int('file_id', 'get', 0);
 $rank = $nv_Request->get_int('rank', 'get', 0);
-$action = $nv_Request->get_string('action', 'post', '');
-$target_folder = $nv_Request->get_string('target_folder', 'post', '');
+$copy = $nv_Request->get_int('copy', 'get', 0);
+$move = $nv_Request->get_int('move', 'get', 0);
 
 $sql = "SELECT file_name, file_path, lev FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $file_id;
 $result = $db->query($sql);
@@ -22,9 +22,8 @@ $view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DA
 
 $file_name = $row['file_name'];
 $file_path = $row['file_path'];
-$full_path = NV_ROOTDIR . $file_path;
+$full_path = NV_ROOTDIR . $row['file_path'];
 $current_directory = dirname($full_path);
-$directories = [];
 $lev = $row['lev'];
 
 if ($rank > 0) {
@@ -40,27 +39,24 @@ $stmt->execute();
 $directories = $stmt->fetchAll();
 $message = '';
 
-
-$copy = $nv_Request->get_int('copy', 'get', 0);
-$move = $nv_Request->get_int('move', 'get', 0);
 if (defined('NV_IS_SPADMIN')) {
     if ($copy == 1) {
         $message = $lang_module['copy_false'];
         $target_folder = $db->query("SELECT file_path, file_id FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $rank)->fetch();
         $target_url = $target_folder['file_path'];
-        $lev = $target_folder['file_id'];
+        $target_lev = $target_folder['file_id'];
 
-        $sqlCheck = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_name = :file_name AND lev = :lev AND status =1";
+        $sqlCheck = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_name = :file_name AND lev = :lev AND status = 1";
         $stmtCheck = $db->prepare($sqlCheck);
         $stmtCheck->bindParam(':file_name', $row['file_name']);
-        $stmtCheck->bindParam(':lev', $lev);
+        $stmtCheck->bindParam(':lev', $target_lev);
         $stmtCheck->execute();
         $existingFile = $stmtCheck->fetchColumn();
 
         if ($existingFile > 0) {
             $message = $lang_module['f_has_exit'];
         } else {
-            if (copy(NV_ROOTDIR . '/' . $row['file_path'], NV_ROOTDIR . '/' . $target_url . '/' . $row['file_name'])) {
+            if (copy(NV_ROOTDIR . $row['file_path'], NV_ROOTDIR . $target_url . '/' . $row['file_name'])) {
                 $message = $lang_module['copy_ok'];
                 $new_file_name = $row['file_name'];
                 $new_file_path = $target_url . '/' . $new_file_name;
@@ -72,51 +68,67 @@ if (defined('NV_IS_SPADMIN')) {
                 $stmt->bindParam(':file_path', $new_file_path);
                 $stmt->bindParam(':uploaded_by', $user_info['userid']);
                 $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
-                $stmt->bindParam(':lev', $lev);
+                $stmt->bindParam(':lev', $target_lev);
                 $stmt->execute();
 
+                $sql_permissions = "SELECT p_group, p_other FROM " . NV_PREFIXLANG . "_fileserver_permissions WHERE file_id = :folder_id";
+                $stmt_permissions = $db->prepare($sql_permissions);
+                $stmt_permissions->bindParam(':folder_id', $target_lev);
+                $stmt_permissions->execute();
+                $permissions = $stmt_permissions->fetch();
+
+                $new_file_id = $db->lastInsertId(); 
+                $sql_insert_permissions = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_permissions (file_id, p_group, p_other, updated_at) 
+                                           VALUES (:file_id, :p_group, :p_other, :updated_at)";
+                $stmt_permissions_insert = $db->prepare($sql_insert_permissions);
+                $stmt_permissions_insert->bindParam(':file_id', $new_file_id);
+                $stmt_permissions_insert->bindParam(':p_group', $permissions['p_group']);
+                $stmt_permissions_insert->bindParam(':p_other', $permissions['p_other']);
+                $stmt_permissions_insert->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+                $stmt_permissions_insert->execute();
             }
         }
     }
-} else {
-    $message = 'Không có quyền thao tác';
-}
-
-if (defined('NV_IS_SPADMIN')) {
 
     if ($move == 1) {
         $message = $lang_module['move_false'];
         $target_folder = $db->query("SELECT file_path, file_id FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $rank)->fetch();
         $target_url = $target_folder['file_path'];
-        $lev = $target_folder['file_id'];
+        $target_lev = $target_folder['file_id'];
 
         $sqlCheck = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_name = :file_name AND lev = :lev AND status = 1";
         $stmtCheck = $db->prepare($sqlCheck);
         $stmtCheck->bindParam(':file_name', $row['file_name']);
-        $stmtCheck->bindParam(':lev', $lev);
+        $stmtCheck->bindParam(':lev', $target_lev);
         $stmtCheck->execute();
         $existingFile = $stmtCheck->fetchColumn();
 
         if ($existingFile > 0) {
             $message = $lang_module['f_has_exit'];
         } else {
-            if (rename(NV_ROOTDIR . '/' . $row['file_path'], NV_ROOTDIR . '/' . $target_url . '/' . $row['file_name'])) {
-                $message = $lang_module['move_false'];
+            if (rename(NV_ROOTDIR . $row['file_path'], NV_ROOTDIR . $target_url . '/' . $row['file_name'])) {
+                $message = $lang_module['move_ok'];
                 $new_file_path = $target_url . '/' . $row['file_name'];
 
                 $sql_update = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET file_path = :file_path, lev = :lev WHERE file_id = :file_id";
                 $stmt = $db->prepare($sql_update);
                 $stmt->bindParam(':file_path', $new_file_path);
-                $stmt->bindParam(':lev', $lev);
+                $stmt->bindParam(':lev', $target_lev);
                 $stmt->bindParam(':file_id', $file_id);
                 $stmt->execute();
+
+                $sql_update_permissions = "UPDATE " . NV_PREFIXLANG . "_fileserver_permissions SET p_group = :p_group, p_other = :p_other WHERE file_id = :file_id";
+                $stmt_update_permissions = $db->prepare($sql_update_permissions);
+                $stmt_update_permissions->bindParam(':p_group', $permissions['p_group']);
+                $stmt_update_permissions->bindParam(':p_other', $permissions['p_other']);
+                $stmt_update_permissions->bindParam(':file_id', $file_id);
+                $stmt_update_permissions->execute();
             }
         }
     }
 } else {
     $message = 'Không có quyền thao tác';
 }
-
 
 
 if (empty($directories)) {

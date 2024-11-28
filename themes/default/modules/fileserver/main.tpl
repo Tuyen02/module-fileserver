@@ -45,7 +45,7 @@
         <tbody>
             <!-- BEGIN: file_row -->
             <tr>
-                <td><input type="checkbox" name="files[]" value="{ROW.file_id}"></td>
+                <td><input type="checkbox" name="files[]" value="{ROW.file_id}" data-checksess="{ROW.checksess}"></td>
                 <td>
                     <a href="{VIEW}">
                         <i class="fa {ROW.icon_class}" aria-hidden="true"></i>
@@ -97,7 +97,7 @@
     </table>
     <hr>
     <button type="submit" name="compress" class="btn btn-primary mt-2 " id="compressButton" ><i class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}</button>
-    <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll" data-checksess="{CHECK_SESS}"><i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}</button>
+    <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll"><i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}</button>
 </div>
 <br>
 
@@ -384,13 +384,16 @@
             });
         });
     });
-
+    
+    
     document.querySelector('[name="deleteAll"]').addEventListener('click', function (e) {
         e.preventDefault();
 
         const selectedFiles = [];
+        const checksessArray = [];
         document.querySelectorAll('input[name="files[]"]:checked').forEach(input => {
             selectedFiles.push(input.value);
+            checksessArray.push(input.getAttribute('data-checksess'));
         });
 
         if (selectedFiles.length == 0) {
@@ -398,12 +401,11 @@
             return;
         }
         if (!confirm("Bạn có chắc chắn muốn xóa tất cả các file đã chọn?")) {
-        return; 
+            return; 
         }
 
-        const checksess = document.querySelector('[name="deleteAll"]').getAttribute('data-checksess');
         console.log(selectedFiles);
-        console.log(checksess);
+        console.log(checksessArray);
 
         $.ajax({
             type: 'POST',
@@ -411,7 +413,7 @@
             data: {
                 action: 'deleteAll',
                 files: selectedFiles,
-                checksess: checksess 
+                checksess: checksessArray 
             },
             success: function (res) {
                 console.log(res);

@@ -167,23 +167,27 @@ if (!empty($action)) {
         }
     
         $fileIds = $nv_Request->get_array('files', 'post', []);
-        //$checksess = $nv_Request->get_title('checksess', 'get', '');
-        
+        $checksessArray = $nv_Request->get_array('checksess', 'post', []); 
+    
         if (empty($fileIds)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
         }
-        //&& $checksess == md5($fileId . NV_CHECK_SESSION)
-        foreach ($fileIds as $fileId) {
-            if ($fileId > 0) {
-                $deleted = deleteFileOrFolder($fileId);
+    
+        foreach ($fileIds as $index => $fileId) {
+            $fileId = (int)$fileId;
+            $checksess = isset($checksessArray[$index]) ? $checksessArray[$index] : '';
+    
+            if ($fileId > 0 && $checksess == md5($fileId . NV_CHECK_SESSION)) {
+                $deleted = deleteFileOrFolder($fileId); 
                 if ($deleted) {
                     $mess = $lang_module['delete_ok'];
                 } else {
-                    $mess = $lang_module['delete_false'];
+                    $mess_content = $lang_module['delete_false'];
                 }
+            } else {
+                $mess = "Checksess không hợp lệ .";
             }
         }
-        
     }
 
     if ($action == 'rename') {
@@ -368,6 +372,8 @@ if ($success != '') {
 
 foreach ($result as $row) {
     $row['created_at'] = date("d/m/Y", $row['created_at']);
+
+    $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
     if ($row['compressed'] == 1) {
         $row['icon_class'] = 'fa-file-archive-o';
     } else {
