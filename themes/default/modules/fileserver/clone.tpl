@@ -22,23 +22,32 @@
 </form>
 
 <p>{LANG.choose_folder}:</p>
+<p id="selected-folder-path">Đường dẫn thư mục đích: {SELECTED_FOLDER_PATH}</p>
+<!-- BEGIN: back -->
 <div>
-    <a href="{url_previous}" class="btn btn-sm btn-info">
-        <i class="fa fa-chevron-left"></i>
-    </a>
+    <button type="button" class="btn btn-primary" id="backButton">
+        <i class="fa fa-chevron-circle-left" aria-hidden="true"></i>{BACK}
+    </button>
 </div>
-
+<!-- END: back -->
 <!-- BEGIN: directory_option -->
 <a href="{DIRECTORY.url}">
-    <i class="fa fa-folder-o" aria-hidden="true"></i> {DIRECTORY.file_name}
+    <i class="fa fa-folder-o" aria-hidden="true"></i> {DIRECTORY.file_name}{NO_DIRECTORY}
 </a><br>
 <!-- END: directory_option -->
 <p>
 
 <script>
-    function selectFolder(directory) {
+ function selectFolder(directory) {
         document.getElementsByName("target_folder")[0].value = directory;
         alert('Selected folder: ' + directory);
+        document.getElementById("selected-folder-path").innerText = 'Đường dẫn thư mục đích: ' + directory;
     }
+    $(document).ready(function () {
+        $("#backButton").on("click", function (e) {
+            e.preventDefault();
+            window.history.back();
+        });
+    });
 </script>
 <!-- END: main -->

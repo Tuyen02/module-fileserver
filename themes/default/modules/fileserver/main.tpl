@@ -10,9 +10,9 @@
         <input type="text" class="form-control" placeholder="{LANG.search}" id="searchInput" name="search"
             value="{SEARCH_TERM}">
         <select class="form-control ml-2" name="search_type">
-            <option value="all">{LANG.all}</option>
-            <option value="file">{LANG.file}</option>
-            <option value="folder">{LANG.folder}</option>
+            <option value="all" selected="{SEARCH_TYPE == 'all' ? 'selected' : ''}">{LANG.all}</option>
+            <option value="file" selected="{SEARCH_TYPE == 'file' ? 'selected' : ''}">{LANG.file}</option>
+            <option value="folder" selected="{SEARCH_TYPE == 'folder' ? 'selected' : ''}">{LANG.folder}</option>
         </select>
         <button type="submit" class="btn btn-primary ml-2">{LANG.search_btn}</button>
     </form>

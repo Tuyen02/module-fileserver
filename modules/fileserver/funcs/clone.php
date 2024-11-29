@@ -130,19 +130,13 @@ if (defined('NV_IS_SPADMIN')) {
     $message = 'Không có quyền thao tác';
 }
 
+$selected_folder_path = '';
 
-if (empty($directories)) {
-    $sql = "SELECT file_id, file_name, file_path FROM " . NV_PREFIXLANG . "_fileserver_files 
-            WHERE lev = 0 AND status = 1 AND is_folder = 1 ORDER BY file_name ASC";
-    $stmt = $db->query($sql);
-    $directories = $stmt->fetchAll();
-
-    $url_previous = $base_url . '&amp;rank=' . 0;
-} else {
-    $parent_directory = dirname($current_directory);
-    $parent_lev = $lev > 0 ? $lev - 1 : 0;
-
-    $url_previous = $base_url . '&amp;rank=' . $parent_lev;
+if ($rank > 0) {
+    $target_folder = $db->query("SELECT file_path FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $rank)->fetch();
+    if ($target_folder) {
+        $selected_folder_path = $target_folder['file_path'];
+    }
 }
 
 $xtpl = new XTemplate('clone.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
@@ -151,8 +145,14 @@ $xtpl->assign('FILE_ID', $file_id);
 $xtpl->assign('FILE_NAME', $file_name);
 $xtpl->assign('FILE_PATH', $file_path);
 $xtpl->assign('MESSAGE', $message);
-$xtpl->assign('url_previous', $url_previous);
+$xtpl->assign('SELECTED_FOLDER_PATH', $selected_folder_path);
+
 $xtpl->assign('url_view', $view_url);
+
+if(!$selected_folder_path == ''){
+    $xtpl->assign('BACK', '');
+    $xtpl->parse('main.back');
+}
 
 foreach ($directories as $directory) {
     $directory['url'] = $page_url . '&amp;rank=' . $directory['file_id'];
