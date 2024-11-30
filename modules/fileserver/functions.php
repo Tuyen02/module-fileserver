@@ -100,6 +100,10 @@ function compressFiles($fileIds, $zipFilePath)
         return ['status' => 'error', 'message' => 'Danh sách file không hợp lệ: '];
     }
 
+    if (file_exists($zipFilePath)) {
+        unlink($zipFilePath);
+    }
+
     $zip = new PclZip($zipFilePath);
     $filePaths = [];
     $errors = [];

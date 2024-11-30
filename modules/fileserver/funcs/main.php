@@ -311,12 +311,11 @@ if ($download == 1) {
     if ($file) {
         $file_path = NV_ROOTDIR . $file['file_path'];
         $file_name = $file['file_name'];
-        $file_lev = $file['lev'];
-
-        if ($file['is_folder'] == 1) { 
+       
+        if ($file['is_folder'] == 1) {
             $sqlFiles = "SELECT file_id FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = :lev AND status = 1";
             $stmtFiles = $db->prepare($sqlFiles);
-            $stmtFiles->bindParam(':lev', $file_lev, PDO::PARAM_INT);
+            $stmtFiles->bindParam(':lev', $file_id, PDO::PARAM_INT);
             $stmtFiles->execute();
             $filesInFolder = $stmtFiles->fetchAll(PDO::FETCH_COLUMN);
 
@@ -324,22 +323,33 @@ if ($download == 1) {
             $zipFilePath = '/uploads/fileserver/' . $zipFileName;
             $zipFullPath = NV_ROOTDIR . '/' . $zipFilePath;
 
+            if (empty($filesInFolder)) {
+                $zip = new PclZip($zipFullPath);
+                $zip->create(['']);  
+
+                $_download = new NukeViet\Files\Download($zipFullPath, NV_ROOTDIR . '/uploads/fileserver/', $zipFileName, true, 0);
+                $_download->download_file();
+            }
             $compressResult = compressFiles($filesInFolder, $zipFullPath);
 
             if ($compressResult['status'] === 'success') {
                 if (file_exists($zipFullPath)) {
                     $_download = new NukeViet\Files\Download($zipFullPath, NV_ROOTDIR . '/uploads/fileserver/', $zipFileName, true, 0);
                     $_download->download_file();
+                    //nv_jsonOutput(['status' => 'success', 'message' => 'Đã tải xuống file ZIP thành công.']);
                 }
             }
-        } else { 
+        } else {
             if (file_exists($file_path)) {
                 $_download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . '/uploads/fileserver/', $file_name, true, 0);
                 $_download->download_file();
+
+                //nv_jsonOutput(['status' => 'success', 'message' => 'Đã tải xuống file thành công.']);
             }
         }
     }
 }
+
 
 $error = '';
 $success = '';
@@ -387,12 +397,18 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
         $error = $upload_info['error'];
     }
 }
+$selected_all = ($search_type == 'all') ? ' selected' : '';
+$selected_file = ($search_type == 'file') ? ' selected' : '';
+$selected_folder = ($search_type == 'folder') ? ' selected' : '';
 
 $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
 $xtpl->assign('LANG', $lang_module);
 $xtpl->assign('FORM_ACTION', $page_url);
 $xtpl->assign('SEARCH_TERM', $search_term);
-$xtpl->assign('SEARCH_TYPE', $search_type);
+
+$xtpl->assign('SELECTED_ALL', $selected_all);
+$xtpl->assign('SELECTED_FILE', $selected_file);
+$xtpl->assign('SELECTED_FOLDER', $selected_folder);
 
 if ($error != '') {
     $xtpl->assign('ERROR', $error);
@@ -437,6 +453,9 @@ foreach ($result as $row) {
     $url_share = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=share&amp;file_id=' . $row['file_id'];
     $row['url_compress'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=compress&amp;file_id=' . $row['file_id'];
     $row['url_share'] = $url_share;
+    
+    $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
+    $xtpl->assign('ROW', $row);
 
     $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
 
@@ -467,11 +486,7 @@ foreach ($result as $row) {
     }
 
     $xtpl->assign('DOWNLOAD', $row['url_download']);
-    $xtpl->parse('main.file_row.download');
-
-    $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
-
-    $xtpl->assign('ROW', $row);
+    $xtpl->parse('main.file_row.download'); 
     $xtpl->parse('main.file_row');
 }
 
