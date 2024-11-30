@@ -9,11 +9,11 @@
 
         <input type="text" class="form-control" placeholder="{LANG.search}" id="searchInput" name="search"
             value="{SEARCH_TERM}">
-        <select class="form-control ml-2" name="search_type">
-            <option value="all" selected="{SEARCH_TYPE == 'all' ? 'selected' : ''}">{LANG.all}</option>
-            <option value="file" selected="{SEARCH_TYPE == 'file' ? 'selected' : ''}">{LANG.file}</option>
-            <option value="folder" selected="{SEARCH_TYPE == 'folder' ? 'selected' : ''}">{LANG.folder}</option>
-        </select>
+            <select class="form-control ml-2" name="search_type">
+                <option value="all" {SELECTED_ALL}>{LANG.all}</option>
+                <option value="file" {SELECTED_FILE}>{LANG.file}</option>
+                <option value="folder" {SELECTED_FOLDER}>{LANG.folder}</option>
+            </select>
         <button type="submit" class="btn btn-primary ml-2">{LANG.search_btn}</button>
     </form>
 
@@ -86,7 +86,7 @@
                         <i class="fa fa-link"></i>
                     </a>
                     <!-- BEGIN: download -->
-                    <a href="{DOWNLOAD}" class="btn btn-sm btn-success" title="{LANG.download_btn}">
+                    <a href="{DOWNLOAD}" class="btn btn-sm btn-success download" data-file-id="{ROW.file_id}" title="{LANG.download_btn}">
                         <i class="fa fa-download" aria-hidden="true"></i>
                     </a>
                     <!-- END: download -->
@@ -100,6 +100,7 @@
     <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll"><i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}</button>
 </div>
 <br>
+{GENERATE_PAGE}
 
 <div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="createModalLabel"
     aria-hidden="true">
@@ -425,6 +426,28 @@
             }
         });
     });
+
+    // $(document).on('click', '.download', function (event) {
+    //     event.preventDefault();
+
+    //     const fileId = $(this).data('file-id'); 
+    //     const downloadUrl = $(this).attr('href');
+    //     $.ajax({
+    //         url: '',
+    //         type: 'GET',
+    //         data: { download: 1, file_id: fileId }, 
+    //         success: function (response) {
+    //             if (response.status === 'success') {
+    //                 window.location.href = response.download_url; 
+    //             } else {
+    //                 //alert(response.message);
+    //             }
+    //         },
+    //         error: function () {
+    //             alert('Đã xảy ra lỗi trong quá trình tải xuống. Vui lòng thử lại.');
+    //         }
+    //     });
+    // });
 
 </script>
 <!-- END: main -->
