@@ -417,16 +417,7 @@ $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['modu
 $xtpl->assign('LANG', $lang_module);
 $xtpl->assign('FORM_ACTION', $page_url);
 $xtpl->assign('SEARCH_TERM', $search_term);
-
-$xtpl->assign('SELECTED_ALL', $selected_all);
-$xtpl->assign('SELECTED_FILE', $selected_file);
-$xtpl->assign('SELECTED_FOLDER', $selected_folder);
-
-if ($total > $perpage) {
-    $base_url .= '&amp;lev=' . $lev;
-    $generate_page = nv_generate_page($base_url, $total, $perpage, $page);
-    $xtpl->assign('GENERATE_PAGE', $generate_page);
-}
+$xtpl->assign('SEARCH_TYPE', $search_type);
 
 if ($error != '') {
     $xtpl->assign('ERROR', $error);
