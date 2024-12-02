@@ -15,7 +15,7 @@ if (!defined('NV_IS_USER')) {
 //kiểm tra xem user này có trong group hay không?
 if (in_array(13, $user_info['in_groups'])) {
     //nếu có thì lấy id những file mà quản trị cho phép xem hoặc sửa
-    $arr_per = array_column($db->query("SELECT p_group, file_id FROM `nv4_vi_fileserver_permissions` WHERE p_group > 1")->fetchAll(),'p_group','file_id');
+    $arr_per = array_column($db->query("SELECT p_group, file_id FROM `nv4_vi_fileserver_permissions` WHERE p_group > 1")->fetchAll(), 'p_group', 'file_id');
 } else {
     //nếu không có thì chuyển hướng ra bên ngoài
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
@@ -143,7 +143,8 @@ function compressFiles($fileIds, $zipFilePath)
 }
 
 
-function addToDatabase($files, $parent_id, $db) {
+function addToDatabase($files, $parent_id, $db)
+{
     foreach ($files as $file) {
         $isFolder = ($file['folder'] == 1) ? 1 : 0;
         $filePath = str_replace(NV_ROOTDIR, '', $file['filename']);
@@ -162,7 +163,8 @@ function addToDatabase($files, $parent_id, $db) {
     }
 }
 
-function calculateFolderSize($db, $folderId) {
+function calculateFolderSize($db, $folderId)
+{
     $totalSize = 0;
 
     $sql = "SELECT file_id, is_folder, file_size FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = :lev";
@@ -181,3 +183,50 @@ function calculateFolderSize($db, $folderId) {
 
     return $totalSize;
 }
+
+function calculateFileFolderStats($lev, $start = 0, $limit = 5)
+{
+    global $db;
+
+    $total_files = 0;
+    $total_folders = 0;
+    $total_size = 0;
+
+    $sql_count = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = :lev AND status = 1";
+    $stmt_count = $db->prepare($sql_count);
+    $stmt_count->bindParam(':lev', $lev, PDO::PARAM_INT);
+    $stmt_count->execute();
+    $total_count = $stmt_count->fetchColumn();
+
+    $sql = "SELECT file_id, is_folder, file_size FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = :lev AND status = 1 LIMIT :start, :limit";
+    $stmt = $db->prepare($sql);
+    $stmt->bindParam(':lev', $lev, PDO::PARAM_INT);
+    $stmt->bindParam(':start', $start, PDO::PARAM_INT);
+    $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($files as $file) {
+        if ($file['is_folder'] == 1) {
+            $total_folders++;
+            $folder_stats = calculateFileFolderStats($file['file_id']);
+            $total_files += $folder_stats['files'];
+            $total_folders += $folder_stats['folders'];
+            $total_size += $folder_stats['size'];
+        } else {
+            $total_files++;
+            $total_size += $file['file_size']; 
+        }
+    }
+
+    return [
+        'files' => $total_files,
+        'folders' => $total_folders,
+        'size' => $total_size,
+        'total_count' => $total_count
+    ];
+}
+
+
+
+

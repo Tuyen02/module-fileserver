@@ -18,7 +18,7 @@ if (!$row) {
 } else {
     $zipFilePath = NV_ROOTDIR . $row['file_path'];
     $extractTo = NV_ROOTDIR . '/uploads/fileserver/' . pathinfo($row['file_name'], PATHINFO_FILENAME);
-    
+
     if (!is_dir($extractTo)) {
         mkdir($extractTo, 0777, true);
     }
@@ -38,7 +38,7 @@ if (!$row) {
                 $message = $lang_module['unzip_ok_cant_delete'];
             }
             $update_sql = 'UPDATE ' . NV_PREFIXLANG . '_fileserver_files 
-                           SET is_folder = 1, compressed = 0, file_name = :new_name, file_path = :new_path, file_size = :file_size 
+                           SET is_folder = 1, compressed = 0, file_name = :new_name, file_path = :new_path, file_size = :file_size ,created_at= :created_at
                            WHERE file_id = :file_id';
             $update_stmt = $db->prepare($update_sql);
             $new_name = pathinfo($row['file_name'], PATHINFO_FILENAME);
@@ -47,6 +47,7 @@ if (!$row) {
             $update_stmt->bindParam(':new_path', $new_path, PDO::PARAM_STR);
             $update_stmt->bindParam(':file_size', $file_size_zip, PDO::PARAM_INT);
             $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+            $update_stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $update_stmt->execute();
         } else {
             $message = $lang_module['unzip_false'];

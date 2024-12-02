@@ -86,5 +86,6 @@ $lang_module['copy'] = 'Sao chép';
 $lang_module['move'] = 'Di chuyển';
 $lang_module['cancel'] = 'Hủy bỏ';
 $lang_module['choose_folder'] = 'Chọn thư mục';
+$lang_module['log_message'] = 'Đã thực hiện %d file, %d thư mục, tổng dung lượng: %s';
 
 

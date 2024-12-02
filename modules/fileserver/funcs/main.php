@@ -26,11 +26,11 @@ $file_ids = array_keys($arr_per);
 
 $file_ids_placeholder = [];
 
-$sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, f.share, f.compressed
+$sql = "SELECT f.file_id, f.file_name, f.file_path, f.file_size, f.created_at, f.is_folder, f.share, f.compressed,f.lev
         FROM " . NV_PREFIXLANG . "_fileserver_files f
         WHERE f.status = 1 AND lev = :lev";
 
-if (!defined('NV_IS_SPADMIN') && !empty($arr_per)){
+if (!defined('NV_IS_SPADMIN') && !empty($arr_per)) {
     foreach ($file_ids as $index => $file_id) {
         $file_ids_placeholder[":file_id_$index"] = $file_id;
     }
@@ -52,8 +52,8 @@ if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
     }
 }
 
-$perpage = 5; 
-$page = $nv_Request->get_int("page", "get", 1); 
+$perpage = 20;
+$page = $nv_Request->get_int("page", "get", 1);
 
 $total_sql = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . "_fileserver_files f WHERE f.status = 1 AND lev = :lev";
 $total_stmt = $db->prepare($total_sql);
@@ -148,7 +148,7 @@ if (!empty($action)) {
                     $mess = 'Tạo file ' . $name_f . ' thành công';
                 }
             }
-            
+
             if ($status == 'success') {
                 $exe = $stmt->execute();
                 $file_id = $db->lastInsertId();
@@ -186,20 +186,20 @@ if (!empty($action)) {
         if (!defined('NV_IS_SPADMIN')) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_thing_to_do']]);
         }
-    
+
         $fileIds = $nv_Request->get_array('files', 'post', []);
-        $checksessArray = $nv_Request->get_array('checksess', 'post', []); 
-    
+        $checksessArray = $nv_Request->get_array('checksess', 'post', []);
+
         if (empty($fileIds)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
         }
-    
+
         foreach ($fileIds as $index => $fileId) {
             $fileId = (int)$fileId;
             $checksess = isset($checksessArray[$index]) ? $checksessArray[$index] : '';
-    
+
             if ($fileId > 0 && $checksess == md5($fileId . NV_CHECK_SESSION)) {
-                $deleted = deleteFileOrFolder($fileId); 
+                $deleted = deleteFileOrFolder($fileId);
                 if ($deleted) {
                     $mess = $lang_module['delete_ok'];
                 } else {
@@ -280,19 +280,19 @@ if (!empty($action)) {
         if (!defined(constant_name: 'NV_IS_SPADMIN')) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_thing_to_do']]);
         }
-    
+
         $fileIds = $nv_Request->get_array('files', 'post', []);
-        
+
         if (empty($fileIds)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
         }
-    
+
         $zipFileName = 'compressed_' . NV_CURRENTTIME . '.zip';
         $zipFilePath = $base_dir . '/' . $zipFileName;
         $zipFullPath = NV_ROOTDIR . $zipFilePath;
-    
+
         $compressResult = compressFiles($fileIds, $zipFullPath);
-        
+
         if ($compressResult['status'] === 'success') {
             $sqlInsert = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev, compressed) 
                           VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, 1)";
@@ -304,8 +304,10 @@ if (!empty($action)) {
             $stmtInsert->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmtInsert->bindValue(':lev', $lev, PDO::PARAM_INT);
             $stmtInsert->execute();
+
+
             $mess = $compressResult['message'];
-        } 
+        }
     }
     nv_jsonOutput(['status' => $status, 'message' => $mess]);
 }
@@ -323,7 +325,7 @@ if ($download == 1) {
     if ($file) {
         $file_path = NV_ROOTDIR . $file['file_path'];
         $file_name = $file['file_name'];
-       
+
         if ($file['is_folder'] == 1) {
             $sqlFiles = "SELECT file_id FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = :lev AND status = 1";
             $stmtFiles = $db->prepare($sqlFiles);
@@ -332,23 +334,23 @@ if ($download == 1) {
             $filesInFolder = $stmtFiles->fetchAll(PDO::FETCH_COLUMN);
 
             $zipFileName = $file_name . '.zip';
-            $zipFilePath = '/uploads/fileserver/' . $zipFileName;
+            $zipFilePath = '/download/' . $zipFileName;
             $zipFullPath = NV_ROOTDIR . '/' . $zipFilePath;
 
             if (empty($filesInFolder)) {
                 $zip = new PclZip($zipFullPath);
-                $zip->create(['']);  
+                $zip->create(['']);
 
-                $_download = new NukeViet\Files\Download($zipFullPath, NV_ROOTDIR . '/uploads/fileserver/', $zipFileName, true, 0);
+                $_download = new NukeViet\Files\Download($zipFullPath, NV_ROOTDIR . '/download/', $zipFileName, true, 0);
                 $_download->download_file();
             }
             $compressResult = compressFiles($filesInFolder, $zipFullPath);
 
             if ($compressResult['status'] === 'success') {
                 if (file_exists($zipFullPath)) {
-                    $_download = new NukeViet\Files\Download($zipFullPath, NV_ROOTDIR . '/uploads/fileserver/', $zipFileName, true, 0);
+                    $_download = new NukeViet\Files\Download($zipFullPath, NV_ROOTDIR . '/download/', $zipFileName, true, 0);
                     $_download->download_file();
-                    //nv_jsonOutput(['status' => 'success', 'message' => 'Đã tải xuống file ZIP thành công.']);
+                   
                 }
             }
         } else {
@@ -356,7 +358,6 @@ if ($download == 1) {
                 $_download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . '/uploads/fileserver/', $file_name, true, 0);
                 $_download->download_file();
 
-                //nv_jsonOutput(['status' => 'success', 'message' => 'Đã tải xuống file thành công.']);
             }
         }
     }
@@ -417,7 +418,16 @@ $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['modu
 $xtpl->assign('LANG', $lang_module);
 $xtpl->assign('FORM_ACTION', $page_url);
 $xtpl->assign('SEARCH_TERM', $search_term);
-$xtpl->assign('SEARCH_TYPE', $search_type);
+
+$xtpl->assign('SELECTED_ALL', $selected_all);
+$xtpl->assign('SELECTED_FILE', $selected_file);
+$xtpl->assign('SELECTED_FOLDER', $selected_folder);
+
+if ($total > $perpage) {
+    $base_url .= '&amp;lev=' . $lev;
+    $generate_page = nv_generate_page($base_url, $total, $perpage, $page);
+    $xtpl->assign('GENERATE_PAGE', $generate_page);
+}
 
 if ($error != '') {
     $xtpl->assign('ERROR', $error);
@@ -428,7 +438,15 @@ if ($success != '') {
     $xtpl->parse('main.success');
 }
 
-foreach ($result as $row) {
+foreach ($result as $row) { 
+    $stats = calculateFileFolderStats($row['lev']);
+    $xtpl->assign('STATS', [
+    'total_files' => $stats['files'],
+    'total_folders' => $stats['folders'],
+    'total_size' => $stats['size'] ? number_format($stats['size'] / 1024, 2) . ' KB' : '--'
+    ]);
+    $xtpl->parse('main.stats');
+
     $row['created_at'] = date("d/m/Y", $row['created_at']);
 
     $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
@@ -462,9 +480,6 @@ foreach ($result as $row) {
     $url_share = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=share&amp;file_id=' . $row['file_id'];
     $row['url_compress'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=compress&amp;file_id=' . $row['file_id'];
     $row['url_share'] = $url_share;
-    
-    $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
-    $xtpl->assign('ROW', $row);
 
     $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
 
@@ -472,7 +487,6 @@ foreach ($result as $row) {
 
         $xtpl->assign('VIEW', $row['url_compress']);
         $xtpl->parse('main.file_row.view');
-
     } else 
     if ($row['is_folder'] == 1) {
         $row['file_size'] = calculateFolderSize($db, $row['file_id']);
@@ -495,7 +509,10 @@ foreach ($result as $row) {
     }
 
     $xtpl->assign('DOWNLOAD', $row['url_download']);
-    $xtpl->parse('main.file_row.download'); 
+    $xtpl->parse('main.file_row.download');
+
+    $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
+    $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');
 }
 

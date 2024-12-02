@@ -77,7 +77,7 @@ if (defined('NV_IS_SPADMIN')) {
                 $stmt_permissions->execute();
                 $permissions = $stmt_permissions->fetch();
 
-                $new_file_id = $db->lastInsertId(); 
+                $new_file_id = $db->lastInsertId();
                 $sql_insert_permissions = "INSERT INTO " . NV_PREFIXLANG . "_fileserver_permissions (file_id, p_group, p_other, updated_at) 
                                            VALUES (:file_id, :p_group, :p_other, :updated_at)";
                 $stmt_permissions_insert = $db->prepare($sql_insert_permissions);
@@ -149,7 +149,7 @@ $xtpl->assign('SELECTED_FOLDER_PATH', $selected_folder_path);
 
 $xtpl->assign('url_view', $view_url);
 
-if(!$selected_folder_path == ''){
+if (!$selected_folder_path == '') {
     $xtpl->assign('BACK', '');
     $xtpl->parse('main.back');
 }

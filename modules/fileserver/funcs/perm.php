@@ -22,30 +22,30 @@ $group_write_checked = ($row['p_group'] >= 2) ? 'checked' : '';
 $other_read_checked = ($row['p_other'] >= 1) ? 'checked' : '';
 $other_write_checked = ($row['p_other'] >= 2) ? 'checked' : '';
 
-if(defined('NV_IS_SPADMIN')){
+if (defined('NV_IS_SPADMIN')) {
     if ($nv_Request->isset_request('submit', 'post')) {
-    
+
         $group_read = $nv_Request->get_int('group_read', 'post', 0);
         $group_write = $nv_Request->get_int('group_write', 'post', 0);
-        
+
         $other_read = $nv_Request->get_int('other_read', 'post', 0);
         $other_write = $nv_Request->get_int('other_write', 'post', 0);
-    
+
         // Tính toán quyền cho nhóm
         $group_permissions = ($group_read ? 1 : 0) + ($group_write ? 1 : 0);
         // Tính toán quyền cho khác
         $other_permissions = ($other_read ? 1 : 0) + ($other_write ? 1 : 0);
-    
+
         $permissions = [
             'p_group' => $group_permissions,
             'p_other' => $other_permissions,
         ];
-    
+
         $sql_check = "SELECT permission_id FROM " . NV_PREFIXLANG . "_fileserver_permissions WHERE file_id = :file_id";
         $check_stmt = $db->prepare($sql_check);
         $check_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
         $check_stmt->execute();
-    
+
         if ($check_stmt->rowCount() > 0) {
             $sql_update = "UPDATE " . NV_PREFIXLANG . "_fileserver_permissions 
                            SET  `p_group` = :p_group, p_other = :p_other, updated_at = :updated_at 
@@ -72,7 +72,7 @@ if(defined('NV_IS_SPADMIN')){
         $children_stmt = $db->prepare($sql_children);
         $children_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
         $children_stmt->execute();
-        
+
         while ($child = $children_stmt->fetch()) {
             $child_permissions = [
                 'p_group' => $permissions['p_group'],
@@ -89,12 +89,12 @@ if(defined('NV_IS_SPADMIN')){
             $update_child_stmt->bindParam(':file_id', $child['file_id'], PDO::PARAM_INT);
             $update_child_stmt->execute();
         }
-        
+
         $message = 'Cập nhật quyền thành công';
-        
+
         $stmt->execute();
         $row = $stmt->fetch();
-        
+
         $group_read_checked = ($row['p_group'] >= 1) ? 'checked' : '';
         $group_write_checked = ($row['p_group'] >= 2) ? 'checked' : '';
         $other_read_checked = ($row['p_other'] >= 1) ? 'checked' : '';

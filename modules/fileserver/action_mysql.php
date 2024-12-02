@@ -49,8 +49,9 @@ $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_
 
 $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_logs (
     log_id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT,
-    file_id INT,
-    action tinyint(4) NOT NULL,
-    timestamp INT(11) NOT NULL DEFAULT 0
+    lev INT NOT NULL,
+    total_files INT NOT NULL,
+    total_folders INT NOT NULL,
+    total_size INT NOT NULL,
+    log_time INT(11) NOT NULL DEFAULT 0
 )ENGINE=MyISAM';

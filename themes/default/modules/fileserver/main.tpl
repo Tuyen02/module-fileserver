@@ -9,11 +9,11 @@
 
         <input type="text" class="form-control" placeholder="{LANG.search}" id="searchInput" name="search"
             value="{SEARCH_TERM}">
-            <select class="form-control ml-2" name="search_type">
-                <option value="all" {SELECTED_ALL}>{LANG.all}</option>
-                <option value="file" {SELECTED_FILE}>{LANG.file}</option>
-                <option value="folder" {SELECTED_FOLDER}>{LANG.folder}</option>
-            </select>
+        <select class="form-control ml-2" name="search_type">
+            <option value="all" {SELECTED_ALL}>{LANG.all}</option>
+            <option value="file" {SELECTED_FILE}>{LANG.file}</option>
+            <option value="folder" {SELECTED_FOLDER}>{LANG.folder}</option>
+        </select>
         <button type="submit" class="btn btn-primary ml-2">{LANG.search_btn}</button>
     </form>
 
@@ -65,7 +65,8 @@
                         <i class="fa fa-trash-o"></i>
                     </a>
                     <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}"
-                        data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal" title="{LANG.rename_btn}">
+                        data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal"
+                        title="{LANG.rename_btn}">
                         <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
                     </button>
                     <!-- BEGIN: edit -->
@@ -86,7 +87,8 @@
                         <i class="fa fa-link"></i>
                     </a>
                     <!-- BEGIN: download -->
-                    <a href="{DOWNLOAD}" class="btn btn-sm btn-success download" data-file-id="{ROW.file_id}" title="{LANG.download_btn}">
+                    <a href="{DOWNLOAD}" class="btn btn-sm btn-success download" data-file-id="{ROW.file_id}"
+                        title="{LANG.download_btn}">
                         <i class="fa fa-download" aria-hidden="true"></i>
                     </a>
                     <!-- END: download -->
@@ -94,13 +96,27 @@
             </tr>
             <!-- END: file_row -->
         </tbody>
+        <tfoot>
+            <tr>
+                <td class="gray" colspan="7">
+                        <strong>Full Size:</strong> 
+                        <span class="badge text-bg-light border-radius-0">{STATS.total_size}</span>
+                        <strong>File:</strong> 
+                        <span class="badge badge-secondary">{STATS.total_files}</span>
+                        <strong>Folder:</strong> 
+                        <span class="badge badge-secondary">{STATS.total_folders}</span>
+                    </div>
+                </td>
+            </tr>
+        </tfoot>
     </table>
     <hr>
-    <button type="submit" name="compress" class="btn btn-primary mt-2 " id="compressButton" ><i class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}</button>
-    <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll"><i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}</button>
+    <button type="submit" name="compress" class="btn btn-primary mt-2 " id="compressButton"><i
+            class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}</button>
+    <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll"><i class="fa fa-trash"
+            aria-hidden="true"></i> {LANG.delete_btn}</button>
 </div>
-<br>
-{GENERATE_PAGE}
+<div class="text-center">{GENERATE_PAGE}</div>
 
 <div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="createModalLabel"
     aria-hidden="true">
@@ -385,8 +401,8 @@
             });
         });
     });
-    
-    
+
+
     document.querySelector('[name="deleteAll"]').addEventListener('click', function (e) {
         e.preventDefault();
 
@@ -402,7 +418,7 @@
             return;
         }
         if (!confirm("Bạn có chắc chắn muốn xóa tất cả các file đã chọn?")) {
-            return; 
+            return;
         }
 
         console.log(selectedFiles);
@@ -414,7 +430,7 @@
             data: {
                 action: 'deleteAll',
                 files: selectedFiles,
-                checksess: checksessArray 
+                checksess: checksessArray
             },
             success: function (res) {
                 console.log(res);
@@ -426,28 +442,6 @@
             }
         });
     });
-
-    // $(document).on('click', '.download', function (event) {
-    //     event.preventDefault();
-
-    //     const fileId = $(this).data('file-id'); 
-    //     const downloadUrl = $(this).attr('href');
-    //     $.ajax({
-    //         url: '',
-    //         type: 'GET',
-    //         data: { download: 1, file_id: fileId }, 
-    //         success: function (response) {
-    //             if (response.status === 'success') {
-    //                 window.location.href = response.download_url; 
-    //             } else {
-    //                 //alert(response.message);
-    //             }
-    //         },
-    //         error: function () {
-    //             alert('Đã xảy ra lỗi trong quá trình tải xuống. Vui lòng thử lại.');
-    //         }
-    //     });
-    // });
 
 </script>
 <!-- END: main -->
