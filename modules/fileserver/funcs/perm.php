@@ -31,9 +31,7 @@ if (defined('NV_IS_SPADMIN')) {
         $other_read = $nv_Request->get_int('other_read', 'post', 0);
         $other_write = $nv_Request->get_int('other_write', 'post', 0);
 
-        // Tính toán quyền cho nhóm
         $group_permissions = ($group_read ? 1 : 0) + ($group_write ? 1 : 0);
-        // Tính toán quyền cho khác
         $other_permissions = ($other_read ? 1 : 0) + ($other_write ? 1 : 0);
 
         $permissions = [
@@ -90,7 +88,7 @@ if (defined('NV_IS_SPADMIN')) {
             $update_child_stmt->execute();
         }
 
-        $message = 'Cập nhật quyền thành công';
+        $message = $lang_module['update_ok'];
 
         $stmt->execute();
         $row = $stmt->fetch();
@@ -101,7 +99,8 @@ if (defined('NV_IS_SPADMIN')) {
         $other_write_checked = ($row['p_other'] >= 2) ? 'checked' : '';
     }
 } else {
-    $message = 'Không có quyền thao tác.';
+    $status = $lang_module['error'];
+    $message = $lang_module['not_thing_to_do'];
 }
 
 $xtpl = new XTemplate('perm.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);

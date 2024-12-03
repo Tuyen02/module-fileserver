@@ -11,22 +11,21 @@ $result = $db->query($sql);
 $row = $result->fetch();
 
 if (!$row) {
-    $message = $lang_module('f_has_exit');
+    $status = $lang_module['error'];
+    $message = $lang_module['f_has_exit'];
 }
 $share = $row['share'];
+$status = '';
 $message = '';
 if ($share == 0) {
-    $message = $lang_module('no_share');
-    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $file_id);
-    exit();
+    $message = $lang_module['no_share'];
+
 } elseif ($share == 1) {
-    $message = $lang_module('share_w_user');
-    // nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=share&amp;file_id=' . $file_id);
-    // exit();
+    $message = $lang_module['share_w_user'];
+
 } elseif ($share == 2) {
-    $message = $lang_module('share_w_everyone');
-    // nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=share&amp;file_id=' . $file_id);
-    // exit();
+    $message = $lang_module['share_w_everyone'];
+
 }
 
 
@@ -59,7 +58,8 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
     $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
     $stmt->execute();
 
-    $message = $lang_module('update_ok');
+    $status = $lang_module['success'];
+    $message = $lang_module['update_ok'];
 }
 $view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['lev'];
 

@@ -100,11 +100,11 @@
             <tr>
                 <td class="gray" colspan="7">
                         <strong>Full Size:</strong> 
-                        <span class="badge text-bg-light border-radius-0">{STATS.total_size}</span>
+                        <span class="badge text-bg-light border-radius-0">{ROW.total_size}</span>
                         <strong>File:</strong> 
-                        <span class="badge badge-secondary">{STATS.total_files}</span>
+                        <span class="badge badge-secondary">{ROW.total_files}</span>
                         <strong>Folder:</strong> 
-                        <span class="badge badge-secondary">{STATS.total_folders}</span>
+                        <span class="badge badge-secondary">{ROW.total_folders}</span>
                     </div>
                 </td>
             </tr>

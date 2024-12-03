@@ -53,5 +53,6 @@ $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_
     total_files INT NOT NULL,
     total_folders INT NOT NULL,
     total_size INT NOT NULL,
-    log_time INT(11) NOT NULL DEFAULT 0
+    log_time INT(11) NOT NULL DEFAULT 0,
+    UNIQUE KEY lev_unique (lev)
 )ENGINE=MyISAM';

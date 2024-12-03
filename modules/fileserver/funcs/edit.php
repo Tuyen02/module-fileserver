@@ -3,7 +3,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 $file_id = $nv_Request->get_int('file_id', 'get', 0);
-
+$page = $nv_Request->get_int("page", "get", 1);
 
 $sql = "SELECT file_name, file_path, lev FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $file_id;
 $result = $db->query($sql);
@@ -12,13 +12,15 @@ $row = $result->fetch();
 $view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['lev'];
 
 if (!$row) {
-    $message = $lang_module('f_has_exit');
+    $status = $lang_module['error'];
+    $message = $lang_module['f_has_exit'];
 }
 $file_name = $row['file_name'];
 $file_path = $row['file_path'];
 $full_path = NV_ROOTDIR . $file_path;
 $file_content = file_exists($full_path) ? file_get_contents($full_path) : '';
 
+$status = '';
 $message = '';
 if (defined('NV_IS_SPADMIN')) {
     if ($nv_Request->get_int('file_id', 'post') > 0) {
@@ -35,10 +37,13 @@ if (defined('NV_IS_SPADMIN')) {
         $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
         $stmt->execute();
 
-        $message = 'Cập nhật thành công.';
+        updateLog($row['lev']);
+        $status = $lang_module['error'];
+        $message = $lang_module['update_ok'];
     }
 } else {
-    $message = $lang_module('not_thing_to_do');
+    $status = $lang_module['error'];
+    $message = $lang_module['not_thing_to_do'];
 }
 
 $xtpl = new XTemplate('edit.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);

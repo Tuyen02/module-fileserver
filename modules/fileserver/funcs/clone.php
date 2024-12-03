@@ -54,6 +54,7 @@ if (defined('NV_IS_SPADMIN')) {
         $existingFile = $stmtCheck->fetchColumn();
 
         if ($existingFile > 0) {
+            $status = $lang_module['error'];
             $message = $lang_module['f_has_exit'];
         } else {
             if (copy(NV_ROOTDIR . $row['file_path'], NV_ROOTDIR . $target_url . '/' . $row['file_name'])) {
@@ -104,6 +105,7 @@ if (defined('NV_IS_SPADMIN')) {
         $existingFile = $stmtCheck->fetchColumn();
 
         if ($existingFile > 0) {
+            $status = $lang_module['error'];
             $message = $lang_module['f_has_exit'];
         } else {
             if (rename(NV_ROOTDIR . $row['file_path'], NV_ROOTDIR . $target_url . '/' . $row['file_name'])) {
@@ -127,7 +129,8 @@ if (defined('NV_IS_SPADMIN')) {
         }
     }
 } else {
-    $message = 'Không có quyền thao tác';
+    $status = $lang_module['error'];
+    $message = $lang_module['not_thing_to_do'];
 }
 
 $selected_folder_path = '';

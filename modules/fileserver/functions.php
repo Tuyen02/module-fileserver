@@ -6,18 +6,9 @@ if (!defined('NV_SYSTEM')) {
 
 define('NV_IS_MOD_FILESERVER', true);
 
-
-if (!defined('NV_IS_USER')) {
-    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
-}
-
-//13: id của group
-//kiểm tra xem user này có trong group hay không?
 if (in_array(13, $user_info['in_groups'])) {
-    //nếu có thì lấy id những file mà quản trị cho phép xem hoặc sửa
     $arr_per = array_column($db->query("SELECT p_group, file_id FROM `nv4_vi_fileserver_permissions` WHERE p_group > 1")->fetchAll(), 'p_group', 'file_id');
 } else {
-    //nếu không có thì chuyển hướng ra bên ngoài
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
 }
 
@@ -25,60 +16,85 @@ function deleteFileOrFolder($fileId)
 {
     global $db;
 
-    $sql = "SELECT * FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = :file_id";
+    $sql = "SELECT file_path, is_folder FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = :file_id";
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':file_id', $fileId, PDO::PARAM_INT);
     $stmt->execute();
     $row = $stmt->fetch();
 
     if (empty($row)) {
-        return false;
+        return false; 
     }
 
     $filePath = $row['file_path'];
-    $full_dir = NV_ROOTDIR . $filePath;
+    $isFolder = $row['is_folder'];
 
-    $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET status = 0 WHERE file_path = :file_path";
-    $stmtUpdate = $db->prepare($sqlUpdate);
-    $stmtUpdate->bindValue(':file_path', $filePath, PDO::PARAM_STR);
-    $stmtUpdate->execute();
-
-    if (is_dir($full_dir)) {
-        updateDirectoryStatus($filePath);
+    if ($isFolder) {
+        deleteDirectoryContents($fileId);
     } else {
-        if (!unlink($full_dir)) {
-            return false;
-        }
+        $sqlDeleteFile = "DELETE FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = :file_id";
+        $stmtDeleteFile = $db->prepare($sqlDeleteFile);
+        $stmtDeleteFile->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+        $stmtDeleteFile->execute();
     }
 
+    $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET status = 0 WHERE file_id = :file_id";
+    $stmtUpdate = $db->prepare($sqlUpdate);
+    $stmtUpdate->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+    $stmtUpdate->execute();
+
+    $fullPath = NV_ROOTDIR . '/' . $filePath;
+    if (is_dir($fullPath)) {
+        rmdir($fullPath); 
+    } else {
+        unlink($fullPath);
+    }
+
+    if ($isFolder) {
+        $sqlDeleteFolder = "DELETE FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = :file_id";
+        $stmtDeleteFolder = $db->prepare($sqlDeleteFolder);
+        $stmtDeleteFolder->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+        $stmtDeleteFolder->execute();
+    }
     return true;
 }
 
-function updateDirectoryStatus($dir)
+function deleteDirectoryContents($folderId)
 {
     global $db;
-    $full_dir = NV_ROOTDIR . '/' . $dir;
 
-    $files = scandir($full_dir);
+    $sql = "SELECT file_id, file_path, is_folder FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = :lev";
+    $stmt = $db->prepare($sql);
+    $stmt->bindParam(':lev', $folderId, PDO::PARAM_INT);
+    $stmt->execute();
+    $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    foreach ($files as $file) {
-        if ($file !== '.' && $file !== '..') {
-            $filePath = $dir . '/' . $file;
-            $fullFilePath = NV_ROOTDIR . '/' . $filePath;
+    foreach ($items as $item) {
+        $fileId = $item['file_id'];
+        $filePath = $item['file_path'];
+        $isFolder = $item['is_folder'];
 
-            if (is_dir($fullFilePath)) {
-                updateDirectoryStatus($filePath);
-            } else {
-                unlink($fullFilePath);
-            }
+        if ($isFolder) {
+            deleteDirectoryContents($fileId);
+        } else {
+            $sqlDeleteFile = "DELETE FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = :file_id";
+            $stmtDeleteFile = $db->prepare($sqlDeleteFile);
+            $stmtDeleteFile->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+            $stmtDeleteFile->execute();
+        }
 
-            $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET status = 0 WHERE file_path = :file_path";
-            $stmtUpdate = $db->prepare($sqlUpdate);
-            $stmtUpdate->bindValue(':file_path', $filePath, PDO::PARAM_STR);
-            $stmtUpdate->execute();
+        $sqlUpdate = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET status = 0 WHERE file_id = :file_id";
+        $stmtUpdate = $db->prepare($sqlUpdate);
+        $stmtUpdate->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+        $stmtUpdate->execute();
+
+        $fullPath = NV_ROOTDIR . '/' . $filePath;
+        if (is_dir($fullPath)) {
+            rmdir($fullPath); 
+        } else {
+            unlink($fullPath);
         }
     }
-    rmdir($full_dir);
 }
 
 function checkIfParentIsFolder($db, $lev)
@@ -88,7 +104,7 @@ function checkIfParentIsFolder($db, $lev)
         return $stmt->fetchColumn();
     } else {
         error_log("Lỗi truy vấn trong checkIfParentIsFolder với lev: " . intval($lev));
-        return null;
+        return 0;
     }
 }
 
@@ -96,7 +112,7 @@ function compressFiles($fileIds, $zipFilePath)
 {
     global $db;
 
-    if (!is_array($fileIds) || empty($fileIds)) {
+    if ( empty($fileIds) || !is_array($fileIds)) {
         return ['status' => 'error', 'message' => 'Danh sách file không hợp lệ: '];
     }
 
@@ -106,9 +122,9 @@ function compressFiles($fileIds, $zipFilePath)
 
     $zip = new PclZip($zipFilePath);
     $filePaths = [];
-    $errors = [];
+    $errors = '';
 
-    $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
+    $placeholders = implode(',', array_fill(0, count($fileIds), '?'));///
     $sql = "SELECT file_path, file_name FROM " . NV_PREFIXLANG . "_fileserver_files 
             WHERE file_id IN ($placeholders) AND status = 1";
     $stmt = $db->prepare($sql);
@@ -123,12 +139,8 @@ function compressFiles($fileIds, $zipFilePath)
         if (file_exists($realPath)) {
             $filePaths[] = $realPath;
         } else {
-            $errors[] = "File không tồn tại: " . $realPath;
+            $errors = "File không tồn tại: " . $realPath;
         }
-    }
-
-    foreach ($errors as $error) {
-        error_log($error);
     }
 
     if (count($filePaths) > 0) {
@@ -163,8 +175,9 @@ function addToDatabase($files, $parent_id, $db)
     }
 }
 
-function calculateFolderSize($db, $folderId)
+function calculateFolderSize( $folderId)
 {
+    global $db;
     $totalSize = 0;
 
     $sql = "SELECT file_id, is_folder, file_size FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = :lev";
@@ -175,16 +188,15 @@ function calculateFolderSize($db, $folderId)
 
     foreach ($files as $file) {
         if ($file['is_folder'] == 1) {
-            $totalSize += calculateFolderSize($db, $file['file_id']);
+            $totalSize += calculateFolderSize( $file['file_id']);
         } else {
             $totalSize += $file['file_size'];
         }
     }
-
     return $totalSize;
 }
 
-function calculateFileFolderStats($lev, $start = 0, $limit = 5)
+function calculateFileFolderStats($lev)
 {
     global $db;
 
@@ -192,17 +204,9 @@ function calculateFileFolderStats($lev, $start = 0, $limit = 5)
     $total_folders = 0;
     $total_size = 0;
 
-    $sql_count = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = :lev AND status = 1";
-    $stmt_count = $db->prepare($sql_count);
-    $stmt_count->bindParam(':lev', $lev, PDO::PARAM_INT);
-    $stmt_count->execute();
-    $total_count = $stmt_count->fetchColumn();
-
-    $sql = "SELECT file_id, is_folder, file_size FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = :lev AND status = 1 LIMIT :start, :limit";
+    $sql = "SELECT file_id, is_folder, file_size FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = :lev AND status = 1 ";
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':lev', $lev, PDO::PARAM_INT);
-    $stmt->bindParam(':start', $start, PDO::PARAM_INT);
-    $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
     $stmt->execute();
     $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -215,17 +219,42 @@ function calculateFileFolderStats($lev, $start = 0, $limit = 5)
             $total_size += $folder_stats['size'];
         } else {
             $total_files++;
-            $total_size += $file['file_size']; 
+            $total_size += $file['file_size'];
         }
     }
-
     return [
         'files' => $total_files,
         'folders' => $total_folders,
-        'size' => $total_size,
-        'total_count' => $total_count
+        'size' => $total_size
     ];
 }
+
+function updateLog($lev)
+{
+    global $db;
+
+    $stats = calculateFileFolderStats($lev);
+
+    $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_fileserver_logs 
+                      (lev, total_files, total_folders, total_size, log_time) 
+                      VALUES (:lev, :total_files, :total_folders, :total_size, :log_time)
+                      ON DUPLICATE KEY UPDATE 
+                        total_files = :update_files, 
+                        total_folders = :update_folders, 
+                        total_size = :update_size';
+    $stmtInsert = $db->prepare($sqlInsert);
+    $stmtInsert->bindValue(':lev', $lev, PDO::PARAM_INT);
+    $stmtInsert->bindValue(':total_files', $stats['files'], PDO::PARAM_INT);
+    $stmtInsert->bindValue(':total_folders', $stats['folders'], PDO::PARAM_INT);
+    $stmtInsert->bindValue(':total_size', $stats['size'], PDO::PARAM_INT);
+    $stmtInsert->bindValue(':log_time', NV_CURRENTTIME, PDO::PARAM_INT);
+    $stmtInsert->bindValue(':update_files', $stats['files'], PDO::PARAM_INT);
+    $stmtInsert->bindValue(':update_folders', $stats['folders'], PDO::PARAM_INT);
+    $stmtInsert->bindValue(':update_size', $stats['size'], PDO::PARAM_INT);
+    $stmtInsert->execute();
+}
+
+
 
 
 

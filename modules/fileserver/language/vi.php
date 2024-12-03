@@ -46,7 +46,7 @@ $lang_module['update_ok'] = 'Cập nhật thành công';
 $lang_module['no_share'] = 'Không chia sẻ';
 $lang_module['share_w_user'] = 'Chia sẻ với người có tài khoản';
 $lang_module['share_w_everyone'] = 'Chia sẻ với mọi người ';
-$lang_module[''] = '';
+$lang_module['checksess_invalid'] = 'Checksess không hợp lệ .';
 
 
 $lang_module['module_title'] = 'Module File Server';
@@ -86,6 +86,5 @@ $lang_module['copy'] = 'Sao chép';
 $lang_module['move'] = 'Di chuyển';
 $lang_module['cancel'] = 'Hủy bỏ';
 $lang_module['choose_folder'] = 'Chọn thư mục';
-$lang_module['log_message'] = 'Đã thực hiện %d file, %d thư mục, tổng dung lượng: %s';
 
 
