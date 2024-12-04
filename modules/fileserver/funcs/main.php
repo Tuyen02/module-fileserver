@@ -15,7 +15,7 @@ $full_dir = NV_ROOTDIR . $base_dir;
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
 $page_url = $base_url;
 
-if (in_array(13, $user_info['in_groups'])) {
+if (in_array($config_value = get_config_value(), $user_info['in_groups'])) {
     $arr_per = array_column($db->query("SELECT p_group, file_id FROM `nv4_vi_fileserver_permissions` WHERE p_group > 1")->fetchAll(), 'p_group', 'file_id');
 } else {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
@@ -67,7 +67,7 @@ foreach ($file_ids_placeholder as $param => $file_id) {
 }
 
 if (!empty($search_term)) {
-    $stmt->bindValue(':search_term',trim($db->quote('%' .$search_term. '%'), "'"), PDO::PARAM_STR);
+    $stmt->bindValue(':search_term','%'.$search_term. '%', PDO::PARAM_STR);
 }
 $stmt->execute();
 $result = $stmt->fetchAll();
@@ -80,6 +80,7 @@ if ($lev > 0) {
 }
 
 $action = $nv_Request->get_title('action', 'post', '');
+$fileIds = $nv_Request->get_array('files', 'post', []);
 
 if (!empty($action)) {
 
@@ -183,7 +184,6 @@ if (!empty($action)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_thing_to_do']]);
         }
 
-        $fileIds = $nv_Request->get_array('files', 'post', []);
         $checksessArray = $nv_Request->get_array('checksess', 'post', []);
 
         if (empty($fileIds)) {
@@ -280,8 +280,6 @@ if (!empty($action)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_thing_to_do']]);
         }
 
-        $fileIds = $nv_Request->get_array('files', 'post', []);
-
         if (empty($fileIds)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
         }
@@ -324,7 +322,7 @@ if ($download == 1) {
     if ($file) {
         $file_path = NV_ROOTDIR . $file['file_path'];
         $file_name = $file['file_name'];
-        $is_zip = false;
+       
         if ($file['is_folder'] == 1) {
             $sqlFiles = "SELECT file_id FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = :lev AND status = 1";
             $stmtFiles = $db->prepare($sqlFiles);
@@ -332,30 +330,31 @@ if ($download == 1) {
             $stmtFiles->execute();
             $filesInFolder = $stmtFiles->fetchAll(PDO::FETCH_COLUMN);
 
-            $zipFileName = $file_name .'_'. NV_CURRENTTIME.'.zip';
+            $zipFileName = $file_name . '_' . NV_CURRENTTIME . '.zip';
             $zipFilePath = '/uploads/fileserver/' . $zipFileName;
             $zipFullPath = NV_ROOTDIR . '/' . $zipFilePath;
 
             if (empty($filesInFolder)) {
                 $zip = new PclZip($zipFullPath);
-                $zip->create(['']);
-                $is_zip = true;
+                $zip->create(['']);  
+
+                $_download = new NukeViet\Files\Download($zipFullPath, NV_ROOTDIR . '/uploads/fileserver/', $zipFileName, true, 0);
+                $_download->download_file();
             }
             $compressResult = compressFiles($filesInFolder, $zipFullPath);
 
-            if ($compressResult['status'] === 'success') {
+            if ($compressResult['status'] == 'success') {
                 if (file_exists($zipFullPath)) {
-                    $is_zip = true;  
+                    $_download = new NukeViet\Files\Download($zipFullPath, NV_ROOTDIR . '/uploads/fileserver/', $zipFileName, true, 0);
+                    $_download->download_file();
                 }
             }
         } else {
             if (file_exists($file_path)) {
-                $is_zip = true;
+                $_download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . '/uploads/fileserver/', $file_name, true, 0);
+                $_download->download_file();
+
             }
-        }
-        if($is_zip == true){
-            $_download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . '/uploads/fileserver/', $file_name, true, 0);
-            $_download->download_file();
         }
     }
 }
@@ -447,7 +446,7 @@ $xtpl->assign('SELECTED_FILE', $selected_file);
 $xtpl->assign('SELECTED_FOLDER', $selected_folder);
 
 if ($total > $perpage) {
-    $page_url = $base_url.'&amp;lev=' . $lev.'&search='.$search_term.'&search_type'.$search_type;
+    $page_url = $base_url.'&amp;lev=' . $lev.'&search='.$search_term.'&search_type='.$search_type;
     $generate_page = nv_generate_page($page_url, $total, $perpage, $page);
     $xtpl->assign('GENERATE_PAGE', $generate_page);
 }

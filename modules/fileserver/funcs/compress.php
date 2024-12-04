@@ -53,6 +53,7 @@ if (!$row) {
             $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
             $update_stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $update_stmt->execute();
+            updateLog($file_id);
         } else {
             $status = $lang_module['error'];
             $message = $lang_module['unzip_false'];
@@ -74,7 +75,6 @@ if (!empty($list)) {
         $file['file_name'] = basename($file['filename']);
         $file['file_size'] = $file['folder'] ? '-' : nv_convertfromBytes($file['size']);
         $file['file_type'] = $file['folder'] ? 'fa-folder-o' : 'fa-file-o';
-        $file['created_at'] = date("d/m/Y", $file['created_at']);
         $xtpl->assign('FILE', $file);
         $xtpl->parse('main.file');
     }

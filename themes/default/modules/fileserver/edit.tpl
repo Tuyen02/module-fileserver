@@ -48,7 +48,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/htmlmixed/htmlmixed.min.js"></script>
 <script>
     $(document).ready(function () {
-
         $("#backButton").on("click", function (e) {
             e.preventDefault();
             window.history.back();

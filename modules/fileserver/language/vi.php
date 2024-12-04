@@ -19,14 +19,14 @@ $lang_translator['copyright'] = '@Copyright (C) 2009-2021 VINADES.,JSC. All righ
 $lang_translator['info'] = '';
 $lang_translator['langtype'] = 'lang_module';
 
-$lang_module['error'] = 'Lỗi.';
-$lang_module['success'] = 'Thành công.';
+$lang_module['error'] = 'error.';
+$lang_module['success'] = 'success';
 $lang_module['sys_err'] = 'Lỗi hệ thống.';
 $lang_module['not_thing_to_do'] = 'Không có quyền thao tác.';
 $lang_module['cannot_create_file_in_file.'] = 'Không thể tạo file con trong file.';
 $lang_module['f_has_exit'] = 'File đã tồn tại.';
 $lang_module['cannot_create_file'] = 'Không thể tạo file.';
-$lang_module['create_ok'] = 'Tạo file  thành công.';
+$lang_module['create_ok'] = 'Tạo thành công.';
 $lang_module['delete_ok'] = 'Xóa thành công.';
 $lang_module['delete_false'] = 'Xóa thất bại.';
 $lang_module['cannot_rename_file'] = 'Không thể đổi tên file.';
@@ -47,6 +47,13 @@ $lang_module['no_share'] = 'Không chia sẻ';
 $lang_module['share_w_user'] = 'Chia sẻ với người có tài khoản';
 $lang_module['share_w_everyone'] = 'Chia sẻ với mọi người ';
 $lang_module['checksess_invalid'] = 'Checksess không hợp lệ .';
+$lang_module['Lỗi truy vấn trong checkIfParentIsFolder với lev: '] = 'Lỗi truy vấn trong checkIfParentIsFolder với lev: ';
+$lang_module['list_invalid'] = 'Danh sách file không hợp lệ: ';
+$lang_module['cannot_find_file'] = 'Không tìm thấy file nào hợp lệ với file_id đã chọn.';
+$lang_module['f_hasnt_exit'] = 'File không tồn tại';
+$lang_module['zip_false'] = 'Có lỗi khi nén file: ';
+$lang_module['zip_ok'] = 'Nén thành công ';
+$lang_module['file_invalid'] = 'Không có file hợp lệ để nén.';
 
 
 $lang_module['module_title'] = 'Module File Server';
@@ -86,5 +93,3 @@ $lang_module['copy'] = 'Sao chép';
 $lang_module['move'] = 'Di chuyển';
 $lang_module['cancel'] = 'Hủy bỏ';
 $lang_module['choose_folder'] = 'Chọn thư mục';
-
-

@@ -7,20 +7,16 @@
 
 <form method="post">
     <input type="hidden" name="file_id" value="{FILE_ID}">
-
-
     <a href="{url_copy}" class="btn btn-info">
         <i class="fa fa-check-circle"></i> {LANG.copy}
     </a>
     <a href="{url_move}" class="btn btn-info">
         <i class="fa fa-check-circle"></i> {LANG.move}
     </a>
-
     <a href="{url_view}" class="btn btn-danger">
         <i class="fa fa-times-circle"></i> {LANG.cancel}
     </a>
 </form>
-
 <p>{LANG.choose_folder}:</p>
 <p id="selected-folder-path">Đường dẫn thư mục đích: {SELECTED_FOLDER_PATH}</p>
 <!-- BEGIN: back -->
