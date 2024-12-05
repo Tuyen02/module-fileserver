@@ -52,8 +52,19 @@ if (!$row) {
             $update_stmt->bindParam(':file_size', $file_size_zip, PDO::PARAM_INT);
             $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
             $update_stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
-            $update_stmt->execute();
-            updateLog($file_id);
+            
+            if($update_stmt->execute()){
+                updateLog($file_id);
+                $file_id = $db->lastInsertId();
+                $sql1 = "INSERT INTO ". NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
+                    VALUES (:file_id, :p_group, :p_other, :updated_at)";
+                $stmta = $db->prepare($sql1);
+                $stmta->bindParam(':file_id', $file_id, PDO::PARAM_STR);
+                $stmta->bindValue(':p_group', '1', PDO::PARAM_INT);
+                $stmta->bindValue(':p_other', '1', PDO::PARAM_INT);
+                $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+                $stmta->execute();
+            }
         } else {
             $status = $lang_module['error'];
             $message = $lang_module['unzip_false'];

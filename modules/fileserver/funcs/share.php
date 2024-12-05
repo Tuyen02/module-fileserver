@@ -6,7 +6,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 $file_id = $nv_Request->get_int('file_id', 'get', 0);
 
 
-$sql = "SELECT file_name, file_path, view, share FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $file_id;
+$sql = "SELECT file_name, file_path, view, share FROM ". NV_PREFIXLANG . '_' . $module_data ."_files WHERE file_id = " . $file_id;
 $result = $db->query($sql);
 $row = $result->fetch();
 
@@ -31,7 +31,7 @@ if ($share == 0) {
 
 if (!$nv_Request->isset_request($module_name . '-' . $file_id, 'session')) {
     $nv_Request->set_Session($module_name . '-' . $file_id, NV_CURRENTTIME);
-    $sql = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET view = view + 1 WHERE file_id = :file_id";
+    $sql = "UPDATE ". NV_PREFIXLANG . '_' . $module_data ."_files SET view = view + 1 WHERE file_id = :file_id";
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
     $stmt->execute();
@@ -51,7 +51,7 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
 
     $file_size = filesize($full_path);
 
-    $sql = "UPDATE " . NV_PREFIXLANG . "_fileserver_files SET updated_at = :updated_at, file_size = :file_size WHERE file_id = :file_id";
+    $sql = "UPDATE ". NV_PREFIXLANG . '_' . $module_data ."_files SET updated_at = :updated_at, file_size = :file_size WHERE file_id = :file_id";
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
     $stmt->bindValue(':file_size', $file_size, PDO::PARAM_INT);

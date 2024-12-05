@@ -57,4 +57,4 @@ $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_
     UNIQUE KEY lev_unique (lev)
 )ENGINE=MyISAM';
 
-$sql_create_module[] = "INSERT INTO nv4_config (lang, module, config_name, config_value) VALUES ('vi', 'fileserver', 'group_admin_fileserver','13')";
+$sql_create_module[] = "INSERT INTO " . $db_config['prefix'] . "_config (lang, module, config_name, config_value) VALUES ('vi', 'fileserver', 'group_admin_fileserver','13')";
