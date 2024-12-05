@@ -18,10 +18,10 @@
     </a>
 </form>
 <p>{LANG.choose_folder}:</p>
-<p id="selected-folder-path">Đường dẫn thư mục đích: {SELECTED_FOLDER_PATH}</p>
+<p id="selected-folder-path">Đường dẫn thư mục đích: <span class="text-success"><u>{SELECTED_FOLDER_PATH}</u></span></p>
 <!-- BEGIN: back -->
 <div>
-    <button type="button" class="btn btn-primary" id="backButton">
+    <button type="button" class="btn btn-info" id="backButton">
         <i class="fa fa-chevron-circle-left" aria-hidden="true"></i>{BACK}
     </button>
 </div>

@@ -37,6 +37,15 @@ $stmt = $db->prepare($sql);
 $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
 $stmt->execute();
 $directories = $stmt->fetchAll();
+
+if (empty($directories)) {
+    $sql = "SELECT file_id, file_name, file_path, lev FROM " . NV_PREFIXLANG . "_fileserver_files 
+            WHERE lev = 0 AND is_folder = 1 AND status = 1 ORDER BY file_id ASC";
+    $stmt = $db->prepare($sql);
+    $stmt->execute();
+    $directories = $stmt->fetchAll();
+}
+
 $message = '';
 
 if (defined('NV_IS_SPADMIN')) {
@@ -180,3 +189,4 @@ $contents = $xtpl->text('main');
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);
 include NV_ROOTDIR . '/includes/footer.php';
+

@@ -322,7 +322,9 @@ if ($download == 1) {
     if ($file) {
         $file_path = NV_ROOTDIR . $file['file_path'];
         $file_name = $file['file_name'];
-       
+        $zip = '';
+        $zipFileName = '';
+
         if ($file['is_folder'] == 1) {
             $sqlFiles = "SELECT file_id FROM " . NV_PREFIXLANG . "_fileserver_files WHERE lev = :lev AND status = 1";
             $stmtFiles = $db->prepare($sqlFiles);
@@ -335,29 +337,29 @@ if ($download == 1) {
             $zipFullPath = NV_ROOTDIR . '/' . $zipFilePath;
 
             if (empty($filesInFolder)) {
-                $zip = new PclZip($zipFullPath);
-                $zip->create(['']);  
-
-                $_download = new NukeViet\Files\Download($zipFullPath, NV_ROOTDIR . '/uploads/fileserver/', $zipFileName, true, 0);
-                $_download->download_file();
-            }
-            $compressResult = compressFiles($filesInFolder, $zipFullPath);
-
-            if ($compressResult['status'] == 'success') {
-                if (file_exists($zipFullPath)) {
-                    $_download = new NukeViet\Files\Download($zipFullPath, NV_ROOTDIR . '/uploads/fileserver/', $zipFileName, true, 0);
-                    $_download->download_file();
+                $zip = $zipFullPath;
+                $zipArchive = new PclZip($zipFullPath);
+                $zipArchive->create(['']);
+            } else {
+                $compressResult = compressFiles($filesInFolder, $zipFullPath);
+                if ($compressResult['status'] == 'success' && file_exists($zipFullPath)) {
+                    $zip = $zipFullPath;
                 }
             }
         } else {
             if (file_exists($file_path)) {
-                $_download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . '/uploads/fileserver/', $file_name, true, 0);
-                $_download->download_file();
-
+                $zip = $file_path;
+                $zipFileName = $file_name;
             }
+        }
+
+        if (!empty($zip)) {
+            $_download = new NukeViet\Files\Download($zip, NV_ROOTDIR . '/uploads/fileserver/', $zipFileName, true, 0);
+            $_download->download_file();
         }
     }
 }
+
 
 
 $error = '';
