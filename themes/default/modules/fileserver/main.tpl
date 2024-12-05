@@ -6,7 +6,7 @@
     <div class="alert alert-warning">{ERROR}</div>
     <!-- END: error -->
     <form action="{FORM_ACTION}" method="get" id="searchForm" class="form-inline my-2 my-lg-0">
-
+        <input type="hidden" name="lev" value="{ROW.lev}">
         <input type="text" class="form-control" placeholder="{LANG.search}" id="searchInput" name="search"
             value="{SEARCH_TERM}">
         <select class="form-control ml-2" name="search_type">

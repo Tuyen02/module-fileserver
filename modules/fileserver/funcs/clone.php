@@ -79,23 +79,25 @@ if (defined('NV_IS_SPADMIN')) {
                 $stmt->bindParam(':uploaded_by', $user_info['userid']);
                 $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 $stmt->bindParam(':lev', $target_lev);
-                $stmt->execute();
 
-                $sql_permissions = "SELECT p_group, p_other FROM ". NV_PREFIXLANG . '_' . $module_data . "_permissions WHERE file_id = :folder_id";
-                $stmt_permissions = $db->prepare($sql_permissions);
-                $stmt_permissions->bindParam(':folder_id', $target_lev);
-                $stmt_permissions->execute();
-                $permissions = $stmt_permissions->fetch();
+                if($stmt->execute()){
+                    $sql_permissions = "SELECT p_group, p_other FROM ". NV_PREFIXLANG . '_' . $module_data . "_permissions WHERE file_id = :folder_id";
+                    $stmt_permissions = $db->prepare($sql_permissions);
+                    $stmt_permissions->bindParam(':folder_id', $target_lev);
+                    $stmt_permissions->execute();
+                    $permissions = $stmt_permissions->fetch();
 
-                $new_file_id = $db->lastInsertId();
-                $sql_insert_permissions = "INSERT INTO ". NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
-                                           VALUES (:file_id, :p_group, :p_other, :updated_at)";
-                $stmt_permissions_insert = $db->prepare($sql_insert_permissions);
-                $stmt_permissions_insert->bindParam(':file_id', $new_file_id);
-                $stmt_permissions_insert->bindParam(':p_group', $permissions['p_group']);
-                $stmt_permissions_insert->bindParam(':p_other', $permissions['p_other']);
-                $stmt_permissions_insert->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-                $stmt_permissions_insert->execute();
+                    $new_file_id = $db->lastInsertId();
+                    $sql_insert_permissions = "INSERT INTO ". NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
+                                            VALUES (:file_id, :p_group, :p_other, :updated_at)";
+                    $stmt_permissions_insert = $db->prepare($sql_insert_permissions);
+                    $stmt_permissions_insert->bindParam(':file_id', $new_file_id);
+                    $stmt_permissions_insert->bindParam(':p_group', $permissions['p_group']);
+                    $stmt_permissions_insert->bindParam(':p_other', $permissions['p_other']);
+                    $stmt_permissions_insert->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+                    $stmt_permissions_insert->execute();
+                    updateLog($target_lev);
+                }
             }
         }
     }
@@ -126,14 +128,25 @@ if (defined('NV_IS_SPADMIN')) {
                 $stmt->bindParam(':file_path', $new_file_path);
                 $stmt->bindParam(':lev', $target_lev);
                 $stmt->bindParam(':file_id', $file_id);
-                $stmt->execute();
 
-                $sql_update_permissions = "UPDATE ". NV_PREFIXLANG . '_' . $module_data . "_permissions SET p_group = :p_group, p_other = :p_other WHERE file_id = :file_id";
-                $stmt_update_permissions = $db->prepare($sql_update_permissions);
-                $stmt_update_permissions->bindParam(':p_group', $permissions['p_group']);
-                $stmt_update_permissions->bindParam(':p_other', $permissions['p_other']);
-                $stmt_update_permissions->bindParam(':file_id', $file_id);
-                $stmt_update_permissions->execute();
+                if($stmt->execute()){
+                    $sql_permissions = "SELECT p_group, p_other FROM ". NV_PREFIXLANG . '_' . $module_data . "_permissions WHERE file_id = :folder_id";
+                    $stmt_permissions = $db->prepare($sql_permissions);
+                    $stmt_permissions->bindParam(':folder_id', $target_lev);
+                    $stmt_permissions->execute();
+                    $permissions = $stmt_permissions->fetch();
+
+                    $new_file_id = $db->lastInsertId();
+                    $sql_insert_permissions = "INSERT INTO ". NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
+                                            VALUES (:file_id, :p_group, :p_other, :updated_at)";
+                    $stmt_permissions_insert = $db->prepare($sql_insert_permissions);
+                    $stmt_permissions_insert->bindParam(':file_id', $new_file_id);
+                    $stmt_permissions_insert->bindParam(':p_group', $permissions['p_group']);
+                    $stmt_permissions_insert->bindParam(':p_other', $permissions['p_other']);
+                    $stmt_permissions_insert->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+                    $stmt_permissions_insert->execute();
+                    updateLog($target_lev);
+                }
             }
         }
     }

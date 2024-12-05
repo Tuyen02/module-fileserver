@@ -285,3 +285,7 @@ function updateLog($lev)
     $stmtInsert->bindValue(':update_size', $stats['size'], PDO::PARAM_INT);
     $stmtInsert->execute();
 }
+function pr($a)
+{
+    exit('<pre><code>' . htmlspecialchars(print_r($a, true)) . '</code></pre>');
+}
