@@ -164,40 +164,7 @@ if ($rank > 0) {
     }
 }
 
-$xtpl = new XTemplate('clone.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
-$xtpl->assign('LANG', $lang_module);
-$xtpl->assign('FILE_ID', $file_id);
-$xtpl->assign('FILE_NAME', $file_name);
-$xtpl->assign('FILE_PATH', $file_path);
-$xtpl->assign('MESSAGE', $message);
-$xtpl->assign('SELECTED_FOLDER_PATH', $selected_folder_path);
-
-$xtpl->assign('url_view', $view_url);
-
-if (!$selected_folder_path == '') {
-    $xtpl->assign('BACK', '');
-    $xtpl->parse('main.back');
-}
-
-foreach ($directories as $directory) {
-    $directory['url'] = $page_url . '&amp;rank=' . $directory['file_id'];
-    $xtpl->assign('DIRECTORY', $directory);
-    $xtpl->parse('main.directory_option');
-}
-
-if ($message != '') {
-    $xtpl->assign('MESSAGE', $message);
-    $xtpl->parse('main.message');
-}
-
-$url_copy = $base_url . '&amp;copy=1';
-$xtpl->assign('url_copy', $url_copy);
-
-$url_move = $base_url . '&amp;move=1';
-$xtpl->assign('url_move', $url_move);
-
-$xtpl->parse('main');
-$contents = $xtpl->text('main');
+$contents = nv_page_clone($row, $file_id, $file_name, $file_path, $message, $selected_folder_path, $view_url, $directories, $page_url, $base_url);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

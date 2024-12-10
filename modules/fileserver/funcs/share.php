@@ -63,21 +63,7 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
 }
 $view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['lev'];
 
-$xtpl = new XTemplate('share.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
-$xtpl->assign('LANG', $lang_module);
-$xtpl->assign('FILE_CONTENT', htmlspecialchars($file_content));
-$xtpl->assign('FILE_ID', $file_id);
-$xtpl->assign('FILE_NAME', $file_name);
-$xtpl->assign('VIEW', $view);
-$xtpl->assign('url_view', $view_url);
-
-if ($message != '') {
-    $xtpl->assign('MESSAGE', $message);
-    $xtpl->parse('main.message');
-}
-
-$xtpl->parse('main');
-$contents = $xtpl->text('main');
+$contents = nv_page_share($row, $file_content,  $file_id, $file_name, $view, $view_url, $message);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

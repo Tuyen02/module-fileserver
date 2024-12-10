@@ -15,17 +15,7 @@ if (!empty($row)) {
     $message = $lang_module['f_has_exit'];
 }
 
-
-$xtpl = new XTemplate('edit_img.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
-$xtpl->assign('LANG', $lang_module);
-
-$xtpl->assign('FILE_ID', $file_id);
-$xtpl->assign('FILE_NAME', $row['file_name']);
-$xtpl->assign('FILE_PATH', $row['file_path']);
-
-
-$xtpl->parse('main');
-$contents = $xtpl->text('main');
+$contents = nv_page_edit_img($row,$file_id);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

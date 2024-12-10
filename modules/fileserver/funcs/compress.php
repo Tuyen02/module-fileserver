@@ -72,32 +72,7 @@ if (!$row) {
     }
 }
 
-$xtpl = new XTemplate('compress.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
-$xtpl->assign('LANG', $lang_module);
-$xtpl->assign('FILE_ID', $file_id);
-
-if ($file_size_zip > 0) {
-    $xtpl->assign('ZIP_FILE_SIZE', nv_convertfromBytes($file_size_zip));
-    $xtpl->parse('main.zip_file_size');
-}
-
-if (!empty($list)) {
-    foreach ($list as $file) {
-        $file['file_name'] = basename($file['filename']);
-        $file['file_size'] = $file['folder'] ? '-' : nv_convertfromBytes($file['size']);
-        $file['file_type'] = $file['folder'] ? 'fa-folder-o' : 'fa-file-o';
-        $xtpl->assign('FILE', $file);
-        $xtpl->parse('main.file');
-    }
-}
-
-if (!empty($message)) {
-    $xtpl->assign('MESSAGE', $message);
-    $xtpl->parse('main.message');
-}
-
-$xtpl->parse('main');
-$contents = $xtpl->text('main');
+$contents = nv_page_compress($row,$file_id,$file_size_zip,$list,$message);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

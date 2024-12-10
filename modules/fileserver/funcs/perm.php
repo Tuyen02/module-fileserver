@@ -103,23 +103,7 @@ if (defined('NV_IS_SPADMIN')) {
     $message = $lang_module['not_thing_to_do'];
 }
 
-$xtpl = new XTemplate('perm.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
-$xtpl->assign('LANG', $lang_module);
-$xtpl->assign('FILE_ID', $file_id);
-$xtpl->assign('FILE_NAME', htmlspecialchars($row['file_name']));
-$xtpl->assign('FILE_PATH', htmlspecialchars($row['file_path']));
-$xtpl->assign('GROUP_READ_CHECKED', $group_read_checked);
-$xtpl->assign('GROUP_WRITE_CHECKED', $group_write_checked);
-$xtpl->assign('OTHER_READ_CHECKED', $other_read_checked);
-$xtpl->assign('OTHER_WRITE_CHECKED', $other_write_checked);
-
-if ($message != '') {
-    $xtpl->assign('MESSAGE', $message);
-    $xtpl->parse('main.message');
-}
-
-$xtpl->parse('main');
-$contents = $xtpl->text('main');
+$contents = nv_page_perm($row, $file_id, $group_read_checked, $group_write_checked, $other_read_checked, $other_write_checked, $message);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);
