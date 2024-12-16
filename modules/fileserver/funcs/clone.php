@@ -3,12 +3,16 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
-$file_id = $nv_Request->get_int('file_id', 'get', 0);
+$page_title = $module_info['site_title'];
+$key_words = $module_info['keywords'];
+$description = $module_info['description'];
+
+// $file_id = $nv_Request->get_int('file_id', 'get', 0);
 $rank = $nv_Request->get_int('rank', 'get', 0);
 $copy = $nv_Request->get_int('copy', 'get', 0);
 $move = $nv_Request->get_int('move', 'get', 0);
 
-$sql = "SELECT file_name, file_path, lev FROM ". NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . $file_id;
+$sql = "SELECT file_name,alias, file_path, lev FROM ". NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . $file_id;
 $result = $db->query($sql);
 $row = $result->fetch();
 
@@ -16,9 +20,9 @@ if (!$row) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=clone');
 }
 
-$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=clone' . '&amp;file_id=' . $file_id;
+$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=clone/' .$row['alias'].'-'. $file_id;
 $page_url = $base_url;
-$view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['lev'];
+$view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main/' .$row['alias'].'-'.'lev=' . $row['lev'];
 
 $file_name = $row['file_name'];
 $file_path = $row['file_path'];
@@ -39,7 +43,7 @@ $stmt->execute();
 $directories = $stmt->fetchAll();
 
 if (empty($directories)) {
-    $sql = "SELECT file_id, file_name, file_path, lev FROM ". NV_PREFIXLANG . '_' . $module_data . "_files 
+    $sql = "SELECT file_id,alias, file_name, file_path, lev FROM ". NV_PREFIXLANG . '_' . $module_data . "_files 
             WHERE lev = 0 AND is_folder = 1 AND status = 1 ORDER BY file_id ASC";
     $stmt = $db->prepare($sql);
     $stmt->execute();
@@ -68,13 +72,15 @@ if (defined('NV_IS_SPADMIN')) {
         } else {
             if (copy(NV_ROOTDIR . $row['file_path'], NV_ROOTDIR . $target_url . '/' . $row['file_name'])) {
                 $message = $lang_module['copy_ok'];
-                $new_file_name = $row['file_name'];
+                $new_file_name = $$row['file_name'];
                 $new_file_path = $target_url . '/' . $new_file_name;
 
-                $sql_insert = "INSERT INTO ". NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
-                               VALUES (:file_name, :file_path, :uploaded_by, 0, :created_at, :lev)";
+                $sql_insert = "INSERT INTO ". NV_PREFIXLANG . '_' . $module_data . "_files (file_name,alias, file_path, uploaded_by, is_folder, created_at, lev) 
+                               VALUES (:file_name,:alias, :file_path, :uploaded_by, 0, :created_at, :lev)";
                 $stmt = $db->prepare($sql_insert);
                 $stmt->bindParam(':file_name', $new_file_name);
+                $alias = pathinfo($row['file_name'],PATHINFO_FILENAME).'_'.NV_CURRENTTIME.'.'.pathinfo($row['file_name'],PATHINFO_EXTENSION);
+                $stmt->bindParam(':alias', change_alias($alias));
                 $stmt->bindParam(':file_path', $new_file_path);
                 $stmt->bindParam(':uploaded_by', $user_info['userid']);
                 $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);

@@ -2,7 +2,12 @@
 if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
-$file_id = $nv_Request->get_int('file_id', 'get', 0);
+
+$page_title = $module_info['site_title'];
+$key_words = $module_info['keywords'];
+$description = $module_info['description'];
+
+// $file_id = $nv_Request->get_int('file_id', 'get', 0);
 $page = $nv_Request->get_int("page", "get", 1);
 
 $sql = "SELECT file_name, file_path, lev FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . $file_id;

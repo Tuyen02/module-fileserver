@@ -3,9 +3,12 @@
 if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
+$page_title = $module_info['site_title'];
+$key_words = $module_info['keywords'];
+$description = $module_info['description'];
 $message = '';
 
-$file_id = $nv_Request->get_int('file_id', 'get,post', 0);
+// $file_id = $nv_Request->get_int('file_id', 'get,post', 0);
 
 $sql = "SELECT f.file_name, f.file_path,
         (SELECT p.p_group FROM ". NV_PREFIXLANG . '_' . $module_data ."_permissions p WHERE p.file_id = f.file_id) AS p_group,

@@ -6,6 +6,14 @@ if (!defined('NV_SYSTEM')) {
 
 define('NV_IS_MOD_FILESERVER', true);
 
+if(!empty($array_op)){
+    preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m);
+    $lev = $m[2];
+    $file_id = $m[2];
+}else{
+    $lev = $nv_Request->get_int("lev", "get,post", 0);
+}
+
 if (in_array($config_value = get_config_value(), $user_info['in_groups'])) {
     $arr_per = array_column($db->query("SELECT p_group, file_id FROM `nv4_vi_fileserver_permissions` WHERE p_group > 1")->fetchAll(), 'p_group', 'file_id');
 } else {
@@ -194,11 +202,13 @@ function addToDatabase($files, $parent_id, $db)
         $filePath = str_replace(NV_ROOTDIR, '', $file['filename']);
 
         $insert_sql = "INSERT INTO ". NV_PREFIXLANG . '_' . $module_data . "_files 
-                       (file_name, file_path, file_size, is_folder, lev, compressed) 
-                       VALUES (:file_name, :file_path, :file_size, :is_folder, :lev, 0)";
+                       (file_name,alias, file_path, file_size, is_folder, lev, compressed) 
+                       VALUES (:file_name,:alias, :file_path, :file_size, :is_folder, :lev, 0)";
         $insert_stmt = $db->prepare($insert_sql);
         $file_name = basename($file['filename']);
         $insert_stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
+        $alias = change_alias(pathinfo($file_name,PATHINFO_FILENAME).NV_CURRENTTIME.'.'.pathinfo($file_name,PATHINFO_EXTENSION));
+        $insert_stmt->bindParam(':alias',$alias, PDO::PARAM_STR);
         $insert_stmt->bindParam(':file_path', $filePath, PDO::PARAM_STR);
         $insert_stmt->bindParam(':file_size', $file['size'], PDO::PARAM_INT);
         $insert_stmt->bindParam(':is_folder', $isFolder, PDO::PARAM_INT);

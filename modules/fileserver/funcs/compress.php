@@ -2,8 +2,11 @@
 if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
+$page_title = $module_info['site_title'];
+$key_words = $module_info['keywords'];
+$description = $module_info['description'];
 
-$file_id = $nv_Request->get_int('file_id', 'get', 0);
+// $file_id = $nv_Request->get_int('file_id', 'get', 0);
 $action = $nv_Request->get_title('action', 'post', '');
 
 $sql = 'SELECT file_name, file_size, file_path, compressed FROM ' . NV_PREFIXLANG . '_fileserver_files WHERE file_id = :file_id';
@@ -42,12 +45,13 @@ if (!$row) {
                 $message = $lang_module['unzip_ok_cant_delete'];
             }
             $update_sql = 'UPDATE ' . NV_PREFIXLANG . '_fileserver_files 
-                           SET is_folder = 1, compressed = 0, file_name = :new_name, file_path = :new_path, file_size = :file_size ,created_at= :created_at
+                           SET is_folder = 1, compressed = 0, file_name = :new_name,alias=:alias, file_path = :new_path, file_size = :file_size ,created_at= :created_at
                            WHERE file_id = :file_id';
             $update_stmt = $db->prepare($update_sql);
             $new_name = pathinfo($row['file_name'], PATHINFO_FILENAME);
             $new_path = '/uploads/fileserver/' . $new_name;
             $update_stmt->bindParam(':new_name', $new_name, PDO::PARAM_STR);
+            $update_stmt->bindParam(':alias',$new_name, PDO::PARAM_STR);
             $update_stmt->bindParam(':new_path', $new_path, PDO::PARAM_STR);
             $update_stmt->bindParam(':file_size', $file_size_zip, PDO::PARAM_INT);
             $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
