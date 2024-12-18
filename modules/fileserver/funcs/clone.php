@@ -20,7 +20,7 @@ if (!$row) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=clone');
 }
 
-$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=clone/' .$row['alias'].'-'. $file_id;
+$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=clone/' .$row['alias'];
 $page_url = $base_url;
 $view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main/' .$row['alias'].'-'.'lev=' . $row['lev'];
 
@@ -72,28 +72,27 @@ if (defined('NV_IS_SPADMIN')) {
         } else {
             if (copy(NV_ROOTDIR . $row['file_path'], NV_ROOTDIR . $target_url . '/' . $row['file_name'])) {
                 $message = $lang_module['copy_ok'];
-                $new_file_name = $$row['file_name'];
+                $new_file_name = $row['file_name'];
                 $new_file_path = $target_url . '/' . $new_file_name;
 
-                $sql_insert = "INSERT INTO ". NV_PREFIXLANG . '_' . $module_data . "_files (file_name,alias, file_path, uploaded_by, is_folder, created_at, lev) 
-                               VALUES (:file_name,:alias, :file_path, :uploaded_by, 0, :created_at, :lev)";
+                $sql_insert = "INSERT INTO ". NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
+                               VALUES (:file_name, :file_path, :uploaded_by, 0, :created_at, :lev)";
                 $stmt = $db->prepare($sql_insert);
                 $stmt->bindParam(':file_name', $new_file_name);
-                $alias = pathinfo($row['file_name'],PATHINFO_FILENAME).'_'.NV_CURRENTTIME.'.'.pathinfo($row['file_name'],PATHINFO_EXTENSION);
-                $stmt->bindParam(':alias', change_alias($alias));
                 $stmt->bindParam(':file_path', $new_file_path);
                 $stmt->bindParam(':uploaded_by', $user_info['userid']);
                 $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 $stmt->bindParam(':lev', $target_lev);
 
                 if($stmt->execute()){
+                    $new_file_id = $db->lastInsertId();
+                    updateAlias($new_file_id,$new_file_name);
                     $sql_permissions = "SELECT p_group, p_other FROM ". NV_PREFIXLANG . '_' . $module_data . "_permissions WHERE file_id = :folder_id";
                     $stmt_permissions = $db->prepare($sql_permissions);
                     $stmt_permissions->bindParam(':folder_id', $target_lev);
                     $stmt_permissions->execute();
                     $permissions = $stmt_permissions->fetch();
 
-                    $new_file_id = $db->lastInsertId();
                     $sql_insert_permissions = "INSERT INTO ". NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
                                             VALUES (:file_id, :p_group, :p_other, :updated_at)";
                     $stmt_permissions_insert = $db->prepare($sql_insert_permissions);

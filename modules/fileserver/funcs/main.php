@@ -113,7 +113,6 @@ if (!empty($action)) {
         }
 
         if (!empty($name_f)) {
-            $alias = change_alias($name_f);
             $file_path = $base_dir . '/' . $name_f;
             if (file_exists($file_path)) {
                 $status = 'error';
@@ -125,11 +124,10 @@ if (!empty($action)) {
                     $i++;
                 }
             }
-            $sql = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name,alias, file_path, uploaded_by, is_folder, created_at, lev) 
-                    VALUES (:file_name,:alias, :file_path, :uploaded_by, :is_folder, :created_at, :lev)";
+            $sql = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
+                    VALUES (:file_name, :file_path, :uploaded_by, :is_folder, :created_at, :lev)";
             $stmt = $db->prepare($sql);
             $stmt->bindParam(':file_name', $name_f, PDO::PARAM_STR);
-            $stmt->bindParam(':alias', $alias, PDO::PARAM_STR);
             $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
             $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_STR);
             $stmt->bindParam(':is_folder', $type, PDO::PARAM_INT);
@@ -154,6 +152,7 @@ if (!empty($action)) {
             if ($status == 'success') {
                 $exe = $stmt->execute();
                 $file_id = $db->lastInsertId();
+                updateAlias($file_id,$name_f);
                 $sql1 = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
                     VALUES (:file_id, :p_group, :p_other, :updated_at)";
                 $stmta = $db->prepare($sql1);
@@ -248,7 +247,7 @@ if (!empty($action)) {
                     $sqlUpdate = "UPDATE " . NV_PREFIXLANG . '_' . $module_data . "_files SET file_name = :new_name,alias=:alias, file_path = :new_path, updated_at = :updated_at WHERE file_id = :file_id";
                     $stmtUpdate = $db->prepare($sqlUpdate);
                     $stmtUpdate->bindParam(':new_name', $newName);
-                    $stmtUpdate->bindParam(':alias', change_alias($newName));
+                    $stmtUpdate->bindParam(':alias', change_alias($newName.'_'.$fileId));
                     $stmtUpdate->bindParam(':new_path', $newFilePath);
                     $stmtUpdate->bindParam(':file_id', $fileId, PDO::PARAM_INT);
                     $stmtUpdate->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
@@ -300,11 +299,10 @@ if (!empty($action)) {
         $compressResult = compressFiles($fileIds, $zipFullPath);
 
         if ($compressResult['status'] === 'success') {
-            $sqlInsert = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name,alias, file_path, file_size, uploaded_by, is_folder, created_at, lev, compressed) 
-                          VALUES (:file_name,:alias, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, 1)";
+            $sqlInsert = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev, compressed) 
+                          VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, 1)";
             $stmtInsert = $db->prepare($sqlInsert);
             $stmtInsert->bindParam(':file_name', $zipFileName, PDO::PARAM_STR);
-            $stmtInsert->bindParam(':alias', change_alias($zipFileName), PDO::PARAM_STR);
             $stmtInsert->bindParam(':file_path', $zipFilePath, PDO::PARAM_STR);
             $stmtInsert->bindParam(':file_size', filesize($zipFullPath), PDO::PARAM_INT);
             $stmtInsert->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_INT);
@@ -312,6 +310,7 @@ if (!empty($action)) {
             $stmtInsert->bindValue(':lev', $lev, PDO::PARAM_INT);
             if ($stmtInsert->execute()) {
                 $file_id = $db->lastInsertId();
+                updateAlias($file_id,$zipFileName);
                 $sql1 = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
                 VALUES (:file_id, :p_group, :p_other, :updated_at)";
                 $stmta = $db->prepare($sql1);
@@ -404,11 +403,10 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
 
         $lev = $nv_Request->get_int("lev", "get,post", 0);
 
-        $sql = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name,alias, file_path, file_size, uploaded_by, is_folder, created_at, lev) 
-                VALUES (:file_name,:alias, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)";
+        $sql = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev) 
+                VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)";
         $stmt = $db->prepare($sql);
         $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
-        $stmt->bindParam(':alias', change_alias($file_name), PDO::PARAM_STR);
         $stmt->bindParam(':file_path', $relative_path, PDO::PARAM_STR);
         $stmt->bindParam(':file_size', $file_size, PDO::PARAM_STR);
         $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_STR);
@@ -417,6 +415,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
 
         if ($stmt->execute()) {
             $file_id = $db->lastInsertId();
+            updateAlias($file_id,$file_name);
             $sql1 = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
                 VALUES (:file_id, :p_group, :p_other, :updated_at)";
             $stmta = $db->prepare($sql1);

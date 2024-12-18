@@ -19,6 +19,17 @@ if (in_array($config_value = get_config_value(), $user_info['in_groups'])) {
 } else {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
 }
+
+function updateAlias($file_id,$file_name){
+    global $db, $module_data;
+    $alias = change_alias($file_name.'_'.$file_id);
+    $sqlUpdate = "UPDATE ". NV_PREFIXLANG . '_' . $module_data . "_files SET alias=:alias WHERE file_id = :file_id";
+    $stmtUpdate = $db->prepare($sqlUpdate);
+    $stmtUpdate->bindValue(':alias', $alias, PDO::PARAM_INT);
+    $stmtUpdate->bindValue(':file_id', $file_id, PDO::PARAM_INT);
+    $stmtUpdate->execute();
+    return true;
+}
 function get_config_value()
 {
     global $db;
@@ -202,18 +213,19 @@ function addToDatabase($files, $parent_id, $db)
         $filePath = str_replace(NV_ROOTDIR, '', $file['filename']);
 
         $insert_sql = "INSERT INTO ". NV_PREFIXLANG . '_' . $module_data . "_files 
-                       (file_name,alias, file_path, file_size, is_folder, lev, compressed) 
-                       VALUES (:file_name,:alias, :file_path, :file_size, :is_folder, :lev, 0)";
+                       (file_name, file_path, file_size, is_folder, lev, compressed) 
+                       VALUES (:file_name, :file_path, :file_size, :is_folder, :lev, 0)";
         $insert_stmt = $db->prepare($insert_sql);
         $file_name = basename($file['filename']);
         $insert_stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
-        $alias = change_alias(pathinfo($file_name,PATHINFO_FILENAME).NV_CURRENTTIME.'.'.pathinfo($file_name,PATHINFO_EXTENSION));
-        $insert_stmt->bindParam(':alias',$alias, PDO::PARAM_STR);
         $insert_stmt->bindParam(':file_path', $filePath, PDO::PARAM_STR);
         $insert_stmt->bindParam(':file_size', $file['size'], PDO::PARAM_INT);
         $insert_stmt->bindParam(':is_folder', $isFolder, PDO::PARAM_INT);
         $insert_stmt->bindParam(':lev', $parent_id, PDO::PARAM_INT);
         $insert_stmt->execute();
+
+        $file_id = $db->lastInsertId();
+        updateAlias($file_id,$file_name);
     }
 }
 
