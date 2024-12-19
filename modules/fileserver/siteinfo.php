@@ -15,10 +15,10 @@ if(!empty($array_op)){
 }
 
 $_arr_siteinfo = [];
-$_arr_siteinfo['number_file'] = $db_slave->query("SELECT total_files FROM " . NV_PREFIXLANG . '_' . $module_data . "_logs WHERE lev = ". $lev)->fetch(PDO::FETCH_ASSOC);
+$_arr_siteinfo['number_file'] = $db_slave->query("SELECT COUNT(*) FROM " . NV_PREFIXLANG . "_fileserver_files WHERE status =1")->fetchColumn();
 
 $siteinfo[] = [
     'key' => $lang_siteinfo['total_file'],
-    'value' => number_format($_arr_siteinfo['number_file'])
+    'value' => $_arr_siteinfo['number_file']
 ];
 
