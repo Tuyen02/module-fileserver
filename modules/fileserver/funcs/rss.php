@@ -3,7 +3,7 @@
 if (!defined('NV_IS_MOD_FILESERVER'))
     die('Stop!!!');
 
- 
+$page_title = $lang_module['rss'];
 $channel = array();
 $items = array();
  

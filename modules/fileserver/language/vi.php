@@ -93,3 +93,11 @@ $lang_module['copy'] = 'Sao chép';
 $lang_module['move'] = 'Di chuyển';
 $lang_module['cancel'] = 'Hủy bỏ';
 $lang_module['choose_folder'] = 'Chọn thư mục';
+
+$lang_module['copy_or_move'] = 'Sao chép hoặc di chuyển';
+$lang_module['compress'] = 'Nén';
+$lang_module['edit_img'] = 'Chỉnh sửa ảnh';
+$lang_module['edit'] = 'Chỉnh sửa';
+$lang_module['perm'] = 'Phân quyền';
+$lang_module['rss'] = 'RSS';
+$lang_module['share'] = 'Chia sẻ';

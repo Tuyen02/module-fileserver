@@ -3,9 +3,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
-$page_title = $module_info['site_title'];
-$key_words = $module_info['keywords'];
-$description = $module_info['description'];
+$page_title = $lang_module['copy_or_move'];
 
 // $file_id = $nv_Request->get_int('file_id', 'get', 0);
 $rank = $nv_Request->get_int('rank', 'get', 0);

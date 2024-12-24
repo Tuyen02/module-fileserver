@@ -21,3 +21,6 @@ $lang_translator['langtype'] = 'lang_module';
 
 
 $lang_module['total_file'] = 'Tổng số file & folder';
+$lang_module['api_fileserver'] = 'API File Server';
+$lang_module['api_fileserver_GetFile'] = 'Lấy thông tin file (GetFile)';
+$lang_module['api_fileserver_DeleteFile'] = 'Xóa file (DeleteFile)';
