@@ -20,7 +20,7 @@ $full_dir = NV_ROOTDIR . $base_dir;
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
 
 $page_url = $base_url;
-$canonicalUrl = getCanonicalUrl($page_url, true, true);
+// $canonicalUrl = getCanonicalUrl($page_url, true, true);
 
 if (in_array($config_value = get_config_value(), $user_info['in_groups'])) {
     $arr_per = array_column($db->query("SELECT p_group, file_id FROM `nv4_vi_fileserver_permissions` WHERE p_group > 1")->fetchAll(), 'p_group', 'file_id');

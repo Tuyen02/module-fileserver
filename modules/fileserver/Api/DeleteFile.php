@@ -52,8 +52,8 @@ class DeleteFile implements IApi
         if ($fileId > 0) {
             $deleted = $this->deleteFileOrFolder($fileId);
             if ($deleted) {
-                $this->result->setSuccess();
-                $this->result->set('message', 'Delete file success');
+                $this->result->setSuccess()
+                    ->set('message', 'Delete file success');
             } else {
                 $this->result->setError()
                     ->setCode('1001')
