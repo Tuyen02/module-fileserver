@@ -26,3 +26,4 @@ $lang_module['api_fileserver_GetFile'] = 'Lấy thông tin file (GetFile)';
 $lang_module['api_fileserver_DeleteFile'] = 'Xóa file (DeleteFile)';
 $lang_module['api_fileserver_AddFile'] = 'Thêm file (AddFile)';
 $lang_module['api_fileserver_UpdateFile'] = 'Cập nhật file (UpdateFile)';
+$lang_module['api_fileserver_UploadFile'] = 'Upload file (UploadFile)';

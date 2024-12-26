@@ -46,7 +46,7 @@ class AddFile implements IApi
      */
     public function execute()
     {
-        global $nv_Request, $db, $user_info, $lang_module;
+        global $nv_Request, $db, $user_info;
         $base_dir = '/uploads/fileserver';
         $full_dir = NV_ROOTDIR . $base_dir;
         $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=fileserver';
