@@ -14,6 +14,5 @@ if (!defined('NV_ADMIN')) {
 }
 
 if (defined('NV_IS_SPADMIN')) {
-    // $submenu['Test'] = $lang_module['test'];
-
+    $submenu['export'] = $lang_module['export'];
 }
