@@ -28,3 +28,4 @@ $lang_module['api_fileserver_AddFile'] = 'Thêm file (AddFile)';
 $lang_module['api_fileserver_UpdateFile'] = 'Cập nhật file (UpdateFile)';
 $lang_module['api_fileserver_UploadFile'] = 'Upload file (UploadFile)';
 $lang_module['export'] = 'Export';
+$lang_module['import'] = 'Import';

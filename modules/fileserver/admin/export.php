@@ -68,7 +68,7 @@ function intvaluetostring($int)
 }
 
 //mảng này chứa danh sách các sheet
-$sql= "SELECT file_name, file_size, file_path, created_at FROM `nv4_vi_fileserver_files` WHERE status = 1";
+$sql= "SELECT * FROM `nv4_vi_fileserver_files` WHERE status = 1";
 $stmt = $db->prepare($sql);
 $stmt->execute();
 $result = $stmt->fetchAll();
@@ -124,9 +124,18 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $arr_header_row = [
             'STT',
             'Tên File',
-            'Kích thước',
+            'Alias',
             'Đường dẫn',
+            'Kích thước',
+            'Người tải lên',
             'Ngày tải lên',
+            'Ngày cập nhật',
+            'Là thư mục',
+            'Trạng thái',
+            'Cấp độ',
+            'Lượt xem',
+            'Chia sẻ',
+            'Nén',
         ];
         // bắt đầu in từ ô
         $title_char_from = 'A';
@@ -255,9 +264,18 @@ if ($nv_Request->isset_request('submit', 'post')) {
             // các dữ liệu row kết quả
             $objWorksheet->setCellValue($table_char_from++ . $i, $stt);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_name']);
-            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_size'] ? number_format($_data2['file_size'] / 1024, 2) . ' KB' : '--');
+            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['alias']);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_path']);
+            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_size'] ? number_format($_data2['file_size'] / 1024, 2) . ' KB' : '--');
+            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['uploaded_by']);
             $objWorksheet->setCellValue($table_char_from++ . $i, date("d/m/Y", $_data2['created_at']));
+            $objWorksheet->setCellValue($table_char_from++ . $i, date("d/m/Y", $_data2['updated_at']));
+            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['is_folder']);
+            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['status']);
+            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['lev']);
+            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['view']);
+            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['share']);
+            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['compressed']);
 
             $objWorksheet->getRowDimension($i)->setRowHeight(20);
         }
@@ -265,11 +283,20 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $objWorksheet->getStyle('A4:G' . $i)
             ->applyFromArray($styleTableArray);
         // auto size
-        $objWorksheet->getColumnDimension('A')->setWidth(15);
-        $objWorksheet->getColumnDimension('B')->setWidth(17);
+        $objWorksheet->getColumnDimension('A')->setWidth(10);
+        $objWorksheet->getColumnDimension('B')->setWidth(35);
         $objWorksheet->getColumnDimension('C')->setWidth(35);
-        $objWorksheet->getColumnDimension('D')->setWidth(30);
-        $objWorksheet->getColumnDimension('E')->setWidth(30);
+        $objWorksheet->getColumnDimension('D')->setWidth(35);
+        $objWorksheet->getColumnDimension('E')->setWidth(20);
+        $objWorksheet->getColumnDimension('F')->setWidth(10);
+        $objWorksheet->getColumnDimension('G')->setWidth(20);
+        $objWorksheet->getColumnDimension('H')->setWidth(20);
+        $objWorksheet->getColumnDimension('I')->setWidth(10);
+        $objWorksheet->getColumnDimension('J')->setWidth(10);
+        $objWorksheet->getColumnDimension('K')->setWidth(10);
+        $objWorksheet->getColumnDimension('L')->setWidth(10);
+        $objWorksheet->getColumnDimension('M')->setWidth(10);
+        $objWorksheet->getColumnDimension('N')->setWidth(10);
 
         // lưu file
         $file_path = $file_folder_path . '/ssssss' . $key . '.' . $excel_ext;
