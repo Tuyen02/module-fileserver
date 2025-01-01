@@ -1,21 +1,17 @@
 <!-- BEGIN: main -->
-<div class="container">
+
     <!-- BEGIN: error -->
     <div class="alert alert-danger">
         {ERROR}
     </div>
     <!-- END: error -->
 
-    <div>
-        <form action="{FORM_ACTION}" method="post" class="confirm-reload" enctype=“multipart/form-data”>
-            <div class="form-group row text-center ">
-                <button type="submit" class="btn btn-primary" value="1" name="submit" value="submit">Xuất File</button>
-            </div>
-        </form>
-    </div>
-
-
-    <table class="table table-hover">
+    <form action="{FORM_ACTION}" method="post" class="confirm-reload" enctype=“multipart/form-data”>
+        <div class="form-group row text-center ">
+            <button type="submit" class="btn btn-primary" value="1" name="submit" value="submit">Xuất File</button>
+        </div>
+    </form>
+    <table class="table">
         <thead class="thead-dark">
             <tr>
                 <th scope="col">Tên file</th>
@@ -31,14 +27,12 @@
                     {ROW.file_name}
                 </td>
                 <td>{ROW.file_size}</td>
-                <td>{ROW.file_path}</td>
+                <td><a href="{ROW.url_download}">{ROW.file_path}</a></td>
                 <td>{ROW.created_at}</td>
-
-                <!-- END: download -->
                 </td>
             </tr>
             <!-- END: file_row -->
         </tbody>
     </table>
-</div>
+
 <!-- END: main -->

@@ -312,6 +312,51 @@ if ($nv_Request->isset_request('submit', 'post')) {
     }
 }
 
+$download = $nv_Request->get_int('download', 'get', 0);
+if ($download == 1) {
+    $file_id = $nv_Request->get_int('file_id', 'get', 0);
+
+    $sql = "SELECT file_path, file_name, is_folder FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = :file_id";
+    $stmt = $db->prepare($sql);
+    $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+    $stmt->execute();
+    $file = $stmt->fetch();
+
+    if ($file) {
+        $file_path = NV_ROOTDIR . $file['file_path'];
+        $file_name = $file['file_name'];
+        $is_folder = $file['is_folder'];
+        $zip = '';
+
+        if ($is_folder == 1) {
+            $zipFileName = $file_name . '_' . NV_CURRENTTIME . '.zip';
+            $zipFilePath = '/data/tmp/' . $zipFileName;
+            $zipFullPath = NV_ROOTDIR . $zipFilePath;
+
+            $zipArchive = new PclZip($zipFullPath);
+            $zipArchive->create($file_path, PCLZIP_OPT_REMOVE_PATH, NV_ROOTDIR);
+
+            if (file_exists($zipFullPath)) {
+                $zip = $zipFullPath;
+            }
+        } elseif (pathinfo($file_path, PATHINFO_EXTENSION) === 'zip') {
+            if (file_exists($file_path)) {
+                $zip = $file_path;
+            }
+        } else {
+            if (file_exists($file_path)) {
+                $zip = $file_path;
+            }
+        }
+
+        if (!empty($zip) && file_exists($zip)) {
+            $downloadPath = ($is_folder == 1) ? '/data/tmp/' : '/uploads/fileserver/';
+            $_download = new NukeViet\Files\Download($zip, NV_ROOTDIR . $downloadPath, basename($zip), true, 0);
+            $_download->download_file();
+        }
+    }
+}
+
 $xtpl = new XTemplate('export.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
 $xtpl->assign('LANG', $lang_module);
 $xtpl->assign('OP', $op);
@@ -320,6 +365,7 @@ $xtpl->assign('FORM_ACTION', NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE 
 $xtpl->assign('MODULE_DATA', $module_data);
 
 foreach ($result as $row) {
+    $row['url_download'] = NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=export&amp;file_id=' . $row['file_id'] . "&download=1";
     $row['created_at'] = date("d/m/Y", $row['created_at']);
     $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
     $xtpl->assign('ROW', $row);
