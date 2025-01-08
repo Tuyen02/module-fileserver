@@ -13,6 +13,15 @@ $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
 $stmt->execute();
 $row = $stmt->fetch();
 
+$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=compress/';
+
+//$canonicalUrl = getCanonicalUrl($page_url, true, true);
+$array_mod_title[] = [
+    'catid' => 0,
+    'title' => $lang_module['compress'],
+    'link' => $base_url
+];
+
 $status = '';
 $message = '';
 if (!$row) {
@@ -53,12 +62,12 @@ if (!$row) {
             $update_stmt->bindParam(':new_path', $new_path, PDO::PARAM_STR);
             $update_stmt->bindParam(':file_size', $file_size_zip, PDO::PARAM_INT);
             $update_stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
-            
-            if($update_stmt->execute()){
+
+            if ($update_stmt->execute()) {
                 updateLog($file_id);
                 $file_id = $db->lastInsertId();
-                updateAlias($file_id,$row['file_name']);
-                $sql1 = "INSERT INTO ". NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
+                updateAlias($file_id, $row['file_name']);
+                $sql1 = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
                     VALUES (:file_id, :p_group, :p_other, :updated_at)";
                 $stmta = $db->prepare($sql1);
                 $stmta->bindParam(':file_id', $file_id, PDO::PARAM_STR);
@@ -74,7 +83,7 @@ if (!$row) {
     }
 }
 
-$contents = nv_page_compress($row,$file_id,$file_size_zip,$list,$message);
+$contents = nv_page_compress($row, $file_id, $file_size_zip, $list, $message);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

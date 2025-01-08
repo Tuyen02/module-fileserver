@@ -68,7 +68,7 @@ function intvaluetostring($int)
 }
 
 //mảng này chứa danh sách các sheet
-$sql= "SELECT * FROM `nv4_vi_fileserver_files` WHERE status = 1";
+$sql = "SELECT * FROM `nv4_vi_fileserver_files` WHERE status = 1";
 $stmt = $db->prepare($sql);
 $stmt->execute();
 $result = $stmt->fetchAll();
@@ -196,7 +196,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
 
 
         // Tạo đối tượng objPHPExcel load template
-        
+
         $templatePath = NV_CONSOLE_DIR . '/export_excel/template2.xlsx';
         if (!file_exists($templatePath)) {
             die('Template file does not exist.');
@@ -268,8 +268,8 @@ if ($nv_Request->isset_request('submit', 'post')) {
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_path']);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_size'] ? number_format($_data2['file_size'] / 1024, 2) . ' KB' : '--');
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['uploaded_by']);
-            $objWorksheet->setCellValue($table_char_from++ . $i, date("d/m/Y", $_data2['created_at']));
-            $objWorksheet->setCellValue($table_char_from++ . $i, date("d/m/Y", $_data2['updated_at']));
+            $objWorksheet->setCellValue($table_char_from++ . $i, date('d/m/Y', $_data2['created_at']));
+            $objWorksheet->setCellValue($table_char_from++ . $i, date('d/m/Y', $_data2['updated_at']));
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['is_folder']);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['status']);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['lev']);
@@ -307,7 +307,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $objPHPExcel->disconnectWorksheets();
         unset($objPHPExcel);
 
-        $download = new NukeViet\Files\Download($file_path, $file_folder_path, 'excel-testv2.'.$excel_ext);
+        $download = new NukeViet\Files\Download($file_path, $file_folder_path, 'excel-testv2.' . $excel_ext);
         $download->download_file();
     }
 }
@@ -366,7 +366,7 @@ $xtpl->assign('MODULE_DATA', $module_data);
 
 foreach ($result as $row) {
     $row['url_download'] = NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=export&amp;file_id=' . $row['file_id'] . "&download=1";
-    $row['created_at'] = date("d/m/Y", $row['created_at']);
+    $row['created_at'] = date('d/m/Y', $row['created_at']);
     $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');

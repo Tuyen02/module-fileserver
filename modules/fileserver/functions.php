@@ -11,13 +11,19 @@ if(!empty($array_op)){
     $lev = $m[2];
     $file_id = $m[2];
 }else{
-    $lev = $nv_Request->get_int("lev", "get,post", 0);
+    $lev = $nv_Request->get_int('lev', 'get,post', 0);
 }
 
-if (in_array($config_value = get_config_value(), $user_info['in_groups'])) {
+if (!defined('NV_IS_USER')) {
+    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
+}
+
+
+if (is_array($user_info['in_groups']) && in_array($config_value = $module_config[$module_name]['group_admin_fileserver'], $user_info['in_groups'])) {
     $arr_per = array_column($db->query("SELECT p_group, file_id FROM `nv4_vi_fileserver_permissions` WHERE p_group > 1")->fetchAll(), 'p_group', 'file_id');
 } else {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
+
 }
 
 function updateAlias($file_id,$file_name){
@@ -29,24 +35,6 @@ function updateAlias($file_id,$file_name){
     $stmtUpdate->bindValue(':file_id', $file_id, PDO::PARAM_INT);
     $stmtUpdate->execute();
     return true;
-}
-function get_config_value()
-{
-    global $db;
-
-    $sql = "SELECT config_value FROM nv4_config WHERE config_name = :config_name";
-    $stmt = $db->prepare($sql);
-    $config_name = 'group_admin_fileserver';
-    $stmt->bindParam(':config_name', $config_name, PDO::PARAM_STR);
-
-    $stmt->execute();
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($row && isset($row['config_value'])) {
-        return $row['config_value'];
-    }
-
-    return 0;
 }
 
 function deleteFileOrFolder($fileId)
@@ -154,7 +142,7 @@ function checkIfParentIsFolder($db, $lev)
     if ($stmt) {
         return $stmt->fetchColumn();
     } else {
-        error_log($lang_module["Lỗi truy vấn trong checkIfParentIsFolder với lev: "] . intval($lev));
+        error_log($lang_module['Lỗi truy vấn trong checkIfParentIsFolder với lev: '] . intval($lev));
         return 0;
     }
 }

@@ -32,18 +32,17 @@
 </a><br>
 <!-- END: directory_option -->
 <p>
-
-    <script>
-        function selectFolder(directory) {
-            document.getElementsByName("target_folder")[0].value = directory;
-            alert('Selected folder: ' + directory);
-            document.getElementById("selected-folder-path").innerText = 'Đường dẫn thư mục đích: ' + directory;
-        }
-        $(document).ready(function () {
-            $("#backButton").on("click", function (e) {
-                e.preventDefault();
-                window.history.back();
-            });
+<script>
+    function selectFolder(directory) {
+        document.getElementsByName("target_folder")[0].value = directory;
+        alert('Selected folder: ' + directory);
+        document.getElementById("selected-folder-path").innerText = 'Đường dẫn thư mục đích: ' + directory;
+    }
+    $(document).ready(function () {
+        $("#backButton").on("click", function (e) {
+            e.preventDefault();
+            window.history.back();
         });
-    </script>
-    <!-- END: main -->
+    });
+</script>
+<!-- END: main -->

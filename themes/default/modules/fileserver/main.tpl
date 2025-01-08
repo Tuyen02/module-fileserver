@@ -20,9 +20,11 @@
     <br>
     <form action="{FORM_ACTION}" method="post" enctype="multipart/form-data" id="uploadForm"
         class="form-inline my-2 my-lg-0">
+        <!-- BEGIN: back -->
         <button type="button" class="btn btn-warning" id="backButton">
             <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
         </button>
+        <!-- END: back -->
         <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">{LANG.create_btn}</a>
         <button type="button" class="btn btn-primary" id="uploadButton">{LANG.upload_btn}</button>
         <input type="file" name="uploadfile" id="uploadfile" required style="display: none;">
@@ -99,22 +101,22 @@
         <tfoot>
             <tr>
                 <td class="gray" colspan="7">
-                        <strong>Full Size:</strong> 
-                        <span class="badge text-bg-light border-radius-0">{ROW.total_size}</span>
-                        <strong>File:</strong> 
-                        <span class="badge badge-secondary">{ROW.total_files}</span>
-                        <strong>Folder:</strong> 
-                        <span class="badge badge-secondary">{ROW.total_folders}</span>
-                    </div>
-                </td>
-            </tr>
-        </tfoot>
-    </table>
-    <hr>
-    <button type="submit" name="compress" class="btn btn-primary mt-2 " id="compressButton"><i
-            class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}</button>
-    <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll"><i class="fa fa-trash"
-            aria-hidden="true"></i> {LANG.delete_btn}</button>
+                    <strong>Full Size:</strong>
+                    <span class="badge text-bg-light border-radius-0">{ROW.total_size}</span>
+                    <strong>File:</strong>
+                    <span class="badge badge-secondary">{ROW.total_files}</span>
+                    <strong>Folder:</strong>
+                    <span class="badge badge-secondary">{ROW.total_folders}</span>
+</div>
+</td>
+</tr>
+</tfoot>
+</table>
+<hr>
+<button type="submit" name="compress" class="btn btn-primary mt-2 " id="compressButton"><i class="fa fa-file-archive-o"
+        aria-hidden="true"></i> {LANG.zip_btn}</button>
+<button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll"><i class="fa fa-trash"
+        aria-hidden="true"></i> {LANG.delete_btn}</button>
 </div>
 <div class="text-center">{GENERATE_PAGE}</div>
 

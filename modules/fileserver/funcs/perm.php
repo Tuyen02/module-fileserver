@@ -9,14 +9,23 @@ $message = '';
 // $file_id = $nv_Request->get_int('file_id', 'get,post', 0);
 
 $sql = "SELECT f.file_name, f.file_path,
-        (SELECT p.p_group FROM ". NV_PREFIXLANG . '_' . $module_data ."_permissions p WHERE p.file_id = f.file_id) AS p_group,
-        (SELECT p.p_other FROM ". NV_PREFIXLANG . '_' . $module_data ."_permissions p WHERE p.file_id = f.file_id) AS p_other
-        FROM ". NV_PREFIXLANG . '_' . $module_data ."_files f
+        (SELECT p.p_group FROM " . NV_PREFIXLANG . '_' . $module_data . "_permissions p WHERE p.file_id = f.file_id) AS p_group,
+        (SELECT p.p_other FROM " . NV_PREFIXLANG . '_' . $module_data . "_permissions p WHERE p.file_id = f.file_id) AS p_other
+        FROM " . NV_PREFIXLANG . '_' . $module_data . "_files f
         WHERE f.file_id = :file_id";
 $stmt = $db->prepare($sql);
 $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
 $stmt->execute();
 $row = $stmt->fetch();
+
+$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=perm/';
+
+//$canonicalUrl = getCanonicalUrl($page_url, true, true);
+$array_mod_title[] = [
+    'catid' => 0,
+    'title' => $lang_module['perm'],
+    'link' => $base_url
+];
 
 $group_read_checked = ($row['p_group'] >= 1) ? 'checked' : '';
 $group_write_checked = ($row['p_group'] >= 2) ? 'checked' : '';
@@ -40,13 +49,13 @@ if (defined('NV_IS_SPADMIN')) {
             'p_other' => $other_permissions,
         ];
 
-        $sql_check = "SELECT permission_id FROM ". NV_PREFIXLANG . '_' . $module_data ."_permissions WHERE file_id = :file_id";
+        $sql_check = "SELECT permission_id FROM " . NV_PREFIXLANG . '_' . $module_data . "_permissions WHERE file_id = :file_id";
         $check_stmt = $db->prepare($sql_check);
         $check_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
         $check_stmt->execute();
 
         if ($check_stmt->rowCount() > 0) {
-            $sql_update = "UPDATE ". NV_PREFIXLANG . '_' . $module_data ."_permissions 
+            $sql_update = "UPDATE " . NV_PREFIXLANG . '_' . $module_data . "_permissions 
                            SET  `p_group` = :p_group, p_other = :p_other, updated_at = :updated_at 
                            WHERE file_id = :file_id";
             $update_stmt = $db->prepare($sql_update);
@@ -56,7 +65,7 @@ if (defined('NV_IS_SPADMIN')) {
             $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
             $update_stmt->execute();
         } else {
-            $sql_insert = "INSERT INTO ". NV_PREFIXLANG . '_' . $module_data ."_permissions 
+            $sql_insert = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_permissions 
                            (file_id, `p_group`, p_other, updated_at) 
                            VALUES (:file_id, :p_group, :p_other, :updated_at)";
             $insert_stmt = $db->prepare($sql_insert);
@@ -67,7 +76,7 @@ if (defined('NV_IS_SPADMIN')) {
             $insert_stmt->execute();
         }
 
-        $sql_children = "SELECT file_id FROM ". NV_PREFIXLANG . '_' . $module_data ."_files WHERE lev = :file_id";
+        $sql_children = "SELECT file_id FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE lev = :file_id";
         $children_stmt = $db->prepare($sql_children);
         $children_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
         $children_stmt->execute();
@@ -78,7 +87,7 @@ if (defined('NV_IS_SPADMIN')) {
                 'p_other' => $permissions['p_other'],
             ];
 
-            $sql_update_child = "UPDATE ". NV_PREFIXLANG . '_' . $module_data ."_permissions 
+            $sql_update_child = "UPDATE " . NV_PREFIXLANG . '_' . $module_data . "_permissions 
                                  SET `p_group` = :p_group, p_other = :p_other, updated_at = :updated_at 
                                  WHERE file_id = :file_id";
             $update_child_stmt = $db->prepare($sql_update_child);

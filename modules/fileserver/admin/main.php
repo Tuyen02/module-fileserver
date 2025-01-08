@@ -17,11 +17,11 @@ $page_title = 'FILE SERVER';
 $post = [];
 $mess = '';
 
-if ($nv_Request->isset_request("submit", "post")) {
-    $post["config_value"] = $nv_Request->get_title('config_value', "post", '');
+if ($nv_Request->isset_request('submit', 'post')) {
+    $post['config_value'] = $nv_Request->get_title('config_value', 'post', '');
 
     if ($post['config_value'] == '') {
-        $mess = "Chua nhap";
+        $mess = 'Chua nhap';
     }
     $config_name = 'group_admin_fileserver';
     $lang = 'vi';
@@ -30,13 +30,13 @@ if ($nv_Request->isset_request("submit", "post")) {
                 ON DUPLICATE KEY UPDATE 
                         config_value = :config_value_update";
     $stmt = $db->prepare($sql);
-    $stmt->bindParam(":lang", $lang, PDO::PARAM_STR);
-    $stmt->bindParam(":module", $module_name, PDO::PARAM_STR);
-    $stmt->bindParam(":config_name", $config_name, PDO::PARAM_STR);
-    $stmt->bindParam(":config_value", $post['config_value'], PDO::PARAM_STR);
-    $stmt->bindParam(":config_value_update", $post['config_value'], PDO::PARAM_STR);
+    $stmt->bindParam(':lang', $lang, PDO::PARAM_STR);
+    $stmt->bindParam(':module', $module_name, PDO::PARAM_STR);
+    $stmt->bindParam(':config_name', $config_name, PDO::PARAM_STR);
+    $stmt->bindParam(':config_value', $post['config_value'], PDO::PARAM_STR);
+    $stmt->bindParam(':config_value_update', $post['config_value'], PDO::PARAM_STR);
     $exe = $stmt->execute();
-    $mess = "Update oke";
+    $mess = 'Update oke';
 }
 
 $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
