@@ -6,6 +6,7 @@ if (!defined('NV_SYSTEM')) {
 
 define('NV_IS_MOD_FILESERVER', true);
 
+
 if(!empty($array_op)){
     preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m);
     $lev = $m[2];
@@ -14,16 +15,10 @@ if(!empty($array_op)){
     $lev = $nv_Request->get_int('lev', 'get,post', 0);
 }
 
-if (!defined('NV_IS_USER')) {
-    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
-}
-
-
 if (is_array($user_info['in_groups']) && in_array($config_value = $module_config[$module_name]['group_admin_fileserver'], $user_info['in_groups'])) {
-    $arr_per = array_column($db->query("SELECT p_group, file_id FROM `nv4_vi_fileserver_permissions` WHERE p_group > 1")->fetchAll(), 'p_group', 'file_id');
+    $arr_per = array_column($db->query("SELECT p_group, file_id FROM nv4_vi_fileserver_permissions WHERE p_group > 1")->fetchAll(), 'p_group', 'file_id');
 } else {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
-
 }
 
 function updateAlias($file_id,$file_name){

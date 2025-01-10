@@ -5,6 +5,9 @@
     <!-- BEGIN: error -->
     <div class="alert alert-warning">{ERROR}</div>
     <!-- END: error -->
+    <!-- BEGIN: success -->
+    <div class="alert alert-warning">{SUCCESS}</div>
+    <!-- END: success -->
     <form action="{FORM_ACTION}" method="get" id="searchForm" class="form-inline my-2 my-lg-0">
         <input type="hidden" name="lev" value="{ROW.lev}">
         <input type="text" class="form-control" placeholder="{LANG.search}" id="searchInput" name="search"

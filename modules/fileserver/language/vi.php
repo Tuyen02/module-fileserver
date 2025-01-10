@@ -65,6 +65,7 @@ $lang_module['search'] = 'Tìm kiếm ...';
 $lang_module['back_btn'] = 'Quay lại';
 $lang_module['create_btn'] = 'Tạo mới';
 $lang_module['upload_btn'] = 'Tải lên';
+$lang_module['upload_ok'] = 'Tải lên thành công';
 $lang_module['f_name'] = 'Tên';
 $lang_module['f_size'] = 'Kích thước';
 $lang_module['created_at'] = 'Ngày tải lên';

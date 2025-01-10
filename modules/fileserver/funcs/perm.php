@@ -7,8 +7,9 @@ $page_title = $lang_module['perm'];
 $message = '';
 
 // $file_id = $nv_Request->get_int('file_id', 'get,post', 0);
+$page = $nv_Request->get_int('page', 'get', 1);
 
-$sql = "SELECT f.file_name, f.file_path,
+$sql = "SELECT f.file_name, f.file_path, f.alias,
         (SELECT p.p_group FROM " . NV_PREFIXLANG . '_' . $module_data . "_permissions p WHERE p.file_id = f.file_id) AS p_group,
         (SELECT p.p_other FROM " . NV_PREFIXLANG . '_' . $module_data . "_permissions p WHERE p.file_id = f.file_id) AS p_other
         FROM " . NV_PREFIXLANG . '_' . $module_data . "_files f
@@ -18,12 +19,17 @@ $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
 $stmt->execute();
 $row = $stmt->fetch();
 
-$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=perm/';
+$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=perm/' . $row['alias'] . '&page=' . $page;
 
 //$canonicalUrl = getCanonicalUrl($page_url, true, true);
 $array_mod_title[] = [
     'catid' => 0,
     'title' => $lang_module['perm'],
+    'link' => $base_url
+];
+$array_mod_title[] = [
+    'catid' => 0,
+    'title' => $row['file_name'],
     'link' => $base_url
 ];
 

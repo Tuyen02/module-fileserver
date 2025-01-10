@@ -7,21 +7,20 @@ $page_title = $lang_module['compress'];
 // $file_id = $nv_Request->get_int('file_id', 'get', 0);
 $action = $nv_Request->get_title('action', 'post', '');
 
-$sql = 'SELECT file_name, file_size, file_path, compressed FROM ' . NV_PREFIXLANG . '_fileserver_files WHERE file_id = :file_id';
+$sql = 'SELECT file_name, file_size, file_path, compressed,alias FROM ' . NV_PREFIXLANG . '_fileserver_files WHERE file_id = :file_id';
 $stmt = $db->prepare($sql);
 $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
 $stmt->execute();
 $row = $stmt->fetch();
 
-$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=compress/';
+$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=compress/' . $row['alias'] . '&page=' . $page;
 
 //$canonicalUrl = getCanonicalUrl($page_url, true, true);
 $array_mod_title[] = [
     'catid' => 0,
-    'title' => $lang_module['compress'],
+    'title' => $row['file_name'],
     'link' => $base_url
 ];
-
 $status = '';
 $message = '';
 if (!$row) {

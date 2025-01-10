@@ -20,6 +20,17 @@ $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DA
 
 $page_url = $base_url;
 
+if ($lev > 0) {
+    $sql1 = "SELECT file_name, file_path, lev,alias FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . $lev;
+    $result1 = $db->query($sql1);
+    $row1 = $result1->fetch();
+    $array_mod_title[] = [
+        'catid' => 0,
+        'title' => $row1['file_name'],
+        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main/' . $row1['alias'] . '&page=' . $page
+    ];
+}
+
 
 if (!defined('NV_IS_USER')) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
@@ -30,7 +41,6 @@ if (is_array($user_info['in_groups']) && in_array($config_value = $module_config
 } else {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
 }
-
 
 if (!defined('NV_IS_MODADMIN') and $page < 5) {
     $cache_file = NV_LANG_DATA . '_' . $module_info['template'] . '-' . $op . '-' . $page . '-' . NV_CACHE_PREFIX . '.cache';
@@ -49,7 +59,7 @@ if (empty($contents)) {
 
     if (!defined('NV_IS_SPADMIN') && !empty($arr_per)) {
         foreach ($file_ids as $index => $file_id) {
-            $file_ids_placeholder[':file_id_$index'] = $file_id;
+            $file_ids_placeholder[':file_id_' . $index] = $file_id;
         }
 
         if (!empty($file_ids_placeholder)) {
@@ -68,7 +78,6 @@ if (empty($contents)) {
             $sql .= " AND is_folder = 1";
         }
     }
-
 
     $total_sql = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . '_' . $module_data . "_files f WHERE status = 1 AND lev = :lev";
     $total_stmt = $db->prepare($total_sql);
@@ -96,15 +105,6 @@ if (empty($contents)) {
         $base_dir = $db->query("SELECT file_path FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . $lev)->fetchColumn();
         $full_dir = NV_ROOTDIR . $base_dir;
         $page_url .= '&amp;lev=' . $lev;
-
-        $sql1 = "SELECT file_name, file_path, lev FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . $file_id;
-        $result1 = $db->query($sql1);
-        $row1 = $result1->fetch();
-        $array_mod_title[] = [
-            'catid' => 0,
-            'title' => $row1['file_name'],
-            'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main/'
-        ];
     }
 
     $action = $nv_Request->get_title('action', 'post', '');
@@ -319,7 +319,7 @@ if (empty($contents)) {
 
             $compressResult = compressFiles($fileIds, $zipFullPath);
 
-            if ($compressResult['status'] === 'success') {
+            if ($compressResult['status'] == 'success') {
                 $sqlInsert = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev, compressed) 
                           VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, 1)";
                 $stmtInsert = $db->prepare($sqlInsert);
@@ -447,10 +447,10 @@ if (empty($contents)) {
                 $stmta->execute();
             }
             updateLog($lev);
-
             nv_redirect_location($page_url);
+            nv_jsonOutput(['status' => 'success', 'message' => $lang_module['upload_ok']]);
         } else {
-            $error = $upload_info['error'];
+            nv_jsonOutput(['status' => 'error', 'message' => $upload_info['error']]);
         }
     }
     $selected_all = ($search_type == 'all') ? ' selected' : '';
