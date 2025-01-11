@@ -22,10 +22,16 @@ $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DA
 $page_url = $base_url;
 $view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main/' . $row['alias'] . '-' . 'lev=' . $row['lev'];
 
-$canonicalUrl = getCanonicalUrl($page_url, true, true);
+// $canonicalUrl = getCanonicalUrl($page_url, true, true);
 $array_mod_title[] = [
     'catid' => 0,
     'title' => $lang_module['copy_or_move'],
+    'link' => $base_url
+];
+
+$array_mod_title[] = [
+    'catid' => 0,
+    'title' => $row['file_name'],
     'link' => $base_url
 ];
 
