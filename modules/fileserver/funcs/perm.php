@@ -15,7 +15,7 @@ $sql = "SELECT f.file_name, f.file_path, f.alias,
         FROM " . NV_PREFIXLANG . '_' . $module_data . "_files f
         WHERE f.file_id = :file_id";
 $stmt = $db->prepare($sql);
-$stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+$stmt->bindParam(':file_id',$file_id, PDO::PARAM_INT);
 $stmt->execute();
 $row = $stmt->fetch();
 

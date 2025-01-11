@@ -20,17 +20,26 @@ $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DA
 
 $page_url = $base_url;
 
-if ($lev > 0) {
-    $sql1 = "SELECT file_name, file_path, lev,alias FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . $lev;
+$breadcrumbs = [];
+$current_lev = $lev;
+
+while ($current_lev > 0) {
+    $sql1 = "SELECT file_name, file_path, lev, alias FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . $current_lev;
     $result1 = $db->query($sql1);
     $row1 = $result1->fetch();
-    $array_mod_title[] = [
-        'catid' => 0,
+    $breadcrumbs[] = [
+        'catid' => $current_lev,
         'title' => $row1['file_name'],
         'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main/' . $row1['alias'] . '&page=' . $page
     ];
+    $current_lev = $row1['lev'];
 }
 
+$breadcrumbs = array_reverse($breadcrumbs);
+
+foreach ($breadcrumbs as $breadcrumb) {
+    $array_mod_title[] = $breadcrumb;
+}
 
 if (!defined('NV_IS_USER')) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
@@ -448,9 +457,10 @@ if (empty($contents)) {
             }
             updateLog($lev);
             nv_redirect_location($page_url);
-            nv_jsonOutput(['status' => 'success', 'message' => $lang_module['upload_ok']]);
+            $status = 'success';
+            $message = $lang_module['upload_ok'];
         } else {
-            nv_jsonOutput(['status' => 'error', 'message' => $upload_info['error']]);
+            $error = $upload_info['error'];
         }
     }
     $selected_all = ($search_type == 'all') ? ' selected' : '';

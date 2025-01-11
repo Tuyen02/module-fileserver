@@ -6,6 +6,7 @@ $page_title = $lang_module['compress'];
 
 // $file_id = $nv_Request->get_int('file_id', 'get', 0);
 $action = $nv_Request->get_title('action', 'post', '');
+$page = $nv_Request->get_int('page', 'get', 1);
 
 $sql = 'SELECT file_name, file_size, file_path, compressed,alias FROM ' . NV_PREFIXLANG . '_fileserver_files WHERE file_id = :file_id';
 $stmt = $db->prepare($sql);
