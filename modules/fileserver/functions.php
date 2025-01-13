@@ -14,7 +14,6 @@ if(!empty($array_op)){
 }else{
     $lev = $nv_Request->get_int('lev', 'get,post', 0);
 }
-
 if (is_array($user_info['in_groups']) && in_array($config_value = $module_config[$module_name]['group_admin_fileserver'], $user_info['in_groups'])) {
     $arr_per = array_column($db->query("SELECT p_group, file_id FROM nv4_vi_fileserver_permissions WHERE p_group > 1")->fetchAll(), 'p_group', 'file_id');
 } else {

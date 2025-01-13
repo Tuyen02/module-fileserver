@@ -27,12 +27,25 @@
 <!-- BEGIN: message -->
 <div class="alert alert-warning">{MESSAGE}</div>
 <!-- END: message -->
+
 <div class="editor-container">
     <form action="" method="post">
         <div class="form-group">
             <label>{FILE_NAME}</label>
-            <textarea id="editor" class="form-control" name="file_content"
-                style="width: 500px; height: 300px;">{FILE_CONTENT}</textarea>
+            <!-- BEGIN: text -->
+            <textarea id="editor" class="form-control" name="file_content" style="width: 100%; height: 300px;">{FILE_CONTENT}</textarea>
+            <!-- END: text -->
+            <!-- BEGIN: pdf -->
+            <div id="pdfContainer">
+                <iframe src="{FILE_CONTENT}" width="600" height="500"></iframe>
+            </div>
+            <!-- END: pdf -->
+            <!-- BEGIN: docx -->
+            <textarea id="editor" class="form-control" name="file_content" style="width: 100%; height: 300px;">{FILE_CONTENT}</textarea>
+            <!-- END: docx -->
+            <!-- BEGIN: excel -->
+            <textarea id="editor" class="form-control" name="file_content" style="width: 100%; height: 300px;">{FILE_CONTENT}</textarea>
+            <!-- END: excel -->
             <input type="hidden" name="file_id" value="{FILE_ID}">
         </div>
         <a href="{url_view}" class="btn btn-warning">
@@ -41,6 +54,7 @@
         <button type="submit" class="btn btn-primary">{LANG.save_btn}</button>
     </form>
 </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/css/css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>

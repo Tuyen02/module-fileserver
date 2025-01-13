@@ -8,7 +8,7 @@ $page_title = $module_info['site_title'];
 $key_words = $module_info['keywords'];
 $description = $module_info['description'];
 
-$perpage = 5;
+$perpage = 20;
 $page = $nv_Request->get_int('page', 'get', 1);
 
 $search_term = $nv_Request->get_title('search', 'get', '');
@@ -322,7 +322,7 @@ if (empty($contents)) {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
             }
 
-            $zipFileName = 'compressed_' . NV_CURRENTTIME . '.zip';
+            $zipFileName = $nv_Request->get_title('zipFileName', 'get', ''). '.zip';
             $zipFilePath = $base_dir . '/' . $zipFileName;
             $zipFullPath = NV_ROOTDIR . $zipFilePath;
 

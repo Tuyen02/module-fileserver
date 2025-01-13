@@ -65,8 +65,8 @@ function nv_page_main_list($result, $page_url, $error, $success, $permissions, $
             $row['permissions'] = 'N/A';
         }
 
-        $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main/' . $row['alias']. '&page=' . $page;
-        $row['url_perm'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=perm/' . $row['alias']. '&page=' . $page;
+        $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main/' . $row['alias'] . '&page=' . $page;
+        $row['url_perm'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=perm/' . $row['alias'] . '&page=' . $page;
         $row['url_edit'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=edit/' . $row['alias'] . '&page=' . $page;
         $row['url_edit_img'] = nv_url_rewrite(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=edit_img/' . $row['alias'] . '&page=' . $page);
         $row['url_delete'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;file_id=' . $row['file_id'] . '&action=delete&checksess=' . md5($row['file_id'] . NV_CHECK_SESSION);
@@ -97,10 +97,10 @@ function nv_page_main_list($result, $page_url, $error, $success, $permissions, $
                 $xtpl->assign('COPY', $row['url_clone']);
                 $xtpl->parse('main.file_row.copy');
 
-                if ($fileInfo == 'txt') {
+                if ($fileInfo == 'txt' || $fileInfo == 'php' || $fileInfo == 'html' || $fileInfo == 'css' || $fileInfo == 'js' || $fileInfo == 'json' || $fileInfo == 'xml' || $fileInfo == 'sql' || $fileInfo == 'pdf' || $fileInfo == 'doc' || $fileInfo == 'docx' || $fileInfo == 'xls' || $fileInfo == 'xlsx') {
                     $xtpl->assign('EDIT', $row['url_edit']);
                     $xtpl->parse('main.file_row.edit');
-                } else if ($fileInfo == 'png' || $fileInfo == 'jpg') {
+                } else if ($fileInfo == 'png' || $fileInfo == 'jpg' || $fileInfo == 'jpeg' || $fileInfo == 'gif' || $fileInfo == 'mp3' || $fileInfo == 'mp4') {
                     $xtpl->assign('VIEW', $row['url_edit_img']);
                     $xtpl->parse('main.file_row.view');
                 }
@@ -114,7 +114,7 @@ function nv_page_main_list($result, $page_url, $error, $success, $permissions, $
         $xtpl->parse('main.file_row');
     }
 
-    if($_SERVER['REQUEST_URI'] != '/'.NV_LANG_DATA.'/'.$module_name.'/'){
+    if ($_SERVER['REQUEST_URI'] != '/' . NV_LANG_DATA . '/' . $module_name . '/') {
         $xtpl->assign('BACK', '');
         $xtpl->parse('main.back');
     }
@@ -196,7 +196,7 @@ function nv_page_compress($row, $file_id, $file_size_zip, $list, $message)
     return $xtpl->text('main');
 }
 
-function nv_page_edit_img($row, $file_id)
+function nv_page_edit_img($row, $file_id, $file_extension)
 {
     global $module_file, $global_config, $lang_module, $module_name;
 
@@ -206,6 +206,17 @@ function nv_page_edit_img($row, $file_id)
     $xtpl->assign('FILE_ID', $file_id);
     $xtpl->assign('FILE_NAME', $row['file_name']);
     $xtpl->assign('FILE_PATH', $row['file_path']);
+
+    if ($file_extension == 'mp3') {
+        $xtpl->assign('audio', '');
+        $xtpl->parse('main.audio');
+    } else if ($file_extension == 'mp4') {
+        $xtpl->assign('video', '');
+        $xtpl->parse('main.video');
+    } else if ($file_extension == 'jpg' || $file_extension == 'jpeg' || $file_extension == 'png' || $file_extension == 'gif') {
+        $xtpl->assign('IMG', '');
+        $xtpl->parse('main.img');
+    }
 
     $xtpl->parse('main');
     return $xtpl->text('main');
@@ -222,9 +233,25 @@ function nv_page_edit($row, $file_content, $file_id, $file_name, $view_url, $mes
     $xtpl->assign('FILE_NAME', $file_name);
     $xtpl->assign('url_view', $view_url);
 
+    $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+
     if ($message != '') {
         $xtpl->assign('MESSAGE', $message);
         $xtpl->parse('main.message');
+    }
+
+    if (in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
+        $xtpl->assign('text', '');
+        $xtpl->parse('main.text');
+    } elseif ($file_extension == 'pdf') {
+        $xtpl->assign('pdf', '');
+        $xtpl->parse('main.pdf');
+    } elseif (in_array($file_extension, ['doc', 'docx'])) {
+        $xtpl->assign('docx', '');
+        $xtpl->parse('main.docx');
+    } elseif (in_array($file_extension, ['xls', 'xlsx'])) {
+        $xtpl->assign('excel', '');
+        $xtpl->parse('main.excel');
     }
 
     $xtpl->parse('main');

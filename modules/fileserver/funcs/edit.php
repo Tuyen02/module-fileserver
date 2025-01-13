@@ -14,7 +14,7 @@ $sql = "SELECT file_name, file_path, lev, alias FROM " . NV_PREFIXLANG . '_' . $
 $result = $db->query($sql);
 $row = $result->fetch();
 
-if ($row == false) {
+if (empty($row)) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
 }
 
@@ -39,14 +39,24 @@ $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
 
 $file_content = '';
 if (file_exists($full_path)) {
-    if ($file_extension === 'pdf') {
-        $file_content = 'PDF content cannot be displayed directly. Please download the file to view its content.';
+    if ($file_extension == 'pdf') {
+        $file_content = $file_path;;
     } elseif (in_array($file_extension, ['xlsx', 'xls'])) {
         $spreadsheet = IOFactory::load($full_path);
         $sheet = $spreadsheet->getActiveSheet();
         $file_content_array = $sheet->toArray();
         foreach ($file_content_array as $row) {
             $file_content .= implode("\t", $row) . "\n";
+        }
+    } elseif (in_array($file_extension, ['doc', 'docx'])) {
+        $zip = new ZipArchive;
+        if ($zip->open($full_path) == true) {
+            if (($index = $zip->locateName('word/document.xml')) !== false) {
+                $data = $zip->getFromIndex($index);
+                $xml = new SimpleXMLElement($data);
+                $file_content = strip_tags($xml->asXML());
+            }
+            $zip->close();
         }
     } else {
         $file_content = file_get_contents($full_path);
@@ -57,9 +67,8 @@ $status = '';
 $message = '';
 if (defined('NV_IS_SPADMIN')) {
     if ($nv_Request->get_int('file_id', 'post') > 0) {
-        if ($file_extension === 'pdf') {
-            $status = $lang_module['error'];
-            $message = 'Editing PDF files is not supported.';
+        if ($file_extension == 'pdf') {
+            $file_path = $row['file_path'];
         } elseif (in_array($file_extension, ['xlsx', 'xls'])) {
             $file_content = $nv_Request->get_array('file_content', 'post', []);
             $spreadsheet = IOFactory::load($full_path);
@@ -72,6 +81,18 @@ if (defined('NV_IS_SPADMIN')) {
             }
             $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
             $writer->save($full_path);
+        } elseif (in_array($file_extension, ['doc', 'docx'])) {
+            $file_content = $nv_Request->get_string('file_content', 'post');
+            $zip = new ZipArchive;
+            if ($zip->open($full_path) == true) {
+                if (($index = $zip->locateName('word/document.xml')) !== false) {
+                    $xml = new SimpleXMLElement('<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>');
+                    $body = $xml->addChild('w:body');
+                    $body->addChild('w:p', htmlspecialchars($file_content));
+                    $zip->addFromString('word/document.xml', $xml->asXML());
+                }
+                $zip->close();
+            }
         } else {
             $file_content = $nv_Request->get_string('file_content', 'post');
             file_put_contents($full_path, $file_content);

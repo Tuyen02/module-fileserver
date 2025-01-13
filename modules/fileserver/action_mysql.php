@@ -21,7 +21,6 @@ $sql_drop_module[] = 'DROP TABLE IF EXISTS ' . $db_config['prefix'] . '_' . $lan
 
 $sql_create_module = $sql_drop_module;
 
-
 $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_files (
   file_id INT(11) NOT NULL AUTO_INCREMENT,
   file_name VARCHAR(255) NOT NULL,

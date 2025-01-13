@@ -8,9 +8,8 @@ $page_title = $lang_module['compress'];
 $action = $nv_Request->get_title('action', 'post', '');
 $page = $nv_Request->get_int('page', 'get', 1);
 
-$sql = 'SELECT file_name, file_size, file_path, compressed,alias FROM ' . NV_PREFIXLANG . '_fileserver_files WHERE file_id = :file_id';
+$sql = "SELECT file_name, file_size, file_path, compressed,alias FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $lev;
 $stmt = $db->prepare($sql);
-$stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
 $stmt->execute();
 $row = $stmt->fetch();
 
