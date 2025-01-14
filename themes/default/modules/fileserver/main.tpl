@@ -115,32 +115,32 @@
         </tfoot>
     </table>
     <hr>
-    <button type="button" class="btn btn-primary mt-2" id="compressButton" data-toggle="modal"
-        data-target="#compressModal">
+    <a href="#" class="btn btn-primary" id="compressButton" data-toggle="modal" data-target="#compressModal">
         <i class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}
-    </button>
-    <div class="modal fade" id="compressModal" tabindex="-1" role="dialog" aria-labelledby="compressModalLabel"
-        aria-hidden="true">
+    </a>
+
+    <div class="modal fade" id="compressModal" tabindex="-1" role="dialog" aria-labelledby="compressModalLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="compressModalLabel">Nhập tên file zip</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+                    <h3 class="modal-title" id="compressModalLabel">Nén Modal</h3>
                 </div>
                 <div class="modal-body">
                     <form id="compressForm">
                         <div class="form-group">
                             <label for="zipFileName">Tên file zip</label>
                             <input type="text" class="form-control" id="zipFileName" name="zipFileName" required>
+                            <div id="fileNameWarning" class="text-danger mt-2" style="display: none;"></div>
+                            <div id="fileNameSuccess" class="text-success mt-2" style="display: none;"></div>
                         </div>
-                        <button type="submit" class="btn btn-primary">Gửi</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">{LANG.close_btn}</button>
+                        <button type="submit" class="btn btn-primary">{LANG.zip_btn}</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+
     <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll"><i class="fa fa-trash"
             aria-hidden="true"></i> {LANG.delete_btn}</button>
 </div>
@@ -380,7 +380,7 @@
     });
 
     $(document).ready(function () {
-        document.querySelector('[name="compress"]').addEventListener('click', function (e) {
+        $('#compressButton').on('click', function (e) {
             e.preventDefault();
 
             const selectedFiles = [];
@@ -390,12 +390,51 @@
 
             if (selectedFiles.length == 0) {
                 alert("Vui lòng chọn ít nhất một file để nén!");
-                return;
+                return false;
             }
 
             console.log(selectedFiles);
+        });
 
-            $('#compressModal').modal('show');
+        let isFileNameValid = false;
+
+        $('#zipFileName').on('input', function () {
+            var zipFileName = $(this).val();
+            const selectedFiles = [];
+            document.querySelectorAll('input[name="files[]"]:checked').forEach(input => {
+                selectedFiles.push(input.value);
+            });
+            if (zipFileName) {
+                $.ajax({
+                    type: 'POST',
+                    url: '', 
+                    data: {
+                        action: 'check_filename',
+                        zipFileName: zipFileName,
+                        files: selectedFiles,
+                        lev: 0
+                    },
+                    success: function (res) {
+                        if (res.status == 'error') {
+                            $('#fileNameWarning').text(res.message).show();
+                            $('#fileNameSuccess').hide();
+                            isFileNameValid = false;
+                        } else {
+                            $('#fileNameSuccess').text(res.message).show();
+                            $('#fileNameWarning').hide();
+                            isFileNameValid = true;
+                        }
+                    },
+                    error: function () {
+                        alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+                        isFileNameValid = false;
+                    }
+                });
+            } else {
+                $('#fileNameWarning').hide();
+                $('#fileNameSuccess').hide();
+                isFileNameValid = false;
+            }
         });
 
         $('#compressForm').on('submit', function (e) {
@@ -406,19 +445,23 @@
                 selectedFiles.push(input.value);
             });
 
+            if (!isFileNameValid) {
+                alert('Tên file không hợp lệ. Vui lòng kiểm tra lại.');
+                return false;
+            }
+
             if (zipFileName && selectedFiles.length > 0) {
                 $.ajax({
                     type: 'POST',
                     url: '',
                     data: {
                         action: 'compress',
-                        files: selectedFiles,
-                        zipFileName: zipFileName
+                        zipFileName: zipFileName,
+                        files: selectedFiles
                     },
                     success: function (res) {
                         console.log(res);
                         alert(res.message);
-                        $('#compressModal').modal('hide');
                         location.reload();
                     },
                     error: function () {
@@ -426,7 +469,7 @@
                     }
                 });
             } else {
-                alert('Vui lòng nhập tên file zip và chọn ít nhất một file!');
+                alert('Vui lòng nhập tên file zip!');
             }
         });
     });

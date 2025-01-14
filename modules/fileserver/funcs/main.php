@@ -129,7 +129,12 @@ if (empty($contents)) {
             if (!defined('NV_IS_SPADMIN')) {
                 nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_thing_to_do']]);
             }
+
             $name_f = $nv_Request->get_title('name_f', 'post', '');
+            if($name_f == ''){
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty']]);
+            }
+            
             $type = $nv_Request->get_int('type', 'post', 0); //1 =  folder, 0 file
             if ($lev > 0) {
                 $parentFileType = checkIfParentIsFolder($db, $lev);
@@ -313,6 +318,36 @@ if (empty($contents)) {
             }
         }
 
+        if ($action == 'check_filename') {
+            $zipFileName = $nv_Request->get_title('zipFileName', 'post', '');
+            if ($zipFileName == '') {
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['zip_file_name_empty']]);
+            }
+        
+            $sqlCheck = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_name = :file_name AND lev = :lev and status = 1";
+            $stmtCheck = $db->prepare($sqlCheck);
+            $stmtCheck->bindParam(':file_name', $zipFileName, PDO::PARAM_STR);
+            $stmtCheck->bindParam(':lev', $lev, PDO::PARAM_INT);
+            $stmtCheck->execute();
+            $count = $stmtCheck->fetchColumn();
+        
+            if ($count > 0) {
+                $i = 1;
+                $originalName = pathinfo($zipFileName, PATHINFO_FILENAME);
+                $extension = pathinfo($zipFileName, PATHINFO_EXTENSION);
+                do {
+                    $zipFileName = $originalName . '_' . $i . '.' . $extension;
+                    $stmtCheck->bindParam(':file_name', $zipFileName, PDO::PARAM_STR);
+                    $stmtCheck->execute();
+                    $count = $stmtCheck->fetchColumn();
+                    $i++;
+                } while ($count > 0);
+                nv_jsonOutput(['status' => 'error', 'message' => 'Tên file đã tồn tại. Gợi ý: ' . $zipFileName]);
+            } else {
+                nv_jsonOutput(['status' => 'success', 'message' => 'Tên file hợp lệ.' ]);
+            }
+        }
+
         if ($action == 'compress') {
             if (!defined(constant_name: 'NV_IS_SPADMIN')) {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_thing_to_do']]);
@@ -322,7 +357,9 @@ if (empty($contents)) {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
             }
 
-            $zipFileName = $nv_Request->get_title('zipFileName', 'get', ''). '.zip';
+            $zipFileName = $nv_Request->get_title('zipFileName', 'post', '');
+            $zipFileName = $zipFileName. '.zip';
+
             $zipFilePath = $base_dir . '/' . $zipFileName;
             $zipFullPath = NV_ROOTDIR . $zipFilePath;
 
