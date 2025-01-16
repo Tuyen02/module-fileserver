@@ -119,7 +119,8 @@
         <i class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}
     </a>
 
-    <div class="modal fade" id="compressModal" tabindex="-1" role="dialog" aria-labelledby="compressModalLabel" aria-hidden="true">
+    <div class="modal fade" id="compressModal" tabindex="-1" role="dialog" aria-labelledby="compressModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -407,7 +408,7 @@
             if (zipFileName) {
                 $.ajax({
                     type: 'POST',
-                    url: '', 
+                    url: '',
                     data: {
                         action: 'check_filename',
                         zipFileName: zipFileName,

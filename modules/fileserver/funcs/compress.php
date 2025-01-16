@@ -31,7 +31,7 @@ if (!$row) {
     $extractTo = NV_ROOTDIR . '/uploads/fileserver/' . pathinfo($row['file_name'], PATHINFO_FILENAME);
 
     if (!is_dir($extractTo)) {
-        mkdir($extractTo, 0777, true);
+        mkdir($extractTo);
     }
 
     $zip = new PclZip($zipFilePath);

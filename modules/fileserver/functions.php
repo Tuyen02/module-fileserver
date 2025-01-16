@@ -6,12 +6,11 @@ if (!defined('NV_SYSTEM')) {
 
 define('NV_IS_MOD_FILESERVER', true);
 
-
-if(!empty($array_op)){
+if (!empty($array_op)) {
     preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m);
     $lev = $m[2];
     $file_id = $m[2];
-}else{
+} else {
     $lev = $nv_Request->get_int('lev', 'get,post', 0);
 }
 if (is_array($user_info['in_groups']) && in_array($config_value = $module_config[$module_name]['group_admin_fileserver'], $user_info['in_groups'])) {
@@ -20,10 +19,11 @@ if (is_array($user_info['in_groups']) && in_array($config_value = $module_config
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
 }
 
-function updateAlias($file_id,$file_name){
+function updateAlias($file_id, $file_name)
+{
     global $db, $module_data;
-    $alias = change_alias($file_name.'_'.$file_id);
-    $sqlUpdate = "UPDATE ". NV_PREFIXLANG . '_' . $module_data . "_files SET alias=:alias WHERE file_id = :file_id";
+    $alias = change_alias($file_name . '_' . $file_id);
+    $sqlUpdate = "UPDATE " . NV_PREFIXLANG . '_' . $module_data . "_files SET alias=:alias WHERE file_id = :file_id";
     $stmtUpdate = $db->prepare($sqlUpdate);
     $stmtUpdate->bindValue(':alias', $alias, PDO::PARAM_INT);
     $stmtUpdate->bindValue(':file_id', $file_id, PDO::PARAM_INT);
@@ -35,14 +35,14 @@ function deleteFileOrFolder($fileId)
 {
     global $db, $module_data;
 
-    $sql = "SELECT * FROM ". NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = :file_id";
+    $sql = "SELECT * FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = :file_id";
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':file_id', $fileId, PDO::PARAM_INT);
     $stmt->execute();
     $row = $stmt->fetch();
 
     if (empty($row)) {
-        return false; 
+        return false;
     }
 
     $filePath = $row['file_path'];
@@ -56,7 +56,7 @@ function deleteFileOrFolder($fileId)
             unlink($fullPath);
         }
 
-        $sqlUpdate = "UPDATE ". NV_PREFIXLANG . '_' . $module_data . "_files SET status = 0 WHERE file_id = :file_id";
+        $sqlUpdate = "UPDATE " . NV_PREFIXLANG . '_' . $module_data . "_files SET status = 0 WHERE file_id = :file_id";
         $stmtUpdate = $db->prepare($sqlUpdate);
         $stmtUpdate->bindValue(':file_id', $fileId, PDO::PARAM_INT);
         $stmtUpdate->execute();
@@ -69,20 +69,20 @@ function updateDirectoryStatus($parentId)
 {
     global $db, $module_data;
 
-    $sqlParent = "SELECT file_path FROM ". NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = :file_id";
+    $sqlParent = "SELECT file_path FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = :file_id";
     $stmtParent = $db->prepare($sqlParent);
     $stmtParent->bindParam(':file_id', $parentId, PDO::PARAM_INT);
     $stmtParent->execute();
     $parent = $stmtParent->fetch();
 
     if (empty($parent)) {
-        return false; 
+        return false;
     }
 
     $parentPath = $parent['file_path'];
     $fullParentPath = NV_ROOTDIR . $parentPath;
 
-    $sql = "SELECT file_id, file_path, is_folder FROM ". NV_PREFIXLANG . '_' . $module_data . "_files WHERE lev = :lev AND status = 1";
+    $sql = "SELECT file_id, file_path, is_folder FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE lev = :lev AND status = 1";
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':lev', $parentId, PDO::PARAM_INT);
     $stmt->execute();
@@ -102,7 +102,7 @@ function updateDirectoryStatus($parentId)
             }
         }
 
-        $sqlUpdate = "UPDATE ". NV_PREFIXLANG . '_' . $module_data . "_files SET status = 0 WHERE file_id = :file_id";
+        $sqlUpdate = "UPDATE " . NV_PREFIXLANG . '_' . $module_data . "_files SET status = 0 WHERE file_id = :file_id";
         $stmtUpdate = $db->prepare($sqlUpdate);
         $stmtUpdate->bindValue(':file_id', $fileId, PDO::PARAM_INT);
         $stmtUpdate->execute();
@@ -120,7 +120,7 @@ function updateDirectoryStatus($parentId)
         }
     }
 
-    $sqlUpdateParent = "UPDATE ". NV_PREFIXLANG . '_' . $module_data . "_files SET status = 0 WHERE file_id = :file_id";
+    $sqlUpdateParent = "UPDATE " . NV_PREFIXLANG . '_' . $module_data . "_files SET status = 0 WHERE file_id = :file_id";
     $stmtUpdateParent = $db->prepare($sqlUpdateParent);
     $stmtUpdateParent->bindParam(':file_id', $parentId, PDO::PARAM_INT);
     $stmtUpdateParent->execute();
@@ -128,11 +128,10 @@ function updateDirectoryStatus($parentId)
     return true;
 }
 
-
 function checkIfParentIsFolder($db, $lev)
 {
     global $lang_module, $module_data;
-    $stmt = $db->query("SELECT is_folder FROM ". NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . intval($lev));
+    $stmt = $db->query("SELECT is_folder FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . intval($lev));
     if ($stmt) {
         return $stmt->fetchColumn();
     } else {
@@ -156,8 +155,8 @@ function compressFiles($fileIds, $zipFilePath)
     $zip = new PclZip($zipFilePath);
     $filePaths = [];
 
-    $placeholders = implode(',', array_fill(0, count($fileIds), '?')); ///
-    $sql = "SELECT file_path, file_name FROM ". NV_PREFIXLANG . '_' . $module_data . "_files 
+    $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
+    $sql = "SELECT file_path, file_name FROM " . NV_PREFIXLANG . '_' . $module_data . "_files 
             WHERE file_id IN ($placeholders) AND status = 1";
     $stmt = $db->prepare($sql);
     $stmt->execute($fileIds);
@@ -193,21 +192,23 @@ function addToDatabase($files, $parent_id, $db)
     foreach ($files as $file) {
         $isFolder = ($file['folder'] == 1) ? 1 : 0;
         $filePath = str_replace(NV_ROOTDIR, '', $file['filename']);
+        $created_at = NV_CURRENTTIME;
 
-        $insert_sql = "INSERT INTO ". NV_PREFIXLANG . '_' . $module_data . "_files 
-                       (file_name, file_path, file_size, is_folder, lev, compressed) 
-                       VALUES (:file_name, :file_path, :file_size, :is_folder, :lev, 0)";
+        $insert_sql = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files 
+                       (file_name, file_path, file_size, is_folder,created_at, lev, compressed) 
+                       VALUES (:file_name, :file_path, :file_size, :is_folder,:created_at, :lev, 0)";
         $insert_stmt = $db->prepare($insert_sql);
         $file_name = basename($file['filename']);
         $insert_stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
         $insert_stmt->bindParam(':file_path', $filePath, PDO::PARAM_STR);
         $insert_stmt->bindParam(':file_size', $file['size'], PDO::PARAM_INT);
         $insert_stmt->bindParam(':is_folder', $isFolder, PDO::PARAM_INT);
+        $insert_stmt->bindValue(':created_at', $created_at, PDO::PARAM_INT);
         $insert_stmt->bindParam(':lev', $parent_id, PDO::PARAM_INT);
         $insert_stmt->execute();
 
         $file_id = $db->lastInsertId();
-        updateAlias($file_id,$file_name);
+        updateAlias($file_id, $file_name);
     }
 }
 
@@ -216,7 +217,7 @@ function calculateFolderSize($folderId)
     global $db, $module_data;
     $totalSize = 0;
 
-    $sql = "SELECT file_id, is_folder, file_size FROM ". NV_PREFIXLANG . '_' . $module_data . "_files WHERE lev = :lev";
+    $sql = "SELECT file_id, is_folder, file_size FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE lev = :lev";
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':lev', $folderId, PDO::PARAM_INT);
     $stmt->execute();
@@ -240,7 +241,7 @@ function calculateFileFolderStats($lev)
     $total_folders = 0;
     $total_size = 0;
 
-    $sql = "SELECT file_id, is_folder, file_size FROM ". NV_PREFIXLANG . '_' . $module_data . "_files WHERE lev = :lev AND status = 1 ";
+    $sql = "SELECT file_id, is_folder, file_size FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE lev = :lev AND status = 1 ";
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':lev', $lev, PDO::PARAM_INT);
     $stmt->execute();

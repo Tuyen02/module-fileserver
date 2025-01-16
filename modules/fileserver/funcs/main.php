@@ -127,79 +127,89 @@ if (empty($contents)) {
         //create
         if ($action == 'create') {
             if (!defined('NV_IS_SPADMIN')) {
-                nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_thing_to_do']]);
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_thing_to_do']]);
             }
 
             $name_f = $nv_Request->get_title('name_f', 'post', '');
-            if($name_f == ''){
+            if ($name_f == '') {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty']]);
             }
-            
-            $type = $nv_Request->get_int('type', 'post', 0); //1 =  folder, 0 file
+
+            $type = $nv_Request->get_int('type', 'post', 0); // 1 = folder, 0 = file
             if ($lev > 0) {
                 $parentFileType = checkIfParentIsFolder($db, $lev);
                 if ($type == 0 && $parentFileType == 0) {
-                    nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_create_file_in_file.']]);
+                    nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_create_file_in_file']]);
                 }
 
                 if ($type == 1 && $parentFileType == 0) {
-                    nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_create_file_in_file.']]);
+                    nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_create_file_in_file']]);
                 }
             }
 
-            if (!empty($name_f)) {
-                $file_path = $base_dir . '/' . $name_f;
-                if (file_exists($file_path)) {
-                    $status = 'error';
-                    $mess = $lang_module['f_has_exit'];
-                    $i = 1;
-                    while (file_exists($file_path)) {
-                        $name_f = pathinfo($name_f, PATHINFO_FILENAME) . '-$i';
-                        $file_path = $dir . '/' . $name_f;
-                        $i++;
-                    }
-                }
-                $sql = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
+            $sqlCheck = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_name = :file_name AND lev = :lev and status = 1";
+            $stmtCheck = $db->prepare($sqlCheck);
+            $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
+            $stmtCheck->bindParam(':lev', $lev, PDO::PARAM_INT);
+            $stmtCheck->execute();
+            $count = $stmtCheck->fetchColumn();
+
+            if ($count > 0) {
+                $i = 1;
+                $originalName = pathinfo($name_f, PATHINFO_FILENAME);
+                $extension = pathinfo($name_f, PATHINFO_EXTENSION);
+                do {
+                    $name_f = $originalName . '_' . $i . '.' . $extension;
+                    $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
+                    $stmtCheck->execute();
+                    $count = $stmtCheck->fetchColumn();
+                    $i++;
+                } while ($count > 0);
+                nv_jsonOutput(['status' => 'error', 'message' => 'Tên file đã tồn tại. Gợi ý: ' . $name_f]);
+            }
+            $file_path = $base_dir . '/' . $name_f;
+
+            $sql = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
                     VALUES (:file_name, :file_path, :uploaded_by, :is_folder, :created_at, :lev)";
-                $stmt = $db->prepare($sql);
-                $stmt->bindParam(':file_name', $name_f, PDO::PARAM_STR);
-                $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
-                $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_STR);
-                $stmt->bindParam(':is_folder', $type, PDO::PARAM_INT);
-                $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
-                $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam(':file_name', $name_f, PDO::PARAM_STR);
+            $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
+            $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_STR);
+            $stmt->bindParam(':is_folder', $type, PDO::PARAM_INT);
+            $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
+            $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
 
-                if ($type == 1) {
-                    //tao folder
-                    $check_dir = nv_mkdir($full_dir, $name_f);
-                    $status = $check_dir[0] == 1 ? 'success' : 'error';
-                    $mess = $check_dir[1];
-                } else {
-                    $mess = $lang_module['cannot_create_file'];
-                    //tao file
-                    $_dir = file_put_contents($full_dir . '/' . $name_f, '');
-                    if (isset($_dir)) {
-                        $status = 'success';
-                        $mess = $lang_module['create_ok'];
-                    }
-                }
-
-                if ($status == 'success') {
-                    $exe = $stmt->execute();
-                    $file_id = $db->lastInsertId();
-                    updateAlias($file_id, $name_f);
-                    $sql1 = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
-                    VALUES (:file_id, :p_group, :p_other, :updated_at)";
-                    $stmta = $db->prepare($sql1);
-                    $stmta->bindParam(':file_id', $file_id, PDO::PARAM_STR);
-                    $stmta->bindValue(':p_group', '1', PDO::PARAM_INT);
-                    $stmta->bindValue(':p_other', '1', PDO::PARAM_INT);
-                    $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-                    $exe = $stmta->execute();
-                    updateLog($lev);
+            if ($type == 1) {
+                // Tạo folder
+                $check_dir = nv_mkdir($full_dir, $name_f);
+                $status = $check_dir[0] == 1 ? 'success' : 'error';
+                $mess = $check_dir[1];
+            } else {
+                // Tạo file
+                $mess = $lang_module['cannot_create_file'];
+                $_dir = file_put_contents($full_dir . '/' . $name_f, '');
+                if (isset($_dir)) {
+                    $status = 'success';
                     $mess = $lang_module['create_ok'];
                 }
             }
+
+            if ($status == 'success') {
+                $exe = $stmt->execute();
+                $file_id = $db->lastInsertId();
+                updateAlias($file_id, $name_f);
+                $sql1 = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
+                        VALUES (:file_id, :p_group, :p_other, :updated_at)";
+                $stmta = $db->prepare($sql1);
+                $stmta->bindParam(':file_id', $file_id, PDO::PARAM_STR);
+                $stmta->bindValue(':p_group', '1', PDO::PARAM_INT);
+                $stmta->bindValue(':p_other', '1', PDO::PARAM_INT);
+                $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+                $stmta->execute();
+                updateLog($lev);
+                $mess = $lang_module['create_ok'];
+            }
+            nv_jsonOutput(['status' => $status, 'message' => $mess]);
         }
 
         if ($action == 'delete') {
@@ -319,32 +329,32 @@ if (empty($contents)) {
         }
 
         if ($action == 'check_filename') {
-            $zipFileName = $nv_Request->get_title('zipFileName', 'post', '');
-            if ($zipFileName == '') {
+            $name_f = $nv_Request->get_title('zipFileName', 'post', '');
+            if ($name_f == '') {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['zip_file_name_empty']]);
             }
-        
+
             $sqlCheck = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_name = :file_name AND lev = :lev and status = 1";
             $stmtCheck = $db->prepare($sqlCheck);
-            $stmtCheck->bindParam(':file_name', $zipFileName, PDO::PARAM_STR);
+            $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
             $stmtCheck->bindParam(':lev', $lev, PDO::PARAM_INT);
             $stmtCheck->execute();
             $count = $stmtCheck->fetchColumn();
-        
+
             if ($count > 0) {
                 $i = 1;
-                $originalName = pathinfo($zipFileName, PATHINFO_FILENAME);
-                $extension = pathinfo($zipFileName, PATHINFO_EXTENSION);
+                $originalName = pathinfo($name_f, PATHINFO_FILENAME);
+                $extension = pathinfo($name_f, PATHINFO_EXTENSION);
                 do {
-                    $zipFileName = $originalName . '_' . $i . '.' . $extension;
-                    $stmtCheck->bindParam(':file_name', $zipFileName, PDO::PARAM_STR);
+                    $name_f = $originalName . '_' . $i . '.' . $extension;
+                    $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
                     $stmtCheck->execute();
                     $count = $stmtCheck->fetchColumn();
                     $i++;
                 } while ($count > 0);
-                nv_jsonOutput(['status' => 'error', 'message' => 'Tên file đã tồn tại. Gợi ý: ' . $zipFileName]);
+                nv_jsonOutput(['status' => 'error', 'message' => 'Tên file đã tồn tại. Gợi ý: ' . $name_f]);
             } else {
-                nv_jsonOutput(['status' => 'success', 'message' => 'Tên file hợp lệ.' ]);
+                nv_jsonOutput(['status' => 'success', 'message' => 'Tên file hợp lệ.']);
             }
         }
 
@@ -358,12 +368,16 @@ if (empty($contents)) {
             }
 
             $zipFileName = $nv_Request->get_title('zipFileName', 'post', '');
-            $zipFileName = $zipFileName. '.zip';
-
+            if ($zipFileName == '') {
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['zip_file_name_empty']]);
+            }
+            $zipFileName = $zipFileName . '.zip';
             $zipFilePath = $base_dir . '/' . $zipFileName;
             $zipFullPath = NV_ROOTDIR . $zipFilePath;
 
             $compressResult = compressFiles($fileIds, $zipFullPath);
+
+            $file_size = filesize($zipFullPath);
 
             if ($compressResult['status'] == 'success') {
                 $sqlInsert = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev, compressed) 
@@ -371,7 +385,7 @@ if (empty($contents)) {
                 $stmtInsert = $db->prepare($sqlInsert);
                 $stmtInsert->bindParam(':file_name', $zipFileName, PDO::PARAM_STR);
                 $stmtInsert->bindParam(':file_path', $zipFilePath, PDO::PARAM_STR);
-                $stmtInsert->bindParam(':file_size', filesize($zipFullPath), PDO::PARAM_INT);
+                $stmtInsert->bindParam(':file_size', $file_size, PDO::PARAM_INT);
                 $stmtInsert->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_INT);
                 $stmtInsert->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 $stmtInsert->bindValue(':lev', $lev, PDO::PARAM_INT);
