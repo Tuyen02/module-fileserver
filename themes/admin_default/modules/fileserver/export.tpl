@@ -5,15 +5,10 @@
         {ERROR}
     </div>
     <!-- END: error -->
-
-    <form action="{FORM_ACTION}" method="post" class="confirm-reload" enctype=“multipart/form-data”>
-        <div class="form-group row text-center ">
-            <button type="submit" class="btn btn-primary" value="1" name="submit" value="submit">Xuất File</button>
-        </div>
-    </form>
-    <table class="table">
+    <table class="table table-bordered">
         <thead class="thead-dark">
             <tr>
+                <th scope="col">#</th>
                 <th scope="col">Tên file</th>
                 <th scope="col">Kích thước</th>
                 <th scope="col">Đường dẫn</th>
@@ -23,6 +18,9 @@
         <tbody>
             <!-- BEGIN: file_row -->
             <tr>
+                <td>
+                    {ROW.stt}
+                </td>
                 <td>
                     {ROW.file_name}
                 </td>
@@ -34,5 +32,11 @@
             <!-- END: file_row -->
         </tbody>
     </table>
+
+    <form action="{FORM_ACTION}" method="post" class="confirm-reload" enctype=“multipart/form-data”>
+        <div class="form-group row text-center ">
+            <button type="submit" class="btn btn-primary" value="1" name="submit" value="submit">Xuất File</button>
+        </div>
+    </form>
 
 <!-- END: main -->

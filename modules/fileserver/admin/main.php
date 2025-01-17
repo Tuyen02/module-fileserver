@@ -13,6 +13,7 @@ $result = $db->query($sql);
 $post = [];
 $mess = '';
 $post['group_ids'] = $nv_Request->get_array('group_ids', 'post', []);
+$group_ids_str = implode(',', $post['group_ids']);
 
 if ($nv_Request->isset_request('submit', 'post')) {
     if (empty($post['group_ids'])) {
@@ -20,23 +21,39 @@ if ($nv_Request->isset_request('submit', 'post')) {
     } else {
         $group_ids_str = implode(',', $post['group_ids']);
         $config_name = 'group_admin_fileserver';
-        $lang = 'vi';
-        $sql = "INSERT INTO nv4_config(lang, module, config_name, config_value) 
-                VALUES (:lang, :module, :config_name, :config_value)
-                ON DUPLICATE KEY UPDATE 
-                        config_value = :config_value_update";
-        $stmt = $db->prepare($sql);
-        $stmt->bindParam(':lang', $lang, PDO::PARAM_STR);
-        $stmt->bindParam(':module', $module_name, PDO::PARAM_STR);
-        $stmt->bindParam(':config_name', $config_name, PDO::PARAM_STR);
-        $stmt->bindParam(':config_value', $group_ids_str, PDO::PARAM_STR);
-        $stmt->bindParam(':config_value_update', $group_ids_str, PDO::PARAM_STR);
-        if ($exe = $stmt->execute()) {
-            $mess = 'Cập nhật thành công.';
-        }else{
-            $mess = 'Cập nhật thất bại.';
+
+        $sql_check = "SELECT COUNT(*) FROM nv4_config WHERE config_name = :config_name";
+        $stmt_check = $db->prepare($sql_check);
+        $stmt_check->bindParam(':config_name', $config_name, PDO::PARAM_STR);
+        $stmt_check->execute();
+        $count = $stmt_check->fetchColumn();
+
+        if ($count > 0) {
+            $sql_update = "UPDATE nv4_config
+                           SET config_value = :config_value 
+                           WHERE config_name = :config_name";
+            $stmt_update = $db->prepare($sql_update);
+            $stmt_update->bindParam(':config_value', $group_ids_str, PDO::PARAM_STR);
+            $stmt_update->bindParam(':config_name', $config_name, PDO::PARAM_STR);
+            if ($stmt_update->execute()) {
+                $mess = 'Cập nhật thành công.';
+            } else {
+                $mess = 'Cập nhật thất bại.';
+            }
+        } else {
+            $sql_insert = "INSERT INTO nv4_config (lang, module, config_name, config_value) 
+                           VALUES (:lang, :module, :config_name, :config_value)";
+            $stmt_insert = $db->prepare($sql_insert);
+            $stmt_insert->bindParam(':lang', $lang, PDO::PARAM_STR);
+            $stmt_insert->bindParam(':module', $module_name, PDO::PARAM_STR);
+            $stmt_insert->bindParam(':config_name', $config_name, PDO::PARAM_STR);
+            $stmt_insert->bindParam(':config_value', $group_ids_str, PDO::PARAM_STR);
+            if ($stmt_insert->execute()) {
+                $mess = 'Chèn mới thành công.';
+            } else {
+                $mess = 'Chèn mới thất bại.';
+            }
         }
-        
     }
 }
 

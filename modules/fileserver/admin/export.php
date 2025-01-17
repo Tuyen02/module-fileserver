@@ -67,12 +67,10 @@ function intvaluetostring($int)
     return $end;
 }
 
-//mảng này chứa danh sách các sheet
 $sql = "SELECT * FROM `nv4_vi_fileserver_files` WHERE status = 1";
 $stmt = $db->prepare($sql);
 $stmt->execute();
 $result = $stmt->fetchAll();
-
 
 if ($nv_Request->isset_request('submit', 'post')) {
     /*
@@ -109,7 +107,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
     }
 
     $page_title = 'Xuất excel';
-    $module_name = 'module_name Xuất excel';
+    $module_name = 'fileserver';
 
     // Ghi dữ liệu vào file
     if (empty($error)) {
@@ -124,18 +122,12 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $arr_header_row = [
             'STT',
             'Tên File',
-            'Alias',
             'Đường dẫn',
             'Kích thước',
             'Người tải lên',
             'Ngày tải lên',
-            'Ngày cập nhật',
             'Là thư mục',
             'Trạng thái',
-            'Cấp độ',
-            'Lượt xem',
-            'Chia sẻ',
-            'Nén',
         ];
         // bắt đầu in từ ô
         $title_char_from = 'A';
@@ -264,39 +256,34 @@ if ($nv_Request->isset_request('submit', 'post')) {
             // các dữ liệu row kết quả
             $objWorksheet->setCellValue($table_char_from++ . $i, $stt);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_name']);
-            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['alias']);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_path']);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_size'] ? number_format($_data2['file_size'] / 1024, 2) . ' KB' : '--');
-            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['uploaded_by']);
-            $objWorksheet->setCellValue($table_char_from++ . $i, date('d/m/Y', $_data2['created_at']));
-            $objWorksheet->setCellValue($table_char_from++ . $i, date('d/m/Y', $_data2['updated_at']));
-            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['is_folder']);
-            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['status']);
-            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['lev']);
-            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['view']);
-            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['share']);
-            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['compressed']);
+            $sql = "SELECT username FROM nv4_users WHERE userid = " . $_data2['uploaded_by'];
+            $stmt = $db->prepare($sql);
+            $stmt->execute();
+            $username = $stmt->fetchColumn();
+
+            $objWorksheet->setCellValue($table_char_from++ . $i,  $username);
+            $objWorksheet->setCellValue($table_char_from++ . $i, date('d/m/Y H:i:s', $_data2['created_at']));
+            $type = ($_data2['is_folder']==1) ? 'Thư mục' : 'Tệp tin';
+            $objWorksheet->setCellValue($table_char_from++ . $i, $type);
+            $status = ($_data2['status']==1) ? 'Hoạt động' : 'Không hoạt động';
+            $objWorksheet->setCellValue($table_char_from++ . $i, $status);
 
             $objWorksheet->getRowDimension($i)->setRowHeight(20);
         }
         // style table
-        $objWorksheet->getStyle('A4:G' . $i)
+        $objWorksheet->getStyle('A4:H' . $i)
             ->applyFromArray($styleTableArray);
         // auto size
         $objWorksheet->getColumnDimension('A')->setWidth(10);
         $objWorksheet->getColumnDimension('B')->setWidth(35);
         $objWorksheet->getColumnDimension('C')->setWidth(35);
         $objWorksheet->getColumnDimension('D')->setWidth(35);
-        $objWorksheet->getColumnDimension('E')->setWidth(20);
-        $objWorksheet->getColumnDimension('F')->setWidth(10);
-        $objWorksheet->getColumnDimension('G')->setWidth(20);
-        $objWorksheet->getColumnDimension('H')->setWidth(20);
-        $objWorksheet->getColumnDimension('I')->setWidth(10);
-        $objWorksheet->getColumnDimension('J')->setWidth(10);
-        $objWorksheet->getColumnDimension('K')->setWidth(10);
-        $objWorksheet->getColumnDimension('L')->setWidth(10);
-        $objWorksheet->getColumnDimension('M')->setWidth(10);
-        $objWorksheet->getColumnDimension('N')->setWidth(10);
+        $objWorksheet->getColumnDimension('E')->setWidth(35);
+        $objWorksheet->getColumnDimension('F')->setWidth(35);
+        $objWorksheet->getColumnDimension('G')->setWidth(35);
+        $objWorksheet->getColumnDimension('H')->setWidth(35);
 
         // lưu file
         $file_path = $file_folder_path . '/ssssss' . $key . '.' . $excel_ext;
@@ -356,7 +343,7 @@ if ($download == 1) {
         }
     }
 }
-
+$stt = 1;
 $xtpl = new XTemplate('export.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
 $xtpl->assign('LANG', $lang_module);
 $xtpl->assign('OP', $op);
@@ -365,6 +352,7 @@ $xtpl->assign('FORM_ACTION', NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE 
 $xtpl->assign('MODULE_DATA', $module_data);
 
 foreach ($result as $row) {
+    $row['stt'] = $stt++;
     $row['url_download'] = NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=export&amp;file_id=' . $row['file_id'] . "&download=1";
     $row['created_at'] = date('d/m/Y', $row['created_at']);
     $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
@@ -372,11 +360,11 @@ foreach ($result as $row) {
     $xtpl->parse('main.file_row');
 }
 
-
 if (!empty($error)) {
     $xtpl->assign('ERROR', $error);
     $xtpl->parse('main.error');
 }
+
 
 $xtpl->parse('main');
 $contents = $xtpl->text('main');
