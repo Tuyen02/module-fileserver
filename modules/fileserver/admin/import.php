@@ -38,58 +38,68 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
                     $_stt = $sheet->getCell('A' . $i)->getValue();
                     if (!empty($_stt)) {
                         $array_tender[$_stt]['file_name'] = $sheet->getCell('B' . $i)->getValue();
-                        $array_tender[$_stt]['alias'] = $sheet->getCell('C' . $i)->getValue();
-                        $array_tender[$_stt]['file_path'] = $sheet->getCell('D' . $i)->getValue();
-                        $array_tender[$_stt]['file_size'] = $sheet->getCell('E' . $i)->getValue();
-                        $array_tender[$_stt]['uploaded_by'] = $sheet->getCell('F' . $i)->getValue();
-                        $array_tender[$_stt]['created_at'] = $sheet->getCell('G' . $i)->getValue();
-                        $array_tender[$_stt]['updated_at'] = $sheet->getCell('H' . $i)->getValue();
-                        $array_tender[$_stt]['is_folder'] = $sheet->getCell('I' . $i)->getValue();
-                        $array_tender[$_stt]['status'] = $sheet->getCell('J' . $i)->getValue();
-                        $array_tender[$_stt]['lev'] = $sheet->getCell('K' . $i)->getValue();
-                        $array_tender[$_stt]['view'] = $sheet->getCell('L' . $i)->getValue();
-                        $array_tender[$_stt]['share'] = $sheet->getCell('M' . $i)->getValue();
-                        $array_tender[$_stt]['compressed'] = $sheet->getCell('N' . $i)->getValue();
+                        $array_tender[$_stt]['file_path'] = $sheet->getCell('C' . $i)->getValue();
+                        $array_tender[$_stt]['file_size'] = $sheet->getCell('D' . $i)->getValue();
+                        $array_tender[$_stt]['uploaded_by'] = $sheet->getCell('E' . $i)->getValue();
+                        $array_tender[$_stt]['created_at'] = $sheet->getCell('F' . $i)->getValue();
+                        $array_tender[$_stt]['is_folder'] = $sheet->getCell('G' . $i)->getValue();
+                        $array_tender[$_stt]['status'] = $sheet->getCell('H' . $i)->getValue();
                     } else {
-                        if (!empty($sheet->getCell('D' . $i)->getValue())) {
-                            $error[] = sprintf($nv_Lang->getModule('col_import'), $i);
+                        if (!empty($sheet->getCell('C' . $i)->getValue())) {
+                            $error = sprintf($nv_Lang->getModule('col_import'), $i);
                         }
                     }
                 }
 
                 if (!empty($array_tender)) {
                     foreach ($array_tender as $stt => $data) {
-                        // Chuẩn bị dữ liệu
                         $file_name = $db->quote($data['file_name']);
-                        $alias = $db->quote($data['alias']);
                         $file_path = $db->quote($data['file_path']);
                         $file_size = intval($data['file_size']);
-                        $uploaded_by = intval($admin_info['userid']);
-                        $created_at = NV_CURRENTTIME;
-                        $updated_at = NV_CURRENTTIME;
-                        $is_folder = intval($data['is_folder']);
-                        $status = intval($data['status']);
-                        $lev = intval($data['lev']);
-                        $view = intval($data['view']);
-                        $share = intval($data['share']);
-                        $compressed = intval($data['compressed']);
 
+                        $sql1 = "SELECT userid FROM nv4_users WHERE username = :username";
+                        $stmt = $db->prepare($sql1);
+                        $stmt->bindParam(':username', $data['uploaded_by'], PDO::PARAM_STR);
+                        $stmt->execute();
+                        $userid = $stmt->fetchColumn();
+
+                        $uploaded_by = $userid;
+                        $dateString = $data['created_at'];
+                        $dateFormatted = str_replace("/", "-", $dateString); 
+                        $timestamp = strtotime($dateFormatted);
+                        $created_at = $timestamp;
+                        $is_folder = ($data['is_folder'] == 'Thư mục') ? 1 : 0;
+                        $status = ($data['status'] == 'Hoạt động') ? 1: 0;
 
                         $sql = 'INSERT INTO ' . $db_config['prefix'] . '_' . NV_LANG_DATA . '_' . $module_data . '_files 
-                            (file_name, alias, file_path, file_size, uploaded_by, created_at, updated_at, is_folder, status, lev, view, share, compressed) 
+                            (file_name, file_path, file_size, uploaded_by, created_at, is_folder, status) 
                             VALUES 
-                            (' . $file_name . ', ' . $alias . ', ' . $file_path . ', ' . $file_size . ', ' . $uploaded_by . ', ' . $created_at . ', ' . $updated_at . ', ' . $is_folder . ', ' . $status . ', ' . $lev . ', ' . $view . ', ' . $share . ', ' . $compressed . ')';
+                            (' . $file_name . ',' . $file_path . ', ' . $file_size . ', ' . $uploaded_by . ', ' . $created_at . ', ' . $is_folder . ', ' . $status . ')';
 
                         $db->query($sql);
+
+                        $file_id = $db->lastInsertId();
+                        updateAlias($file_id, $file_name);
+                        updatePerm($file_id);
+                        updateLog(0);
                     }
                     $success = 'import_success';
                 }
             } catch (Exception $e) {
-                $error[] = $e->getMessage();
+                $error = $e->getMessage();
             }
         } else {
-            $error[] = $upload_info['error'];
+            $error = $upload_info['error'];
         }
+    }
+}
+
+$download = $nv_Request->get_int('download', 'get', 0);
+if ($download == 1) {
+    $file_path = NV_ROOTDIR . '/data/tmp/import-file/test.xlsx';
+    if (file_exists($file_path)) {
+        $download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . '/data/tmp/import-file/', 'test.xlsx', true, 0);
+        $download->download_file();
     }
 }
 
@@ -98,6 +108,7 @@ $xtpl->assign('LANG', $lang_module);
 $xtpl->assign('OP', $op);
 $xtpl->assign('MODULE_NAME', $module_name);
 $xtpl->assign('FORM_ACTION', NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op);
+$xtpl->assign('URL_DOWNLOAD', NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=import&download=1');
 
 if (!empty($error)) {
     $xtpl->assign('ERROR', $error);

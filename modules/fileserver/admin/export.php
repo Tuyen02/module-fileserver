@@ -265,9 +265,9 @@ if ($nv_Request->isset_request('submit', 'post')) {
 
             $objWorksheet->setCellValue($table_char_from++ . $i,  $username);
             $objWorksheet->setCellValue($table_char_from++ . $i, date('d/m/Y H:i:s', $_data2['created_at']));
-            $type = ($_data2['is_folder']==1) ? 'Thư mục' : 'Tệp tin';
+            $type = ($_data2['is_folder'] == 1) ? 'Thư mục' : 'Tệp tin';
             $objWorksheet->setCellValue($table_char_from++ . $i, $type);
-            $status = ($_data2['status']==1) ? 'Hoạt động' : 'Không hoạt động';
+            $status = ($_data2['status'] == 1) ? 'Hoạt động' : 'Không hoạt động';
             $objWorksheet->setCellValue($table_char_from++ . $i, $status);
 
             $objWorksheet->getRowDimension($i)->setRowHeight(20);
@@ -343,6 +343,7 @@ if ($download == 1) {
         }
     }
 }
+
 $stt = 1;
 $xtpl = new XTemplate('export.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
 $xtpl->assign('LANG', $lang_module);
