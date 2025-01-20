@@ -1,5 +1,4 @@
 <?php
-
 if (!defined('NV_IS_FILE_ADMIN')) {
     die('Stop!!!');
 }
@@ -8,6 +7,7 @@ $error = '';
 $success = '';
 $admin_info['allow_files_type'][] = 'xlsx';
 $admin_info['allow_files_type'][] = 'xls';
+
 if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['uploadfile']) && is_uploaded_file($_FILES['uploadfile']['tmp_name'])) {
     $file_extension = pathinfo($_FILES['uploadfile']['name'], PATHINFO_EXTENSION);
     if (!in_array($file_extension, ['xlsx', 'xls'])) {
@@ -30,61 +30,94 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
 
             try {
                 $objPHPExcel = \PhpOffice\PhpSpreadsheet\IOFactory::load($link_file);
-                $sheet = $objPHPExcel->getActiveSheet();
-                $Totalrow = $sheet->getHighestRow();
-                $array_tender = [];
+                $sheetNames = $objPHPExcel->getSheetNames();
+                $importedSheets = [];
 
-                for ($i = 5; $i <= $Totalrow; $i++) {
-                    $_stt = $sheet->getCell('A' . $i)->getValue();
-                    if (!empty($_stt)) {
-                        $array_tender[$_stt]['file_name'] = $sheet->getCell('B' . $i)->getValue();
-                        $array_tender[$_stt]['file_path'] = $sheet->getCell('C' . $i)->getValue();
-                        $array_tender[$_stt]['file_size'] = $sheet->getCell('D' . $i)->getValue();
-                        $array_tender[$_stt]['uploaded_by'] = $sheet->getCell('E' . $i)->getValue();
-                        $array_tender[$_stt]['created_at'] = $sheet->getCell('F' . $i)->getValue();
-                        $array_tender[$_stt]['is_folder'] = $sheet->getCell('G' . $i)->getValue();
-                        $array_tender[$_stt]['status'] = $sheet->getCell('H' . $i)->getValue();
-                    } else {
-                        if (!empty($sheet->getCell('C' . $i)->getValue())) {
-                            $error = sprintf($nv_Lang->getModule('col_import'), $i);
+                function importSheetData($sheet, $parent_id, $db, $objPHPExcel, &$importedSheets) {
+                    $Totalrow = $sheet->getHighestRow();
+
+                    for ($i = 5; $i <= $Totalrow; $i++) {
+                        $_stt = $sheet->getCell('A' . $i)->getValue();
+                        if (!empty($_stt)) {
+                            $file_name = $sheet->getCell('B' . $i)->getValue();
+                            $file_path = $sheet->getCell('C' . $i)->getValue();
+                            $file_size = $sheet->getCell('D' . $i)->getValue();
+                            $uploaded_by = $sheet->getCell('E' . $i)->getValue();
+                            $created_at = $sheet->getCell('F' . $i)->getValue();
+                            $is_folder = ($sheet->getCell('G' . $i)->getValue() == 'Thư mục') ? 1 : 0;
+                            $status = ($sheet->getCell('H' . $i)->getValue() == 'Hoạt động') ? 1 : 0;
+
+                            if (is_numeric($created_at)) {
+                                $created_at = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToTimestamp($created_at);
+                            } else {
+                                $created_at = strtotime(str_replace("/", "-", $created_at));
+                            }
+
+                            $sql = "SELECT userid FROM nv4_users WHERE username = :username";
+                            $stmt = $db->prepare($sql);
+                            $stmt->bindParam(':username', $uploaded_by, PDO::PARAM_STR);
+                            $stmt->execute();
+                            $uploaded_by_id = $stmt->fetchColumn();
+
+                            $sql = "INSERT INTO nv4_vi_fileserver_files (file_name, file_path, file_size, uploaded_by, created_at, is_folder, status, lev) 
+                                    VALUES (:file_name, :file_path, :file_size, :uploaded_by, :created_at, :is_folder, :status, :lev)";
+                            $stmt = $db->prepare($sql);
+                            $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
+                            $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
+                            $stmt->bindParam(':file_size', $file_size, PDO::PARAM_STR);
+                            $stmt->bindParam(':uploaded_by', $uploaded_by_id, PDO::PARAM_INT);
+                            $stmt->bindParam(':created_at', $created_at, PDO::PARAM_INT);
+                            $stmt->bindParam(':is_folder', $is_folder, PDO::PARAM_INT);
+                            $stmt->bindParam(':status', $status, PDO::PARAM_INT);
+                            $stmt->bindParam(':lev', $parent_id, PDO::PARAM_INT);
+                            $stmt->execute();
+
+                            $file_id = $db->lastInsertId();
+                            updateAlias($file_id, $file_name);
+                            updatePerm($file_id);
+                            updateLog($parent_id);
+
+                            $full_path = NV_ROOTDIR . $file_path;
+                            if ($is_folder) {
+                                if (!file_exists($full_path)) {
+                                    mkdir($full_path, 0777, true);
+                                }
+                            } else {
+                                if (!file_exists($full_path)) {
+                                    file_put_contents($full_path, '');
+                                }
+                            }
+
+                            if ($is_folder && !in_array($file_name, $importedSheets)) {
+                                $sub_sheet = $objPHPExcel->getSheetByName($file_name);
+                                if ($sub_sheet) {
+                                    $importedSheets[] = $file_name; // Đánh dấu sheet đã được import
+                                    importSheetData($sub_sheet, $file_id, $db, $objPHPExcel, $importedSheets);
+                                }
+                            }
                         }
                     }
                 }
 
-                if (!empty($array_tender)) {
-                    foreach ($array_tender as $stt => $data) {
-                        $file_name = $db->quote($data['file_name']);
-                        $file_path = $db->quote($data['file_path']);
-                        $file_size = intval($data['file_size']);
+                $sheet = $objPHPExcel->getSheet(0);
+                importSheetData($sheet, 0, $db, $objPHPExcel, $importedSheets);
 
-                        $sql1 = "SELECT userid FROM nv4_users WHERE username = :username";
-                        $stmt = $db->prepare($sql1);
-                        $stmt->bindParam(':username', $data['uploaded_by'], PDO::PARAM_STR);
+                foreach ($sheetNames as $sheetIndex => $sheetName) {
+                    if ($sheetIndex == 0) continue; 
+
+                    if (!in_array($sheetName, $importedSheets)) {
+                        $sheet = $objPHPExcel->getSheet($sheetIndex);
+
+                        $sql = "SELECT file_id FROM nv4_vi_fileserver_files WHERE file_name = :file_name AND is_folder = 1 AND status = 1";
+                        $stmt = $db->prepare($sql);
+                        $stmt->bindParam(':file_name', $sheetName, PDO::PARAM_STR);
                         $stmt->execute();
-                        $userid = $stmt->fetchColumn();
+                        $parent_id = $stmt->fetchColumn();
 
-                        $uploaded_by = $userid;
-                        $dateString = $data['created_at'];
-                        $dateFormatted = str_replace("/", "-", $dateString); 
-                        $timestamp = strtotime($dateFormatted);
-                        $created_at = $timestamp;
-                        $is_folder = ($data['is_folder'] == 'Thư mục') ? 1 : 0;
-                        $status = ($data['status'] == 'Hoạt động') ? 1: 0;
-
-                        $sql = 'INSERT INTO ' . $db_config['prefix'] . '_' . NV_LANG_DATA . '_' . $module_data . '_files 
-                            (file_name, file_path, file_size, uploaded_by, created_at, is_folder, status) 
-                            VALUES 
-                            (' . $file_name . ',' . $file_path . ', ' . $file_size . ', ' . $uploaded_by . ', ' . $created_at . ', ' . $is_folder . ', ' . $status . ')';
-
-                        $db->query($sql);
-
-                        $file_id = $db->lastInsertId();
-                        updateAlias($file_id, $file_name);
-                        updatePerm($file_id);
-                        updateLog(0);
+                        importSheetData($sheet, $parent_id, $db, $objPHPExcel, $importedSheets);
                     }
-                    $success = 'import_success';
                 }
+                $success = $lang_module['import_success'];
             } catch (Exception $e) {
                 $error = $e->getMessage();
             }
@@ -126,4 +159,3 @@ $contents = $xtpl->text('main');
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_admin_theme($contents);
 include NV_ROOTDIR . '/includes/footer.php';
-
