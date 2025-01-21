@@ -23,7 +23,12 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
         );
         $upload->setLanguage($lang_global);
 
-        $upload_info = $upload->save_file($_FILES['uploadfile'], NV_ROOTDIR . '/data/tmp/import-file', false, $global_config['nv_auto_resize']);
+        $upload_dir = NV_ROOTDIR . '/data/tmp/import-file';
+        if (!file_exists($upload_dir)) {
+            mkdir($upload_dir);
+        }
+
+        $upload_info = $upload->save_file($_FILES['uploadfile'], $upload_dir, false, $global_config['nv_auto_resize']);
 
         if ($upload_info['error'] == '') {
             $link_file = $upload_info['name'];

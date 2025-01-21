@@ -1,10 +1,15 @@
 <!-- BEGIN: main -->
 <div class="container">
     <!-- BEGIN: message -->
-    <div class="alert alert-danger">
+    <div class="alert alert-success">
         {MESSAGE}
     </div>
     <!-- END: message -->
+    <!-- BEGIN: error -->
+    <div class="alert alert-danger">
+        {ERROR}
+    </div>
+    <!-- END: error -->
     <form
         action="{NV_BASE_ADMINURL}index.php?{NV_LANG_VARIABLE}={NV_LANG_DATA}&amp;{NV_NAME_VARIABLE}={MODULE_NAME}&amp;{NV_OP_VARIABLE}={OP}"
         method="post" class="confirm-reload">
@@ -16,8 +21,10 @@
                     <div class="input-group mb-3">
                         <div class="input-group-prepend">
                             <div class="input-group-text">
-                                <input type="checkbox" name="group_ids[]" value="{ROW.group_id}" id="group_{ROW.group_id}">
+                                <!-- BEGIN: checked -->
+                                <input type="checkbox" name="group_ids[]" value="{ROW.group_id}" id="group_{ROW.group_id}" {CHECKED}>
                                 <label for="group_{ROW.group_id}">{ROW.title}</label>
+                                <!-- END: checked -->
                             </div>
                         </div>
                     </div>

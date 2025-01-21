@@ -30,4 +30,4 @@ $lang_module['api_fileserver_UploadFile'] = 'Upload file (UploadFile)';
 $lang_module['export'] = 'Export';
 $lang_module['import'] = 'Import';
 $lang_module['error_file_type'] = 'File không đúng định dạng';
-$lang_module['import_success'] = 'Import thành công';
+$lang_module['import_success'] = 'Import dữ liệu thành công';

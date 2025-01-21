@@ -12,12 +12,13 @@ $sql = "SELECT d.group_id, title FROM nv4_users_groups AS g LEFT JOIN nv4_users_
 $result = $db->query($sql);
 $post = [];
 $mess = '';
+$err = '';
 $post['group_ids'] = $nv_Request->get_array('group_ids', 'post', []);
 $group_ids_str = implode(',', $post['group_ids']);
 
 if ($nv_Request->isset_request('submit', 'post')) {
     if (empty($post['group_ids'])) {
-        $mess = 'Chưa chọn nhóm nào.';
+        $err = 'Chưa chọn nhóm nào.';
     } else {
         $group_ids_str = implode(',', $post['group_ids']);
         $config_name = 'group_admin_fileserver';
@@ -29,6 +30,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $count = $stmt_check->fetchColumn();
 
         if ($count > 0) {
+            $nv_Cache->delMod($module_name, $lang = 'vi');
             $sql_update = "UPDATE nv4_config
                            SET config_value = :config_value 
                            WHERE config_name = :config_name";
@@ -38,9 +40,10 @@ if ($nv_Request->isset_request('submit', 'post')) {
             if ($stmt_update->execute()) {
                 $mess = 'Cập nhật thành công.';
             } else {
-                $mess = 'Cập nhật thất bại.';
+                $err = 'Cập nhật thất bại.';
             }
         } else {
+            $lang = 'vi';
             $sql_insert = "INSERT INTO nv4_config (lang, module, config_name, config_value) 
                            VALUES (:lang, :module, :config_name, :config_value)";
             $stmt_insert = $db->prepare($sql_insert);
@@ -51,7 +54,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
             if ($stmt_insert->execute()) {
                 $mess = 'Chèn mới thành công.';
             } else {
-                $mess = 'Chèn mới thất bại.';
+                $err = 'Chèn mới thất bại.';
             }
         }
     }
@@ -71,11 +74,23 @@ $xtpl->assign('POST', $post);
 foreach ($result as $row) {
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.loop');
+    if (in_array($row['group_id'], [1,2,3])) {
+        $xtpl->assign('CHECKED','checked disabled');
+        $xtpl->parse('main.loop.checked');
+    }else{
+        $xtpl->assign('CHECKED','');
+        $xtpl->parse('main.loop.checked');
+    }
 }
 
 if ($mess != '') {
     $xtpl->assign('MESSAGE', $mess);
     $xtpl->parse('main.message');
+}
+
+if ($err != '') {
+    $xtpl->assign('ERROR', $err);
+    $xtpl->parse('main.error');
 }
 
 $xtpl->parse('main');

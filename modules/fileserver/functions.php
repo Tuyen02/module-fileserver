@@ -15,10 +15,9 @@ if (!empty($array_op)) {
 }
 
 $config_value = $module_config[$module_name]['group_admin_fileserver'];
-
 $config_value_array = explode(',', $config_value);
 
-if (is_array($user_info['in_groups']) && array_intersect($user_info['in_groups'], $config_value_array)) {
+if (defined('NV_IS_SPADMIN') || is_array($user_info['in_groups']) && array_intersect($user_info['in_groups'], $config_value_array)) {
     $arr_per = array_column($db->query("SELECT p_group, file_id FROM nv4_vi_fileserver_permissions WHERE p_group > 1")->fetchAll(), 'p_group', 'file_id');
 } else {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
