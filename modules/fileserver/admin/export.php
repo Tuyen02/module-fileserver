@@ -67,7 +67,7 @@ function intvaluetostring($int)
     return $end;
 }
 
-$sql = "SELECT * FROM `nv4_vi_fileserver_files` WHERE status = 1";
+$sql = "SELECT * FROM `nv4_vi_fileserver_files` WHERE status = 1 and lev = 0";
 $stmt = $db->prepare($sql);
 $stmt->execute();
 $result = $stmt->fetchAll();
@@ -80,7 +80,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
     set_time_limit(0);
     // kiểm tra Library
     if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpspreadsheet')) {
-        trigger_error('No phpspreadsheet lib. Run command "composer require phpoffice/phpspreadsheet" to install phpspreadsheet', 256);
+        trigger_error('No phpspreadsheet lib. Run command &quot;composer require phpoffice/phpspreadsheet&quot; to install phpspreadsheet', 256);
     }
 
     // Đặt tên file, đường dẫn
@@ -185,8 +185,6 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $zip = new PclZip($tmp_file);
 
         //chia từng sheet trong excel
-
-
         // Tạo đối tượng objPHPExcel load template
 
         $templatePath = NV_CONSOLE_DIR . '/export_excel/template2.xlsx';
@@ -271,6 +269,56 @@ if ($nv_Request->isset_request('submit', 'post')) {
             $objWorksheet->setCellValue($table_char_from++ . $i, $status);
 
             $objWorksheet->getRowDimension($i)->setRowHeight(20);
+            if ($_data2['is_folder'] == 1) {
+                $folderSheet = $objPHPExcel->createSheet();
+                $folderSheet->setTitle($_data2['file_name']);
+                $folderSheet->fromArray(
+                    $arr_header_row, 
+                    null, 
+                    $title_char_from . $title_number_from 
+                );
+                $folderSheet->getStyle($title_char_from . $title_number_from . ':' . $title_char_to . $title_number_to)
+                    ->applyFromArray($styleTitleArray);
+
+                // Ghi dữ liệu của thư mục vào sheet mới
+                $folderFiles = $db->query("SELECT * FROM `nv4_vi_fileserver_files` WHERE lev = " . $_data2['file_id'])->fetchAll();
+                $j = 4; // bắt đầu từ dòng số 4
+                foreach ($folderFiles as $folderFile) {
+                    $j++;
+                    $stt++;
+                    $table_char_from = $title_char_from;
+
+                    $folderSheet->setCellValue($table_char_from++ . $j, $stt);
+                    $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_name']);
+                    $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_path']);
+                    $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_size'] ? number_format($folderFile['file_size'] / 1024, 2) . ' KB' : '--');
+                    $sql = "SELECT username FROM nv4_users WHERE userid = " . $folderFile['uploaded_by'];
+                    $stmt = $db->prepare($sql);
+                    $stmt->execute();
+                    $username = $stmt->fetchColumn();
+
+                    $folderSheet->setCellValue($table_char_from++ . $j,  $username);
+                    $folderSheet->setCellValue($table_char_from++ . $j, date('d/m/Y H:i:s', $folderFile['created_at']));
+                    $type = ($folderFile['is_folder'] == 1) ? 'Thư mục' : 'Tệp tin';
+                    $folderSheet->setCellValue($table_char_from++ . $j, $type);
+                    $status = ($folderFile['status'] == 1) ? 'Hoạt động' : 'Không hoạt động';
+                    $folderSheet->setCellValue($table_char_from++ . $j, $status);
+
+                    $folderSheet->getRowDimension($j)->setRowHeight(20);
+                }
+                // style table cho sheet mới
+                $folderSheet->getStyle('A4:H' . $j)
+                    ->applyFromArray($styleTableArray);
+                // auto size cho sheet mới
+                $folderSheet->getColumnDimension('A')->setWidth(10);
+                $folderSheet->getColumnDimension('B')->setWidth(35);
+                $folderSheet->getColumnDimension('C')->setWidth(35);
+                $folderSheet->getColumnDimension('D')->setWidth(35);
+                $folderSheet->getColumnDimension('E')->setWidth(35);
+                $folderSheet->getColumnDimension('F')->setWidth(35);
+                $folderSheet->getColumnDimension('G')->setWidth(35);
+                $folderSheet->getColumnDimension('H')->setWidth(35);
+            }
         }
         // style table
         $objWorksheet->getStyle('A4:H' . $i)
