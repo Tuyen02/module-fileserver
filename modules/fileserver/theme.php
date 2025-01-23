@@ -13,7 +13,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
-function nv_page_main_list($result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs)
+function nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs)
 {
     global $module_file, $global_config, $lang_module, $module_name;
 
@@ -123,7 +123,7 @@ function nv_page_main_list($result, $page_url, $error, $success, $permissions, $
     return $xtpl->text('main');
 }
 
-function nv_page_clone($row, $file_id, $file_name, $file_path, $message, $selected_folder_path, $view_url, $directories, $page_url, $base_url)
+function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $message, $selected_folder_path, $view_url, $directories, $page_url, $base_url)
 {
     global $module_file, $global_config, $lang_module, $module_name;
 
@@ -163,7 +163,7 @@ function nv_page_clone($row, $file_id, $file_name, $file_path, $message, $select
     return $xtpl->text('main');
 }
 
-function nv_page_compress($row, $file_id, $file_size_zip, $list, $message)
+function nv_fileserver_compress($row, $file_id, $file_size_zip, $list, $message)
 {
     global $module_file, $global_config, $lang_module, $module_name;
 
@@ -196,7 +196,7 @@ function nv_page_compress($row, $file_id, $file_size_zip, $list, $message)
     return $xtpl->text('main');
 }
 
-function nv_page_edit_img($row, $file_id, $file_extension)
+function nv_fileserver_edit_img($row, $file_id, $file_extension)
 {
     global $module_file, $global_config, $lang_module, $module_name;
 
@@ -222,7 +222,7 @@ function nv_page_edit_img($row, $file_id, $file_extension)
     return $xtpl->text('main');
 }
 
-function nv_page_edit($row, $file_content, $file_id, $file_name, $view_url, $message)
+function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $message)
 {
     global $module_file, $global_config, $lang_module, $module_name;
 
@@ -258,7 +258,7 @@ function nv_page_edit($row, $file_content, $file_id, $file_name, $view_url, $mes
     return $xtpl->text('main');
 }
 
-function nv_page_perm($row, $file_id, $group_read_checked, $group_write_checked, $other_read_checked, $other_write_checked, $message)
+function nv_fileserver_perm($row, $file_id, $group_read_checked, $group_write_checked, $other_read_checked, $other_write_checked, $message)
 {
     global $module_file, $global_config, $lang_module, $module_name;
 
@@ -281,7 +281,7 @@ function nv_page_perm($row, $file_id, $group_read_checked, $group_write_checked,
 
     return $xtpl->text('main');
 }
-function nv_page_share($row, $file_content, $file_id, $file_name, $view, $view_url, $message)
+function nv_fileserver_share($row, $file_content, $file_id, $file_name, $view, $view_url, $message)
 {
     global $module_file, $global_config, $lang_module, $module_name;
 

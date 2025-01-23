@@ -31,3 +31,4 @@ $lang_module['export'] = 'Export';
 $lang_module['import'] = 'Import';
 $lang_module['error_file_type'] = 'File không đúng định dạng';
 $lang_module['import_success'] = 'Import dữ liệu thành công';
+$lang_module['error_file_not_found'] = 'File không tồn tại';

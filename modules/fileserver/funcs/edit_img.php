@@ -35,7 +35,7 @@ $file_path = $row['file_path'];
 $full_path = NV_ROOTDIR . $file_path;
 $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
 
-$contents = nv_page_edit_img($row, $file_id, $file_extension);
+$contents = nv_fileserver_edit_img($row, $file_id, $file_extension);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

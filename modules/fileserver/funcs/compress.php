@@ -82,7 +82,7 @@ if (!$row) {
     }
 }
 
-$contents = nv_page_compress($row, $file_id, $file_size_zip, $list, $message);
+$contents = nv_fileserver_compress($row, $file_id, $file_size_zip, $list, $message);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

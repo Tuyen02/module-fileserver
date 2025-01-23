@@ -25,7 +25,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
 
         $upload_dir = NV_ROOTDIR . '/data/tmp/import-file';
         if (!file_exists($upload_dir)) {
-            mkdir($upload_dir);
+            mkdir($upload_dir, 0777, true);
         }
 
         $upload_info = $upload->save_file($_FILES['uploadfile'], $upload_dir, false, $global_config['nv_auto_resize']);
@@ -40,49 +40,34 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
 
                 function importSheetData($sheet, $parent_id, $db, $objPHPExcel, &$importedSheets) {
                     $Totalrow = $sheet->getHighestRow();
-
+                
                     for ($i = 5; $i <= $Totalrow; $i++) {
-                        $_stt = $sheet->getCell('A' . $i)->getValue();
-                        if (!empty($_stt)) {
-                            $file_name = $sheet->getCell('B' . $i)->getValue();
-                            $file_path = $sheet->getCell('C' . $i)->getValue();
-                            $file_size = $sheet->getCell('D' . $i)->getValue();
-                            $uploaded_by = $sheet->getCell('E' . $i)->getValue();
-                            $created_at = $sheet->getCell('F' . $i)->getValue();
-                            $is_folder = ($sheet->getCell('G' . $i)->getValue() == 'Thư mục') ? 1 : 0;
-                            $status = ($sheet->getCell('H' . $i)->getValue() == 'Hoạt động') ? 1 : 0;
-
-                            if (is_numeric($created_at)) {
-                                $created_at = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToTimestamp($created_at);
-                            } else {
-                                $created_at = strtotime(str_replace("/", "-", $created_at));
-                            }
-
-                            $sql = "SELECT userid FROM nv4_users WHERE username = :username";
-                            $stmt = $db->prepare($sql);
-                            $stmt->bindParam(':username', $uploaded_by, PDO::PARAM_STR);
-                            $stmt->execute();
-                            $uploaded_by_id = $stmt->fetchColumn();
-
-                            $sql = "INSERT INTO nv4_vi_fileserver_files (file_name, file_path, file_size, uploaded_by, created_at, is_folder, status, lev) 
-                                    VALUES (:file_name, :file_path, :file_size, :uploaded_by, :created_at, :is_folder, :status, :lev)";
+                        $file_path = $sheet->getCell('C' . $i)->getValue();
+                        if (!empty($file_path)) {
+                            $full_path = NV_ROOTDIR . $file_path;
+                            $file_name = basename($file_path);
+                            $file_size = file_exists($full_path) ? filesize($full_path) : 0;
+                            $is_folder = pathinfo($file_name, PATHINFO_EXTENSION) == '' ? 1 : 0;
+                
+                            $sql = "INSERT INTO nv4_vi_fileserver_files (file_name, file_path, file_size, uploaded_by, created_at, is_folder, lev) 
+                                    VALUES (:file_name, :file_path, :file_size, :uploaded_by, :created_at, :is_folder, :lev)";
                             $stmt = $db->prepare($sql);
                             $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
                             $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
                             $stmt->bindParam(':file_size', $file_size, PDO::PARAM_STR);
-                            $stmt->bindParam(':uploaded_by', $uploaded_by_id, PDO::PARAM_INT);
+                            $uploaded_by = 1; // Assuming uploaded_by is 1, change as needed
+                            $stmt->bindParam(':uploaded_by', $uploaded_by, PDO::PARAM_INT);
+                            $created_at = NV_CURRENTTIME;
                             $stmt->bindParam(':created_at', $created_at, PDO::PARAM_INT);
                             $stmt->bindParam(':is_folder', $is_folder, PDO::PARAM_INT);
-                            $stmt->bindParam(':status', $status, PDO::PARAM_INT);
                             $stmt->bindParam(':lev', $parent_id, PDO::PARAM_INT);
                             $stmt->execute();
-
+                
                             $file_id = $db->lastInsertId();
                             updateAlias($file_id, $file_name);
                             updatePerm($file_id);
                             updateLog($parent_id);
-
-                            $full_path = NV_ROOTDIR . $file_path;
+                
                             if ($is_folder) {
                                 if (!file_exists($full_path)) {
                                     mkdir($full_path, 0777, true);
@@ -92,7 +77,8 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
                                     file_put_contents($full_path, '');
                                 }
                             }
-
+                
+                            // Nếu là folder, import các file con trong folder đó
                             if ($is_folder && !in_array($file_name, $importedSheets)) {
                                 $sub_sheet = $objPHPExcel->getSheetByName($file_name);
                                 if ($sub_sheet) {
@@ -104,15 +90,18 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
                     }
                 }
 
+                // Import dữ liệu từ sheet đầu tiên
                 $sheet = $objPHPExcel->getSheet(0);
                 importSheetData($sheet, 0, $db, $objPHPExcel, $importedSheets);
 
+                // Import dữ liệu từ các sheet tiếp theo
                 foreach ($sheetNames as $sheetIndex => $sheetName) {
-                    if ($sheetIndex == 0) continue; 
+                    if ($sheetIndex == 0) continue; // Bỏ qua sheet đầu tiên
 
                     if (!in_array($sheetName, $importedSheets)) {
                         $sheet = $objPHPExcel->getSheet($sheetIndex);
 
+                        // Lấy file ID của folder cha từ tên sheet
                         $sql = "SELECT file_id FROM nv4_vi_fileserver_files WHERE file_name = :file_name AND is_folder = 1 AND status = 1";
                         $stmt = $db->prepare($sql);
                         $stmt->bindParam(':file_name', $sheetName, PDO::PARAM_STR);
@@ -134,10 +123,12 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
 
 $download = $nv_Request->get_int('download', 'get', 0);
 if ($download == 1) {
-    $file_path = NV_ROOTDIR . '/data/tmp/import-file/test.xlsx';
+    $file_path = NV_ROOTDIR . '/themes/default/images/fileserver/test.xlsx';
     if (file_exists($file_path)) {
-        $download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . '/data/tmp/import-file/', 'test.xlsx', true, 0);
+        $download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . '/themes/default/images/fileserver/', 'test.xlsx', true, 0);
         $download->download_file();
+    } else {
+        $error = $lang_module['error_file_not_found'];
     }
 }
 

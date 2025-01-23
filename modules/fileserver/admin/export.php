@@ -256,11 +256,12 @@ if ($nv_Request->isset_request('submit', 'post')) {
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_name']);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_path']);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_size'] ? number_format($_data2['file_size'] / 1024, 2) . ' KB' : '--');
-            $sql = "SELECT username FROM nv4_users WHERE userid = " . $_data2['uploaded_by'];
+            $sql = "SELECT username, first_name, last_name FROM nv4_users WHERE userid = " . $_data2['uploaded_by'];
             $stmt = $db->prepare($sql);
             $stmt->execute();
-            $username = $stmt->fetchColumn();
+            $user = $stmt->fetch();
 
+            $username = $user['last_name'].' ' . $user['first_name'] . '(' . $user['username'] . ')';
             $objWorksheet->setCellValue($table_char_from++ . $i,  $username);
             $objWorksheet->setCellValue($table_char_from++ . $i, date('d/m/Y H:i:s', $_data2['created_at']));
             $type = ($_data2['is_folder'] == 1) ? 'Thư mục' : 'Tệp tin';
@@ -283,19 +284,22 @@ if ($nv_Request->isset_request('submit', 'post')) {
                 // Ghi dữ liệu của thư mục vào sheet mới
                 $folderFiles = $db->query("SELECT * FROM `nv4_vi_fileserver_files` WHERE lev = " . $_data2['file_id'])->fetchAll();
                 $j = 4; // bắt đầu từ dòng số 4
+                $folder_stt = 0;
                 foreach ($folderFiles as $folderFile) {
                     $j++;
-                    $stt++;
+                    $folder_stt++;
                     $table_char_from = $title_char_from;
 
-                    $folderSheet->setCellValue($table_char_from++ . $j, $stt);
+                    $folderSheet->setCellValue($table_char_from++ . $j, $folder_stt);
                     $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_name']);
                     $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_path']);
                     $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_size'] ? number_format($folderFile['file_size'] / 1024, 2) . ' KB' : '--');
-                    $sql = "SELECT username FROM nv4_users WHERE userid = " . $folderFile['uploaded_by'];
+                    $sql = "SELECT username, first_name, last_name FROM nv4_users WHERE userid = " . $_data2['uploaded_by'];
                     $stmt = $db->prepare($sql);
                     $stmt->execute();
-                    $username = $stmt->fetchColumn();
+                    $user = $stmt->fetch();
+        
+                    $username = $user['last_name'].' ' . $user['first_name'] . '(' . $user['username'] . ')';
 
                     $folderSheet->setCellValue($table_char_from++ . $j,  $username);
                     $folderSheet->setCellValue($table_char_from++ . $j, date('d/m/Y H:i:s', $folderFile['created_at']));

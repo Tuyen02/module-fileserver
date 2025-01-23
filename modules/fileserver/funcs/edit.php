@@ -116,7 +116,7 @@ if (defined('NV_IS_SPADMIN')) {
     $message = $lang_module['not_thing_to_do'];
 }
 
-$contents = nv_page_edit($row, $file_content, $file_id, $file_name, $view_url, $message);
+$contents = nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $message);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

@@ -113,6 +113,8 @@ if (empty($contents)) {
     $action = $nv_Request->get_title('action', 'post', '');
     $fileIds = $nv_Request->get_array('files', 'post', []);
 
+    // pr($action);
+
     if (!empty($action)) {
 
         $status = $lang_module['error'];
@@ -125,11 +127,20 @@ if (empty($contents)) {
             }
 
             $name_f = $nv_Request->get_title('name_f', 'post', '');
+            $type = $nv_Request->get_int('type', 'post', 0); 
+
             if ($name_f == '') {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty']]);
             }
 
-            $type = $nv_Request->get_int('type', 'post', 0); // 1 = folder, 0 = file
+            $allowed_extensions = ['txt', 'doc', 'docx', 'pdf', 'xlsx', 'xls','jpg'
+            ,'png','gif','jpeg','zip','rar','7z','html','css','js','php'
+            ,'sql','mp3','mp4','avi','flv','mkv','mov','wav','wma','wmv','ppt','pptx','ps'];
+            $extension = pathinfo($name_f, PATHINFO_EXTENSION);
+            if ($type == 0 && ($extension == '' || !in_array($extension, $allowed_extensions))) {
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_extension_not_allowed']]);
+            }
+
             if ($lev > 0) {
                 $parentFileType = checkIfParentIsFolder($db, $lev);
                 if ($type == 0 && $parentFileType == 0) {
@@ -140,6 +151,7 @@ if (empty($contents)) {
                     nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_create_file_in_file']]);
                 }
             }
+            
 
             $sqlCheck = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_name = :file_name AND lev = :lev and status = 1";
             $stmtCheck = $db->prepare($sqlCheck);
@@ -174,15 +186,16 @@ if (empty($contents)) {
             $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
 
             if ($type == 1) {
-                // Tạo folder
-                $check_dir = nv_mkdir($full_dir, $name_f);
-                $status = $check_dir[0] == 1 ? 'success' : 'error';
-                $mess = $check_dir[1];
+                $full_dir = NV_ROOTDIR . $file_path;
+                if (!file_exists($full_dir)) {
+                    mkdir($full_dir);
+                }
+                $status = 'success';
+                $mess = $lang_module['create_ok'];
             } else {
-                // Tạo file
+                $full_dir = NV_ROOTDIR . $file_path;
                 $mess = $lang_module['cannot_create_file'];
-                $_dir = file_put_contents($full_dir . '/' . $name_f, '');
-                if (isset($_dir)) {
+                if (file_put_contents($full_dir, '') !== false) {
                     $status = 'success';
                     $mess = $lang_module['create_ok'];
                 }
@@ -531,7 +544,7 @@ if (empty($contents)) {
         $permissions = [];
     }
     $nv_BotManager->setFollow()->setNoIndex();
-    $contents = nv_page_main_list($result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs);
+    $contents = nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs);
     if (!defined('NV_IS_MODADMIN') and $contents != '' and $cache_file != '') {
         $nv_Cache->setItem($module_name, $cache_file, $contents);
     }

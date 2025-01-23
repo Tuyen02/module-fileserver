@@ -132,7 +132,6 @@
                             <label for="zipFileName">Tên file zip</label>
                             <input type="text" class="form-control" id="zipFileName" name="zipFileName" required>
                             <div id="fileNameWarning" class="text-danger mt-2" style="display: none;"></div>
-                            <div id="fileNameSuccess" class="text-success mt-2" style="display: none;"></div>
                         </div>
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">{LANG.close_btn}</button>
                         <button type="submit" class="btn btn-primary">{LANG.zip_btn}</button>
@@ -166,6 +165,8 @@
                     <div class="form-group">
                         <label for="name">{LANG.f_name}:</label>
                         <input type="text" class="form-control" id="name_f" name="name_f" required>
+                        <div id="nameWarning" class="text-danger mt-2" style="display: none;"></div>
+                        <div id="nameSuccess" class="text-success mt-2" style="display: none;"></div>
                     </div>
                     <input type="hidden" name="create_action" value="create">
                 </form>
@@ -233,48 +234,53 @@
 
 
 <script>
-    function submitCreateForm() {
-        data = {
-            'action': 'create',
-            'name_f': $("#name_f").val(),
-            'type': $("#type").val(),
-        }
-        $.ajax({
-            type: 'POST',
-            url: "",
-            data: data,
-            success: function (res) {
-                console.log(res);
-                alert(res.message);
-                location.reload();
-            },
-            error: function () {
-                alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
-            },
-        });
+
+function submitCreateForm() {
+    var name_f = $("#name_f").val();
+    var type = $("#type").val();
+    var allowedExtensions = ['txt', 'doc', 'docx', 'pdf', 'xlsx', 'xls'];
+    var extension = name_f.split('.').pop().toLowerCase();
+    var nameWarning = $("#nameWarning");
+
+    nameWarning.hide();
+
+    if (type == '0' && (extension == '' || !allowedExtensions.includes(extension))) {
+        nameWarning.text('Tên file không hợp lệ. Vui lòng nhập tên file có đuôi hợp lệ.');
+        nameWarning.show();
+        return;
     }
 
-    function handleDelete(fileId, deleteUrl, checksess) {
-        const data = {
-            action: "delete",
-            file_id: fileId,
-            checksess: checksess,
-        };
+    if (name_f.trim() == '') {
+        nameWarning.text('Tên file không được để trống.');
+        nameWarning.show();
+        return;
+    }
 
-        $.ajax({
-            type: 'POST',
-            url: deleteUrl,
-            data: data,
-            success: function (res) {
-                console.log(res);
-                alert(res.message);
+    var data = {
+        'action': 'create',
+        'name_f': name_f,
+        'type': type,
+    };
+
+    $.ajax({
+        type: 'POST',
+        url: "",
+        data: data,
+        success: function (res) {
+            if (res.status == 'error') {
+                nameWarning.text(res.message);
+                nameWarning.show();
+            } else {
                 location.reload();
-            },
-            error: function () {
-                alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+                alert(res.message);
             }
-        });
-    }
+        },
+        error: function () {
+            nameWarning.text(res.message);
+            nameWarning.show();
+        },
+    });
+}
 
     $(document).on('click', '.delete', function () {
         const fileId = $(this).data('file-id');
@@ -302,7 +308,7 @@
                 location.reload();
             },
             error: function () {
-                alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+                alert(res.message);
             }
         });
     }
@@ -333,7 +339,7 @@
                 location.reload();
             },
             error: function () {
-                alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+                alert(res.message);
             }
         });
     });
@@ -370,7 +376,7 @@
                 location.reload();
             },
             error: function () {
-                alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+                alert(res.message);
             }
         });
     }
@@ -427,7 +433,7 @@
                         }
                     },
                     error: function () {
-                        alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+                        alert(res.message);
                         isFileNameValid = false;
                     }
                 });
@@ -466,7 +472,7 @@
                         location.reload();
                     },
                     error: function () {
-                        alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+                        alert(res.message);
                     }
                 });
             } else {
@@ -529,7 +535,7 @@
                 location.reload();
             },
             error: function () {
-                alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+                alert(res.message);
             }
         });
     });
