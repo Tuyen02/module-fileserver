@@ -8,7 +8,7 @@
     <!-- BEGIN: success -->
     <div class="alert alert-warning">{SUCCESS}</div>
     <!-- END: success -->
-    <form action="{FORM_ACTION}" method="get" id="searchForm" class="form-inline my-2 my-lg-0">
+    <form action="{FORM_ACTION}" method="get" id="searchForm" class="form-inline my-2 my-lg-0" >
         <input type="hidden" name="lev" value="{ROW.lev}">
         <input type="text" class="form-control" placeholder="{LANG.search}" id="searchInput" name="search"
             value="{SEARCH_TERM}">
@@ -127,7 +127,7 @@
                     <h3 class="modal-title" id="compressModalLabel">Nén Modal</h3>
                 </div>
                 <div class="modal-body">
-                    <form id="compressForm">
+                    <form id="compressForm" onsubmit="submitCompressForm(event);">
                         <div class="form-group">
                             <label for="zipFileName">Tên file zip</label>
                             <input type="text" class="form-control" id="zipFileName" name="zipFileName" required>
@@ -140,9 +140,9 @@
             </div>
         </div>
     </div>
-
     <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll"><i class="fa fa-trash"
-            aria-hidden="true"></i> {LANG.delete_btn}</button>
+            aria-hidden="true"></i> {LANG.delete_btn}
+    </button>
 </div>
 <div class="text-center">{GENERATE_PAGE}</div>
 
@@ -154,7 +154,7 @@
                 <h3 class="modal-title col-lg-11" id="createModalLabel">{LANG.create_btn}</h3>
             </div>
             <div class="modal-body">
-                <form id="createForm" method="post" action="">
+                <form id="createForm" method="post" action="" onsubmit="submitCreateForm(event);">
                     <div class="form-group">
                         <label for="type">{LANG.type}:</label>
                         <select class="form-control" id="type" name="type">
@@ -187,7 +187,7 @@
                 <h3 class="modal-title col-lg-11" id="renameModalLabel">{LANG.rename_btn}</h3>
             </div>
             <div class="modal-body">
-                <form id="renameForm" method="post" action="">
+                <form id="renameForm" method="post" action="" onsubmit="submitRenameForm(event);">
                     <div class="form-group">
                         <label for="new_name">{LANG.new_name}:</label>
                         <input type="text" class="form-control" id="new_name" name="new_name" required>
@@ -235,52 +235,50 @@
 
 <script>
 
-function submitCreateForm() {
-    var name_f = $("#name_f").val();
-    var type = $("#type").val();
-    var allowedExtensions = ['txt', 'doc', 'docx', 'pdf', 'xlsx', 'xls'];
-    var extension = name_f.split('.').pop().toLowerCase();
-    var nameWarning = $("#nameWarning");
+    function submitCreateForm() {
+        var name_f = $("#name_f").val();
+        var type = $("#type").val();
+        var allowedExtensions = ['txt', 'doc', 'docx', 'pdf', 'xlsx', 'xls'];
+        var extension = name_f.split('.').pop().toLowerCase();
+        var nameWarning = $("#nameWarning");
 
-    nameWarning.hide();
+        nameWarning.hide();
 
-    if (type == '0' && (extension == '' || !allowedExtensions.includes(extension))) {
-        nameWarning.text('Tên file không hợp lệ. Vui lòng nhập tên file có đuôi hợp lệ.');
-        nameWarning.show();
-        return;
-    }
+        if (type == '0' && (extension == '' || !allowedExtensions.includes(extension))) {
+            nameWarning.text('Tên file không hợp lệ. Vui lòng nhập tên file có đuôi hợp lệ.');
+            nameWarning.show();
+        }
 
-    if (name_f.trim() == '') {
-        nameWarning.text('Tên file không được để trống.');
-        nameWarning.show();
-        return;
-    }
+        if (name_f.trim() == '') {
+            nameWarning.text('Tên file không được để trống.');
+            nameWarning.show();
+        }
 
-    var data = {
-        'action': 'create',
-        'name_f': name_f,
-        'type': type,
-    };
+        var data = {
+            'action': 'create',
+            'name_f': name_f,
+            'type': type,
+        };
 
-    $.ajax({
-        type: 'POST',
-        url: "",
-        data: data,
-        success: function (res) {
-            if (res.status == 'error') {
+        $.ajax({
+            type: 'POST',
+            url: "",
+            data: data,
+            success: function (res) {
+                if (res.status == 'error') {
+                    nameWarning.text(res.message);
+                    nameWarning.show();
+                } else {
+                    location.reload();
+                    alert(res.message);
+                }
+            },
+            error: function () {
                 nameWarning.text(res.message);
                 nameWarning.show();
-            } else {
-                location.reload();
-                alert(res.message);
-            }
-        },
-        error: function () {
-            nameWarning.text(res.message);
-            nameWarning.show();
-        },
-    });
-}
+            },
+        });
+    }
 
     $(document).on('click', '.delete', function () {
         const fileId = $(this).data('file-id');
