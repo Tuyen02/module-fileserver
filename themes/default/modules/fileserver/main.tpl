@@ -290,6 +290,27 @@
         }
     });
 
+    function handleDelete(fileId, deleteUrl, checksess) {
+        const data = {
+            action: "delete",
+            file_id: fileId,
+            checksess: checksess,
+        };
+        $.ajax({
+            type: 'POST',
+            url: deleteUrl,
+            data: data,
+            success: function (res) {
+                console.log(res);
+                alert(res.message);
+                location.reload();
+            },
+            error: function () {
+                alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+            }
+        });
+    }
+
     function submitRenameForm() {
         const data = {
             action: 'rename',
