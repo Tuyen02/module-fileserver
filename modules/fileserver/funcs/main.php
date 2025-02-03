@@ -127,7 +127,7 @@ if (empty($contents)) {
             }
 
             $name_f = $nv_Request->get_title('name_f', 'post', '');
-            $type = $nv_Request->get_int('type', 'post', 0); 
+            $type = $nv_Request->get_int('type', 'post', 0);
 
             if ($name_f == '') {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty']]);
@@ -136,6 +136,7 @@ if (empty($contents)) {
             $allowed_extensions = ['txt', 'doc', 'docx', 'pdf', 'xlsx', 'xls','jpg'
             ,'png','gif','jpeg','zip','rar','7z','html','css','js','php'
             ,'sql','mp3','mp4','avi','flv','mkv','mov','wav','wma','wmv','ppt','pptx','ps'];
+            
             $extension = pathinfo($name_f, PATHINFO_EXTENSION);
             if ($type == 0 && ($extension == '' || !in_array($extension, $allowed_extensions))) {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_extension_not_allowed']]);
@@ -151,7 +152,7 @@ if (empty($contents)) {
                     nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_create_file_in_file']]);
                 }
             }
-            
+
 
             $sqlCheck = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_name = :file_name AND lev = :lev and status = 1";
             $stmtCheck = $db->prepare($sqlCheck);
@@ -489,8 +490,6 @@ if (empty($contents)) {
             $file_name = $upload_info['basename'];
             $file_size = $upload_info['size'];
 
-            $lev = $nv_Request->get_int('lev', 'get,post', 0);
-
             $sql = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev) 
                 VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)";
             $stmt = $db->prepare($sql);
@@ -518,9 +517,12 @@ if (empty($contents)) {
             $status = 'success';
             $message = $lang_module['upload_ok'];
         } else {
+            $status = 'error';
             $error = $upload_info['error'];
         }
+        nv_jsonOutput(['status' => $status, 'message' => $message]);
     }
+
     $selected_all = ($search_type == 'all') ? ' selected' : '';
     $selected_file = ($search_type == 'file') ? ' selected' : '';
     $selected_folder = ($search_type == 'folder') ? ' selected' : '';

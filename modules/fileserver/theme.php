@@ -51,10 +51,48 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
         $row['created_at'] = date('d/m/Y', $row['created_at']);
 
         $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
+        $file_icons = [
+            'pdf' => 'fa-file-pdf-o',
+            'doc' => 'fa-file-word-o',
+            'docx' => 'fa-file-word-o',
+            'xls' => 'fa-file-excel-o',
+            'xlsx' => 'fa-file-excel-o',
+            'ppt' => 'fa-file-powerpoint-o',
+            'pptx' => 'fa-file-powerpoint-o',
+            'jpg' => 'fa-file-image-o',
+            'jpeg' => 'fa-file-image-o',
+            'png' => 'fa-file-image-o',
+            'gif' => 'fa-file-image-o',
+            'zip' => 'fa-file-archive-o',
+            'rar' => 'fa-file-archive-o',
+            '7z' => 'fa-file-archive-o',
+            'html' => 'fa-file-code-o',
+            'css' => 'fa-file-code-o',
+            'js' => 'fa-file-code-o',
+            'php' => 'fa-file-code-o',
+            'sql' => 'fa-file-code-o',
+            'txt' => 'fa-file-text-o',
+            'mp3' => 'fa-file-audio-o',
+            'wav' => 'fa-file-audio-o',
+            'wma' => 'fa-file-audio-o',
+            'mp4' => 'fa-file-video-o',
+            'avi' => 'fa-file-video-o',
+            'flv' => 'fa-file-video-o',
+            'mkv' => 'fa-file-video-o',
+            'mov' => 'fa-file-video-o',
+            'wmv' => 'fa-file-video-o',
+            'ps' => 'fa-file-o',
+        ];
+        
         if ($row['compressed'] == 1) {
             $row['icon_class'] = 'fa-file-archive-o';
         } else {
-            $row['icon_class'] = $row['is_folder'] ? 'fa-folder-o' : 'fa-file-o';
+            if ($row['is_folder']) {
+                $row['icon_class'] = 'fa-folder-o';
+            } else {
+                $extension = pathinfo($row['file_name'], PATHINFO_EXTENSION);
+                $row['icon_class'] = isset($file_icons[$extension]) ? $file_icons[$extension] : 'fa-file-o';
+            }
         }
 
         if ($permissions) {

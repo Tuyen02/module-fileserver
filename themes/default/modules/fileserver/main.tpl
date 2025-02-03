@@ -8,7 +8,7 @@
     <!-- BEGIN: success -->
     <div class="alert alert-warning">{SUCCESS}</div>
     <!-- END: success -->
-    <form action="{FORM_ACTION}" method="get" id="searchForm" class="form-inline my-2 my-lg-0" >
+    <form action="{FORM_ACTION}" method="get" id="searchForm" class="form-inline my-2 my-lg-0">
         <input type="hidden" name="lev" value="{ROW.lev}">
         <input type="text" class="form-control" placeholder="{LANG.search}" id="searchInput" name="search"
             value="{SEARCH_TERM}">
@@ -31,6 +31,7 @@
         <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">{LANG.create_btn}</a>
         <button type="button" class="btn btn-primary" id="uploadButton">{LANG.upload_btn}</button>
         <input type="file" name="uploadfile" id="uploadfile" required style="display: none;">
+        <input type="hidden" name="lev" id="lev" value="{ROW.lev}">
         <input type="hidden" name="submit_upload" value="1">
     </form>
 
@@ -238,13 +239,12 @@
     function submitCreateForm() {
         var name_f = $("#name_f").val();
         var type = $("#type").val();
-        var allowedExtensions = ['txt', 'doc', 'docx', 'pdf', 'xlsx', 'xls'];
         var extension = name_f.split('.').pop().toLowerCase();
         var nameWarning = $("#nameWarning");
 
         nameWarning.hide();
 
-        if (type == '0' && (extension == '' || !allowedExtensions.includes(extension))) {
+        if (type == '0' && (extension == '')) {
             nameWarning.text('Tên file không hợp lệ. Vui lòng nhập tên file có đuôi hợp lệ.');
             nameWarning.show();
         }
