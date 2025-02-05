@@ -181,7 +181,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
         ];
 
         // gọi thư viện zip file
-        $tmp_file = $file_folder_path . '/excel-testv2.zip';
+        $tmp_file = $file_folder_path . '/report_'. date('d/m/Y H:i:s', NV_CURRENTTIME) . '.zip';
         $zip = new PclZip($tmp_file);
 
         //chia từng sheet trong excel
@@ -346,7 +346,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $objPHPExcel->disconnectWorksheets();
         unset($objPHPExcel);
 
-        $download = new NukeViet\Files\Download($file_path, $file_folder_path, 'excel-testv2.' . $excel_ext);
+        $download = new NukeViet\Files\Download($file_path, $file_folder_path, 'report_'. date('d/m/Y', NV_CURRENTTIME) . '.'  . $excel_ext);
         $download->download_file();
     }
 }

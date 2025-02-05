@@ -365,16 +365,16 @@ if (empty($contents)) {
                 nv_jsonOutput(['status' => 'success', 'message' => 'Tên file hợp lệ.']);
             }
         }
-
+        
         if ($action == 'compress') {
-            if (!defined(constant_name: 'NV_IS_SPADMIN')) {
+            if (!defined('NV_IS_SPADMIN')) {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_thing_to_do']]);
             }
-
+        
             if (empty($fileIds)) {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
             }
-
+        
             $zipFileName = $nv_Request->get_title('zipFileName', 'post', '');
             if ($zipFileName == '') {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['zip_file_name_empty']]);
@@ -382,14 +382,14 @@ if (empty($contents)) {
             $zipFileName = $zipFileName . '.zip';
             $zipFilePath = $base_dir . '/' . $zipFileName;
             $zipFullPath = NV_ROOTDIR . $zipFilePath;
-
+        
             $compressResult = compressFiles($fileIds, $zipFullPath);
-
+        
             $file_size = filesize($zipFullPath);
-
+        
             if ($compressResult['status'] == 'success') {
                 $sqlInsert = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev, compressed) 
-                          VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, 1)";
+                              VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, 1)";
                 $stmtInsert = $db->prepare($sqlInsert);
                 $stmtInsert->bindParam(':file_name', $zipFileName, PDO::PARAM_STR);
                 $stmtInsert->bindParam(':file_path', $zipFilePath, PDO::PARAM_STR);
@@ -401,7 +401,7 @@ if (empty($contents)) {
                     $file_id = $db->lastInsertId();
                     updateAlias($file_id, $zipFileName);
                     $sql1 = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
-                VALUES (:file_id, :p_group, :p_other, :updated_at)";
+                             VALUES (:file_id, :p_group, :p_other, :updated_at)";
                     $stmta = $db->prepare($sql1);
                     $stmta->bindParam(':file_id', $file_id, PDO::PARAM_STR);
                     $stmta->bindValue(':p_group', '1', PDO::PARAM_INT);
@@ -513,14 +513,11 @@ if (empty($contents)) {
                 $stmta->execute();
             }
             updateLog($lev);
-            nv_redirect_location($page_url);
-            $status = 'success';
-            $message = $lang_module['upload_ok'];
+            nv_redirect_location($page_url);    
+            $success = $lang_module['upload_ok'];
         } else {
-            $status = 'error';
             $error = $upload_info['error'];
         }
-        nv_jsonOutput(['status' => $status, 'message' => $message]);
     }
 
     $selected_all = ($search_type == 'all') ? ' selected' : '';
