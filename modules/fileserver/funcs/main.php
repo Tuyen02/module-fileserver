@@ -113,8 +113,6 @@ if (empty($contents)) {
     $action = $nv_Request->get_title('action', 'post', '');
     $fileIds = $nv_Request->get_array('files', 'post', []);
 
-    // pr($action);
-
     if (!empty($action)) {
 
         $status = $lang_module['error'];
@@ -291,7 +289,6 @@ if (empty($contents)) {
 
                 $childCount = $db->query("SELECT COUNT(*) FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE lev = " . $fileId)->fetchColumn();
                 if ($file['is_folder'] == 1 && $childCount > 0) {
-                    //$status = 'error';
                     $mess = $lang_module['cannot_rename_file'];
                 } else {
                     $mess = $lang_module['cannot_rename_file'];
@@ -341,21 +338,29 @@ if (empty($contents)) {
             if ($name_f == '') {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['zip_file_name_empty']]);
             }
-
-            $sqlCheck = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_name = :file_name AND lev = :lev and status = 1";
+        
+            $name_with_zip = $name_f;
+            if (pathinfo($name_f, PATHINFO_EXTENSION) !== 'zip') {
+                $name_with_zip = $name_f . '.zip';
+            }
+        
+            $sqlCheck = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE (file_name = :file_name OR file_name = :file_name_zip) AND lev = :lev and status = 1";
             $stmtCheck = $db->prepare($sqlCheck);
             $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
+            $stmtCheck->bindParam(':file_name_zip', $name_with_zip, PDO::PARAM_STR);
             $stmtCheck->bindParam(':lev', $lev, PDO::PARAM_INT);
             $stmtCheck->execute();
             $count = $stmtCheck->fetchColumn();
-
+        
             if ($count > 0) {
                 $i = 1;
                 $originalName = pathinfo($name_f, PATHINFO_FILENAME);
                 $extension = pathinfo($name_f, PATHINFO_EXTENSION);
                 do {
                     $name_f = $originalName . '_' . $i . '.' . $extension;
+                    $name_with_zip = $name_f . '.zip';
                     $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
+                    $stmtCheck->bindParam(':file_name_zip', $name_with_zip, PDO::PARAM_STR);
                     $stmtCheck->execute();
                     $count = $stmtCheck->fetchColumn();
                     $i++;
@@ -379,7 +384,11 @@ if (empty($contents)) {
             if ($zipFileName == '') {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['zip_file_name_empty']]);
             }
-            $zipFileName = $zipFileName . '.zip';
+        
+            if (pathinfo($zipFileName, PATHINFO_EXTENSION) !== 'zip') {
+                $zipFileName .= '.zip';
+            }
+        
             $zipFilePath = $base_dir . '/' . $zipFileName;
             $zipFullPath = NV_ROOTDIR . $zipFilePath;
         
@@ -407,12 +416,13 @@ if (empty($contents)) {
                     $stmta->bindValue(':p_group', '1', PDO::PARAM_INT);
                     $stmta->bindValue(':p_other', '1', PDO::PARAM_INT);
                     $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-                    $exe = $stmta->execute();
+                    $stmta->execute();
                     updateLog($lev);
                 }
                 $mess = $compressResult['message'];
             }
         }
+
         nv_jsonOutput(['status' => $status, 'message' => $mess]);
     }
 

@@ -66,13 +66,10 @@
                 </td>
                 <td>{ROW.username} {ROW.uploaded_by}</td> -->
                 <td>
-                    <a href="{ROW.url_delete}" data-file-id="{ROW.file_id}" data-checksess="{CHECK_SESS}"
-                        class="btn btn-sm btn-danger delete" title="{LANG.delete_btn}">
+                    <button class="btn btn-sm btn-danger delete" data-file-id="{ROW.file_id}" data-checksess="{CHECK_SESS}" data-url="{ROW.url_delete}" title="{LANG.delete_btn}">
                         <i class="fa fa-trash-o"></i>
-                    </a>
-                    <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}"
-                        data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal"
-                        title="{LANG.rename_btn}">
+                    </button>
+                    <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}" data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal" title="{LANG.rename_btn}">
                         <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
                     </button>
                     <!-- BEGIN: edit -->
@@ -80,10 +77,6 @@
                         <i class="fa fa-pencil-square"></i>
                     </a>
                     <!-- END: edit -->
-                    <!-- <button class="btn btn-sm btn-info share" data-file-id="{ROW.file_id}" data-toggle="modal"
-                        data-target="#shareModal" title="{LANG.share_btn}">
-                        <i class="fa fa-link" aria-hidden="true"></i>
-                    </button> -->
                     <!-- BEGIN: copy -->
                     <a href="{COPY}" class="btn btn-sm btn-info" title="{LANG.copy}">
                         <i class="fa fa-clone"></i>
@@ -133,6 +126,7 @@
                             <label for="zipFileName">Tên file zip</label>
                             <input type="text" class="form-control" id="zipFileName" name="zipFileName" required>
                             <div id="fileNameWarning" class="text-danger mt-2" style="display: none;"></div>
+                            <div id="fileNameSuccess" class="text-success mt-2" style="display: none;"></div>
                         </div>
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">{LANG.close_btn}</button>
                         <button type="submit" class="btn btn-primary">{LANG.zip_btn}</button>
@@ -205,37 +199,7 @@
     </div>
 </div>
 
-<!-- <div class="modal fade" id="shareModal" tabindex="-1" role="dialog" aria-labelledby="shareModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header row">
-                <h3 class="modal-title col-lg-11" id="shareModalLabel">{LANG.share_btn}</h3>
-            </div>
-            <div class="modal-body">
-                <form id="shareForm" method="post" action="">
-                    <div class="form-group">
-                        <label for="share_option">Chọn tùy chọn chia sẻ:</label>
-                        <select class="form-control" id="share_option" name="share_option" required>
-                            <option value="0">Không chia sẻ</option>
-                            <option value="1">Chia sẻ với người có tài khoản</option>
-                            <option value="2">Chia sẻ với tất cả mọi người</option>
-                        </select>
-                    </div>
-                    <input type="hidden" name="file_id" id="share_file_id" value="">
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-primary" onclick="submitShareForm();">Chia sẻ</button>
-            </div>
-        </div>
-    </div>
-</div> -->
-
-
 <script>
-
     function submitCreateForm() {
         var name_f = $("#name_f").val();
         var type = $("#type").val();
@@ -282,7 +246,7 @@
 
     $(document).on('click', '.delete', function () {
         const fileId = $(this).data('file-id');
-        const deleteUrl = $(this).attr('href');
+        const deleteUrl = $(this).data('url');
         const checksess = $(this).data('checksess');
 
         if (confirm("Bạn có chắc chắn muốn xóa mục này?")) {
