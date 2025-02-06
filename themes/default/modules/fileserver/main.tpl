@@ -14,8 +14,8 @@
             value="{SEARCH_TERM}">
         <select class="form-control ml-2" name="search_type">
             <option value="all" {SELECTED_ALL}>{LANG.all}</option>
-            <option value="file" {SELECTED_FILE}>{LANG.file}</option>
-            <option value="folder" {SELECTED_FOLDER}>{LANG.folder}</option>
+            <option value="file" {SELECTED_FILE}>{LANG.total_file}</option>
+            <option value="folder" {SELECTED_FOLDER}>{LANG.total_folder}</option>
         </select>
         <button type="submit" class="btn btn-primary ml-2">{LANG.search_btn}</button>
     </form>
@@ -66,12 +66,24 @@
                 </td>
                 <td>{ROW.username} {ROW.uploaded_by}</td> -->
                 <td>
-                    <button class="btn btn-sm btn-danger delete" data-file-id="{ROW.file_id}" data-checksess="{CHECK_SESS}" data-url="{ROW.url_delete}" title="{LANG.delete_btn}">
+                    <button class="btn btn-sm btn-danger delete" data-file-id="{ROW.file_id}"
+                        data-checksess="{CHECK_SESS}" data-url="{ROW.url_delete}" title="{LANG.delete_btn}">
                         <i class="fa fa-trash-o"></i>
                     </button>
-                    <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}" data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal" title="{LANG.rename_btn}">
+                    <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}"
+                        data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal"
+                        title="{LANG.rename_btn}">
                         <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
                     </button>
+                    <a href="{ROW.url_perm}" class="btn btn-sm btn-info share" title="{LANG.perm_btn}">
+                        <i class="fa fa-link"></i>
+                    </a>
+                    <!-- BEGIN: download -->
+                    <a href="{DOWNLOAD}" class="btn btn-sm btn-success download" data-file-id="{ROW.file_id}"
+                        title="{LANG.download_btn}">
+                        <i class="fa fa-download" aria-hidden="true"></i>
+                    </a>
+                    <!-- END: download -->
                     <!-- BEGIN: edit -->
                     <a href="{EDIT}" class="btn btn-sm btn-info" title="{LANG.edit_btn}">
                         <i class="fa fa-pencil-square"></i>
@@ -82,15 +94,6 @@
                         <i class="fa fa-clone"></i>
                     </a>
                     <!-- END: copy -->
-                    <a href="{ROW.url_perm}" class="btn btn-sm btn-info share" title="{LANG.perm_btn}">
-                        <i class="fa fa-link"></i>
-                    </a>
-                    <!-- BEGIN: download -->
-                    <a href="{DOWNLOAD}" class="btn btn-sm btn-success download" data-file-id="{ROW.file_id}"
-                        title="{LANG.download_btn}">
-                        <i class="fa fa-download" aria-hidden="true"></i>
-                    </a>
-                    <!-- END: download -->
                 </td>
             </tr>
             <!-- END: file_row -->
@@ -98,11 +101,11 @@
         <tfoot>
             <tr>
                 <td class="gray" colspan="7">
-                    <strong>Full Size:</strong>
+                    <strong>{LANG.full_size}</strong>
                     <span class="badge text-bg-light border-radius-0">{ROW.total_size}</span>
-                    <strong>File:</strong>
+                    <strong>{LANG.file}</strong>
                     <span class="badge badge-secondary">{ROW.total_files}</span>
-                    <strong>Folder:</strong>
+                    <strong>{LANG.folder}</strong>
                     <span class="badge badge-secondary">{ROW.total_folders}</span>
                 </td>
             </tr>
@@ -118,15 +121,13 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 class="modal-title" id="compressModalLabel">Nén Modal</h3>
+                    <h3 class="modal-title" id="compressModalLabel">{LANG.compress_modal}</h3>
                 </div>
                 <div class="modal-body">
                     <form id="compressForm" onsubmit="submitCompressForm(event);">
                         <div class="form-group">
-                            <label for="zipFileName">Tên file zip</label>
+                            <label for="zipFileName">{LANG.zip_file_name}</label>
                             <input type="text" class="form-control" id="zipFileName" name="zipFileName" required>
-                            <div id="fileNameWarning" class="text-danger mt-2" style="display: none;"></div>
-                            <div id="fileNameSuccess" class="text-success mt-2" style="display: none;"></div>
                         </div>
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">{LANG.close_btn}</button>
                         <button type="submit" class="btn btn-primary">{LANG.zip_btn}</button>
@@ -160,8 +161,6 @@
                     <div class="form-group">
                         <label for="name">{LANG.f_name}:</label>
                         <input type="text" class="form-control" id="name_f" name="name_f" required>
-                        <div id="nameWarning" class="text-danger mt-2" style="display: none;"></div>
-                        <div id="nameSuccess" class="text-success mt-2" style="display: none;"></div>
                     </div>
                     <input type="hidden" name="create_action" value="create">
                 </form>
@@ -204,18 +203,15 @@
         var name_f = $("#name_f").val();
         var type = $("#type").val();
         var extension = name_f.split('.').pop().toLowerCase();
-        var nameWarning = $("#nameWarning");
-
-        nameWarning.hide();
 
         if (type == '0' && (extension == '')) {
-            nameWarning.text('Tên file không hợp lệ. Vui lòng nhập tên file có đuôi hợp lệ.');
-            nameWarning.show();
+            alert('Tên file không hợp lệ. Vui lòng nhập tên file có đuôi hợp lệ.');
+            return;
         }
 
         if (name_f.trim() == '') {
-            nameWarning.text('Tên file không được để trống.');
-            nameWarning.show();
+            alert('Tên file không được để trống.');
+            return;
         }
 
         var data = {
@@ -230,16 +226,14 @@
             data: data,
             success: function (res) {
                 if (res.status == 'error') {
-                    nameWarning.text(res.message);
-                    nameWarning.show();
+                    alert(res.message);
                 } else {
                     location.reload();
                     alert(res.message);
                 }
             },
             error: function () {
-                nameWarning.text(res.message);
-                nameWarning.show();
+                alert(res.message);
             },
         });
     }

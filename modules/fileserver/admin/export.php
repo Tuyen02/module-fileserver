@@ -207,7 +207,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $objWorksheet = $objPHPExcel->getActiveSheet();
 
         // Rename sheet
-        $objWorksheet->setTitle('Sheet1');
+        $objWorksheet->setTitle('Main');
         // Set page orientation and size
         $objWorksheet->getPageSetup()
             ->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE);

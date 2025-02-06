@@ -310,29 +310,6 @@ if (empty($contents)) {
             }
         }
 
-        if ($action == 'share') {
-            if (!defined('NV_IS_SPADMIN')) {
-                nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_thing_to_do']]);
-            }
-            $fileId = $nv_Request->get_int('file_id', 'post', 0);
-            $share_option = $nv_Request->get_int('share_option', 'post', 0);
-
-            if ($fileId > 0) {
-                $sql = "UPDATE " . NV_PREFIXLANG . '_' . $module_data . "_files SET share = :share_option WHERE file_id = :file_id";
-                $stmt = $db->prepare($sql);
-                $stmt->bindParam(':share_option', $share_option, PDO::PARAM_INT);
-                $stmt->bindParam(':file_id', $fileId, PDO::PARAM_INT);
-
-                if ($stmt->execute()) {
-                    $status = $lang_module['success'];
-                    $mess = $lang_module['share_ok'];
-                } else {
-                    $status = $lang_module['error'];
-                    $mess = $lang_module['share_false'];
-                }
-            }
-        }
-
         if ($action == 'check_filename') {
             $name_f = $nv_Request->get_title('zipFileName', 'post', '');
             if ($name_f == '') {

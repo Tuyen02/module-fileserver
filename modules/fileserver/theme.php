@@ -152,7 +152,7 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
         $xtpl->parse('main.file_row');
     }
 
-    if ($_SERVER['REQUEST_URI'] != '/' . NV_LANG_DATA . '/' . $module_name . '/') {
+    if ($_SERVER['REQUEST_URI'] != '/' . $module_name . '/') {
         $xtpl->assign('BACK', '');
         $xtpl->parse('main.back');
     }
