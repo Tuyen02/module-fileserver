@@ -152,7 +152,7 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
         $xtpl->parse('main.file_row');
     }
 
-    if ($_SERVER['REQUEST_URI'] != '/' . $module_name . '/') {
+    if (($_SERVER['REQUEST_URI'] != '/' . $module_name . '/') && ($_SERVER['REQUEST_URI'] != '/' . NV_LANG_DATA . '/' . $module_name . '/')) {
         $xtpl->assign('BACK', '');
         $xtpl->parse('main.back');
     }
@@ -163,7 +163,7 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
 
 function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $message, $selected_folder_path, $view_url, $directories, $page_url, $base_url)
 {
-    global $module_file, $global_config, $lang_module, $module_name;
+    global $module_file, $global_config, $lang_module;
 
     $xtpl = new XTemplate('clone.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);

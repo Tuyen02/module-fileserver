@@ -8,20 +8,20 @@
     <!-- BEGIN: success -->
     <div class="alert alert-warning">{SUCCESS}</div>
     <!-- END: success -->
-    <form action="{FORM_ACTION}" method="get" id="searchForm" class="form-inline my-2 my-lg-0">
+    <form action="" method="get" id="searchForm" class="form-inline my-2 my-lg-0">
         <input type="hidden" name="lev" value="{ROW.lev}">
         <input type="text" class="form-control" placeholder="{LANG.search}" id="searchInput" name="search"
             value="{SEARCH_TERM}">
         <select class="form-control ml-2" name="search_type">
             <option value="all" {SELECTED_ALL}>{LANG.all}</option>
-            <option value="file" {SELECTED_FILE}>{LANG.total_file}</option>
-            <option value="folder" {SELECTED_FOLDER}>{LANG.total_folder}</option>
+            <option value="file" {SELECTED_FILE}>{LANG.file}</option>
+            <option value="folder" {SELECTED_FOLDER}>{LANG.folder}</option>
         </select>
         <button type="submit" class="btn btn-primary ml-2">{LANG.search_btn}</button>
     </form>
 
     <br>
-    <form action="{FORM_ACTION}" method="post" enctype="multipart/form-data" id="uploadForm"
+    <form action="" method="post" enctype="multipart/form-data" id="uploadForm"
         class="form-inline my-2 my-lg-0">
         <!-- BEGIN: back -->
         <button type="button" class="btn btn-warning" id="backButton">
@@ -345,7 +345,7 @@
         console.log("File ID being sent:", data.file_id);
         $.ajax({
             type: 'POST',
-            url: "{FORM_ACTION}",
+            url: "",
             data: data,
             success: function (res) {
                 console.log(res);
