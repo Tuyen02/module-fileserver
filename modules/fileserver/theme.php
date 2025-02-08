@@ -117,7 +117,6 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
 
         $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
         if ($row['compressed'] == 1) {
-
             $xtpl->assign('VIEW', $row['url_compress']);
             $xtpl->parse('main.file_row.view');
         } else

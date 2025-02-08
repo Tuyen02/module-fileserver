@@ -10,7 +10,7 @@ $rank = $nv_Request->get_int('rank', 'get', 0);
 $copy = $nv_Request->get_int('copy', 'get', 0);
 $move = $nv_Request->get_int('move', 'get', 0);
 
-$sql = "SELECT file_name,alias, file_path, lev FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . $file_id;
+$sql = "SELECT * FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . $file_id;
 $result = $db->query($sql);
 $row = $result->fetch();
 
@@ -23,11 +23,6 @@ $page_url = $base_url;
 $view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main/' . $row['alias'] . '-' . 'lev=' . $row['lev'];
 
 // $canonicalUrl = getCanonicalUrl($page_url, true, true);
-$array_mod_title[] = [
-    'catid' => 0,
-    'title' => $lang_module['copy_or_move'],
-    'link' => $base_url
-];
 
 $array_mod_title[] = [
     'catid' => 0,
@@ -86,11 +81,12 @@ if (defined('NV_IS_SPADMIN')) {
                 $new_file_name = $row['file_name'];
                 $new_file_path = $target_url . '/' . $new_file_name;
 
-                $sql_insert = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
-                               VALUES (:file_name, :file_path, :uploaded_by, 0, :created_at, :lev)";
+                $sql_insert = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev) 
+                           VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)";
                 $stmt = $db->prepare($sql_insert);
                 $stmt->bindParam(':file_name', $new_file_name);
                 $stmt->bindParam(':file_path', $new_file_path);
+                $stmt->bindParam(':file_size', $row['file_size']);
                 $stmt->bindParam(':uploaded_by', $user_info['userid']);
                 $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 $stmt->bindParam(':lev', $target_lev);

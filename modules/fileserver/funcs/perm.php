@@ -24,11 +24,6 @@ $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DA
 //$canonicalUrl = getCanonicalUrl($page_url, true, true);
 $array_mod_title[] = [
     'catid' => 0,
-    'title' => $lang_module['perm'],
-    'link' => $base_url
-];
-$array_mod_title[] = [
-    'catid' => 0,
     'title' => $row['file_name'],
     'link' => $base_url
 ];

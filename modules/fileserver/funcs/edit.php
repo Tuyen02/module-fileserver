@@ -20,12 +20,6 @@ if (empty($row)) {
 
 $array_mod_title[] = [
     'catid' => 0,
-    'title' => $lang_module['edit'],
-    'link' => nv_url_rewrite(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=edit/' . $row['alias'] . '&page=' . $page)
-];
-
-$array_mod_title[] = [
-    'catid' => 0,
     'title' => $row['file_name'],
     'link' => nv_url_rewrite(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=edit/' . $row['alias'] . '&page=' . $page)
 ];

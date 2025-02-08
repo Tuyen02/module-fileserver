@@ -415,7 +415,7 @@ if ($download == 1) {
             $zipFullPath = NV_ROOTDIR . $zipFilePath;
 
             $zipArchive = new PclZip($zipFullPath);
-            $zipArchive->create($file_path, PCLZIP_OPT_REMOVE_PATH, NV_ROOTDIR);
+            $zipArchive->create($file_path, PCLZIP_OPT_REMOVE_PATH, dirname($file_path));
 
             if (file_exists($zipFullPath)) {
                 $zip = $zipFullPath;
@@ -437,7 +437,6 @@ if ($download == 1) {
         }
     }
 }
-
 
 $error = '';
 $success = '';

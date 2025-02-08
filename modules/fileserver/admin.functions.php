@@ -47,6 +47,27 @@ function updateAlias($file_id, $file_name)
     return true;
 }
 
+function calculateFolderSize($folderId)
+{
+    global $db, $module_data;
+    $totalSize = 0;
+
+    $sql = "SELECT file_id, is_folder, file_size FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE lev = :lev";
+    $stmt = $db->prepare($sql);
+    $stmt->bindParam(':lev', $folderId, PDO::PARAM_INT);
+    $stmt->execute();
+    $files = $stmt->fetchAll();
+
+    foreach ($files as $file) {
+        if ($file['is_folder'] == 1) {
+            $totalSize += calculateFolderSize($file['file_id']);
+        } else {
+            $totalSize += $file['file_size'];
+        }
+    }
+    return $totalSize;
+}
+
 function calculateFileFolderStats($lev)
 {
     global $db, $module_data;

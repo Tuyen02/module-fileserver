@@ -30,7 +30,7 @@
 
     <div class="alert alert-warning mt-5">
         <p>Lưu ý dạng file tải lên phải là file excel có các đuôi như: xlsx, xls</p>
-        File mẫu có dạng như sau: <a href="{URL_DOWNLOAD}"><i class="fa fa-file-excel-o"></i> test.xlsx</a>
+        File mẫu có dạng như sau: <a href="{URL_DOWNLOAD}"><i class="fa fa-file-excel-o"></i>demo_report.xlsx</a>
     </div>
 </div>
 

@@ -255,13 +255,17 @@ if ($nv_Request->isset_request('submit', 'post')) {
             $objWorksheet->setCellValue($table_char_from++ . $i, $stt);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_name']);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_path']);
-            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_size'] ? number_format($_data2['file_size'] / 1024, 2) . ' KB' : '--');
+            if ($_data2['is_folder'] == 1) {
+                $objWorksheet->setCellValue($table_char_from++ . $i, number_format(calculateFolderSize($_data2['file_id']) / 1024, 2) . ' KB');
+            } else {
+                $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_size'] ? number_format($_data2['file_size'] / 1024, 2) . ' KB' : '--');
+            }
             $sql = "SELECT username, first_name, last_name FROM nv4_users WHERE userid = " . $_data2['uploaded_by'];
             $stmt = $db->prepare($sql);
             $stmt->execute();
             $user = $stmt->fetch();
 
-            $username = $user['last_name'].' ' . $user['first_name'] . '(' . $user['username'] . ')';
+            $username = $user['last_name'].' ' . $user['first_name'] . ' (' . $user['username'] . ')';
             $objWorksheet->setCellValue($table_char_from++ . $i,  $username);
             $objWorksheet->setCellValue($table_char_from++ . $i, date('d/m/Y H:i:s', $_data2['created_at']));
             $type = ($_data2['is_folder'] == 1) ? 'Thư mục' : 'Tệp tin';
@@ -293,13 +297,17 @@ if ($nv_Request->isset_request('submit', 'post')) {
                     $folderSheet->setCellValue($table_char_from++ . $j, $folder_stt);
                     $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_name']);
                     $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_path']);
-                    $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_size'] ? number_format($folderFile['file_size'] / 1024, 2) . ' KB' : '--');
+                    if ($folderFile['is_folder'] == 1) {
+                        $folderSheet->setCellValue($table_char_from++ . $j, number_format(calculateFolderSize($folderFile['file_id']) / 1024, 2) . ' KB');
+                    } else {
+                        $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_size'] ? number_format($folderFile['file_size'] / 1024, 2) . ' KB' : '--');
+                    }
                     $sql = "SELECT username, first_name, last_name FROM nv4_users WHERE userid = " . $_data2['uploaded_by'];
                     $stmt = $db->prepare($sql);
                     $stmt->execute();
                     $user = $stmt->fetch();
         
-                    $username = $user['last_name'].' ' . $user['first_name'] . '(' . $user['username'] . ')';
+                    $username = $user['last_name'].' ' . $user['first_name'] . ' (' . $user['username'] . ')';
 
                     $folderSheet->setCellValue($table_char_from++ . $j,  $username);
                     $folderSheet->setCellValue($table_char_from++ . $j, date('d/m/Y H:i:s', $folderFile['created_at']));
@@ -314,28 +322,28 @@ if ($nv_Request->isset_request('submit', 'post')) {
                 $folderSheet->getStyle('A4:H' . $j)
                     ->applyFromArray($styleTableArray);
                 // auto size cho sheet mới
-                $folderSheet->getColumnDimension('A')->setWidth(10);
-                $folderSheet->getColumnDimension('B')->setWidth(35);
-                $folderSheet->getColumnDimension('C')->setWidth(35);
-                $folderSheet->getColumnDimension('D')->setWidth(35);
-                $folderSheet->getColumnDimension('E')->setWidth(35);
-                $folderSheet->getColumnDimension('F')->setWidth(35);
-                $folderSheet->getColumnDimension('G')->setWidth(35);
-                $folderSheet->getColumnDimension('H')->setWidth(35);
+                $folderSheet->getColumnDimension('A')->setWidth(5);
+                $folderSheet->getColumnDimension('B')->setWidth(50);
+                $folderSheet->getColumnDimension('C')->setWidth(50);
+                $folderSheet->getColumnDimension('D')->setWidth(15);
+                $folderSheet->getColumnDimension('E')->setWidth(40);
+                $folderSheet->getColumnDimension('F')->setWidth(30);
+                $folderSheet->getColumnDimension('G')->setWidth(15);
+                $folderSheet->getColumnDimension('H')->setWidth(15);
             }
         }
         // style table
         $objWorksheet->getStyle('A4:H' . $i)
             ->applyFromArray($styleTableArray);
         // auto size
-        $objWorksheet->getColumnDimension('A')->setWidth(10);
-        $objWorksheet->getColumnDimension('B')->setWidth(35);
-        $objWorksheet->getColumnDimension('C')->setWidth(35);
-        $objWorksheet->getColumnDimension('D')->setWidth(35);
-        $objWorksheet->getColumnDimension('E')->setWidth(35);
-        $objWorksheet->getColumnDimension('F')->setWidth(35);
-        $objWorksheet->getColumnDimension('G')->setWidth(35);
-        $objWorksheet->getColumnDimension('H')->setWidth(35);
+        $objWorksheet->getColumnDimension('A')->setWidth(5);
+        $objWorksheet->getColumnDimension('B')->setWidth(50);
+        $objWorksheet->getColumnDimension('C')->setWidth(50);
+        $objWorksheet->getColumnDimension('D')->setWidth(15);
+        $objWorksheet->getColumnDimension('E')->setWidth(40);
+        $objWorksheet->getColumnDimension('F')->setWidth(30);
+        $objWorksheet->getColumnDimension('G')->setWidth(15);
+        $objWorksheet->getColumnDimension('H')->setWidth(15);
 
         // lưu file
         $file_path = $file_folder_path . '/ssssss' . $key . '.' . $excel_ext;
@@ -373,7 +381,7 @@ if ($download == 1) {
             $zipFullPath = NV_ROOTDIR . $zipFilePath;
 
             $zipArchive = new PclZip($zipFullPath);
-            $zipArchive->create($file_path, PCLZIP_OPT_REMOVE_PATH, NV_ROOTDIR);
+            $zipArchive->create($file_path, PCLZIP_OPT_REMOVE_PATH, dirname($file_path));
 
             if (file_exists($zipFullPath)) {
                 $zip = $zipFullPath;
@@ -408,7 +416,11 @@ foreach ($result as $row) {
     $row['stt'] = $stt++;
     $row['url_download'] = NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=export&amp;file_id=' . $row['file_id'] . "&download=1";
     $row['created_at'] = date('d/m/Y', $row['created_at']);
-    $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
+    if($row['is_folder'] == 1){
+        $row['file_size'] = number_format(calculateFolderSize($row['file_id']) / 1024, 2) . ' KB';
+    }else{
+        $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
+    }
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');
 }
@@ -417,7 +429,6 @@ if (!empty($error)) {
     $xtpl->assign('ERROR', $error);
     $xtpl->parse('main.error');
 }
-
 
 $xtpl->parse('main');
 $contents = $xtpl->text('main');

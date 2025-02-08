@@ -22,7 +22,6 @@ if (defined('NV_IS_SPADMIN') || is_array($user_info['in_groups']) && array_inter
 } else {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
 }
-
 function updateAlias($file_id, $file_name)
 {
     global $db, $module_data;
@@ -294,8 +293,3 @@ function updateLog($lev)
     $stmtInsert->bindValue(':update_size', $stats['size'], PDO::PARAM_INT);
     $stmtInsert->execute();
 }
-function pr($a)
-{
-    exit('<pre><code>' . htmlspecialchars(print_r($a, true)) . '</code></pre>');
-}
-
