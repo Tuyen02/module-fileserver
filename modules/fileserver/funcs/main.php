@@ -364,8 +364,13 @@ if (!empty($action)) {
         $file_size = filesize($zipFullPath);
 
         if ($compressResult['status'] == 'success') {
+            $allFileIds = $fileIds;
+            foreach ($fileIds as $fileId) {
+                $allFileIds = array_merge($allFileIds, getAllChildFileIds($fileId, $db));
+            }
+            $compressed = implode(",", $allFileIds);
             $sqlInsert = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev, compressed) 
-                              VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, 1)";
+                              VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, :compressed)";
             $stmtInsert = $db->prepare($sqlInsert);
             $stmtInsert->bindParam(':file_name', $zipFileName, PDO::PARAM_STR);
             $stmtInsert->bindParam(':file_path', $zipFilePath, PDO::PARAM_STR);
@@ -373,6 +378,7 @@ if (!empty($action)) {
             $stmtInsert->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_INT);
             $stmtInsert->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmtInsert->bindValue(':lev', $lev, PDO::PARAM_INT);
+            $stmtInsert->bindValue(':compressed', $compressed, PDO::PARAM_STR);
             if ($stmtInsert->execute()) {
                 $file_id = $db->lastInsertId();
                 updateAlias($file_id, $zipFileName);
@@ -386,6 +392,8 @@ if (!empty($action)) {
                 $stmta->execute();
                 updateLog($lev);
             }
+            $mess = $compressResult['message'];
+        } else {
             $mess = $compressResult['message'];
         }
     }

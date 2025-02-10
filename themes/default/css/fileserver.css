@@ -1,0 +1,5 @@
+.tree { list-style-type: none; padding-left: 20px; }
+.tree li { margin: 5px 0; cursor: pointer; }
+.tree li span { font-weight: bold; display: flex; align-items: center; gap: 5px; }
+.tree ul { margin-left: 20px; padding-left: 10px; border-left: 1px dashed #ccc; }
+.tree i { font-size: 14px; }

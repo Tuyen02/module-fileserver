@@ -189,9 +189,9 @@ function compressFiles($fileIds, $zipFilePath)
 }
 
 
-function addToDatabase($files, $parent_id, $db)
+function addToDatabase($files, $parent_id)
 {
-    global $module_data;
+    global $module_data, $db;
     foreach ($files as $file) {
         $isFolder = ($file['folder'] == 1) ? 1 : 0;
         $filePath = str_replace(NV_ROOTDIR, '', $file['filename']);
@@ -292,4 +292,103 @@ function updateLog($lev)
     $stmtInsert->bindValue(':update_folders', $stats['folders'], PDO::PARAM_INT);
     $stmtInsert->bindValue(':update_size', $stats['size'], PDO::PARAM_INT);
     $stmtInsert->execute();
+}
+
+function getAllChildFileIds($fileId)
+{
+    global $module_data, $db;
+    $childFileIds = [];
+    $sql = "SELECT file_id FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE lev = :file_id and status = 1";
+    $stmt = $db->prepare($sql);
+    $stmt->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+    $stmt->execute();
+    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($result as $row) {
+        $childFileIds[] = $row['file_id'];
+        $childFileIds = array_merge($childFileIds, getAllChildFileIds($row['file_id'], $db));
+    }
+    return $childFileIds;
+}
+
+function buildTree($list)
+{
+    $tree = [];
+    $items = [];
+    foreach ($list as $item) {
+        $items[$item['file_id']] = $item;
+        $items[$item['file_id']]['children'] = [];
+    }
+    foreach ($items as $item) {
+        if ($item['lev'] != 0) {
+            $items[$item['lev']]['children'][] = &$items[$item['file_id']];
+        } else {
+            $tree[] = &$items[$item['file_id']];
+        }
+    }
+    return $tree;
+}
+
+function displayTree($tree)
+{
+    $output = '<ul>';
+    foreach ($tree as $node) {
+        $output .= '<li><i class="fa ' . getFileIconClass($node) . '"></i> ' . $node['file_name'];
+        if (!empty($node['children'])) {
+            $output .= displayTree($node['children']);
+        }
+        $output .= '</li>';
+    }
+    $output .= '</ul>';
+    return $output;
+}
+
+function getFileIconClass($file)
+{
+    $file_icons = [
+        'pdf' => 'fa-file-pdf-o',
+        'doc' => 'fa-file-word-o',
+        'docx' => 'fa-file-word-o',
+        'xls' => 'fa-file-excel-o',
+        'xlsx' => 'fa-file-excel-o',
+        'ppt' => 'fa-file-powerpoint-o',
+        'pptx' => 'fa-file-powerpoint-o',
+        'jpg' => 'fa-file-image-o',
+        'jpeg' => 'fa-file-image-o',
+        'png' => 'fa-file-image-o',
+        'gif' => 'fa-file-image-o',
+        'zip' => 'fa-file-archive-o',
+        'rar' => 'fa-file-archive-o',
+        '7z' => 'fa-file-archive-o',
+        'html' => 'fa-file-code-o',
+        'css' => 'fa-file-code-o',
+        'js' => 'fa-file-code-o',
+        'php' => 'fa-file-code-o',
+        'sql' => 'fa-file-code-o',
+        'txt' => 'fa-file-text-o',
+        'mp3' => 'fa-file-audio-o',
+        'wav' => 'fa-file-audio-o',
+        'wma' => 'fa-file-audio-o',
+        'mp4' => 'fa-file-video-o',
+        'avi' => 'fa-file-video-o',
+        'flv' => 'fa-file-video-o',
+        'mkv' => 'fa-file-video-o',
+        'mov' => 'fa-file-video-o',
+        'wmv' => 'fa-file-video-o',
+        'ps' => 'fa-file-o',
+    ];
+
+    $file['compressed'] = isset($file['compressed']) ? $file['compressed'] : 0;
+    $file['is_folder'] = isset($file['is_folder']) ? $file['is_folder'] : 0;
+    $file['file_name'] = isset($file['file_name']) ? $file['file_name'] : '';
+
+    if ($file['compressed'] != 0) {
+        return 'fa-file-archive-o';
+    } else {
+        if ($file['is_folder']) {
+            return 'fa-folder-o';
+        } else {
+            $extension = pathinfo($file['file_name'], PATHINFO_EXTENSION);
+            return isset($file_icons[$extension]) ? $file_icons[$extension] : 'fa-file-o';
+        }
+    }
 }

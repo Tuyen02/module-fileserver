@@ -51,49 +51,7 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
         $row['created_at'] = date('d/m/Y', $row['created_at']);
 
         $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
-        $file_icons = [
-            'pdf' => 'fa-file-pdf-o',
-            'doc' => 'fa-file-word-o',
-            'docx' => 'fa-file-word-o',
-            'xls' => 'fa-file-excel-o',
-            'xlsx' => 'fa-file-excel-o',
-            'ppt' => 'fa-file-powerpoint-o',
-            'pptx' => 'fa-file-powerpoint-o',
-            'jpg' => 'fa-file-image-o',
-            'jpeg' => 'fa-file-image-o',
-            'png' => 'fa-file-image-o',
-            'gif' => 'fa-file-image-o',
-            'zip' => 'fa-file-archive-o',
-            'rar' => 'fa-file-archive-o',
-            '7z' => 'fa-file-archive-o',
-            'html' => 'fa-file-code-o',
-            'css' => 'fa-file-code-o',
-            'js' => 'fa-file-code-o',
-            'php' => 'fa-file-code-o',
-            'sql' => 'fa-file-code-o',
-            'txt' => 'fa-file-text-o',
-            'mp3' => 'fa-file-audio-o',
-            'wav' => 'fa-file-audio-o',
-            'wma' => 'fa-file-audio-o',
-            'mp4' => 'fa-file-video-o',
-            'avi' => 'fa-file-video-o',
-            'flv' => 'fa-file-video-o',
-            'mkv' => 'fa-file-video-o',
-            'mov' => 'fa-file-video-o',
-            'wmv' => 'fa-file-video-o',
-            'ps' => 'fa-file-o',
-        ];
-        
-        if ($row['compressed'] == 1) {
-            $row['icon_class'] = 'fa-file-archive-o';
-        } else {
-            if ($row['is_folder']) {
-                $row['icon_class'] = 'fa-folder-o';
-            } else {
-                $extension = pathinfo($row['file_name'], PATHINFO_EXTENSION);
-                $row['icon_class'] = isset($file_icons[$extension]) ? $file_icons[$extension] : 'fa-file-o';
-            }
-        }
+        $row['icon_class'] = getFileIconClass($row);
 
         if ($permissions) {
             $row['p_group'] = $permissions['p_group'];
@@ -116,18 +74,16 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
         $row['url_share'] = $url_share;
 
         $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
-        if ($row['compressed'] == 1) {
+        if ($row['compressed'] != 0) {
             $xtpl->assign('VIEW', $row['url_compress']);
             $xtpl->parse('main.file_row.view');
         } else
             if ($row['is_folder'] == 1) {
                 $row['file_size'] = calculateFolderSize($row['file_id']);
+
                 $xtpl->assign('VIEW', $row['url_view']);
                 $xtpl->parse('main.file_row.view');
             } else {
-                $xtpl->assign('SHARE', $row['url_share']);
-                $xtpl->parse('main.file_row.share');
-
                 $xtpl->assign('VIEW', $row['url_edit']);
                 $xtpl->parse('main.file_row.view');
 
@@ -200,27 +156,16 @@ function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $message, $
     return $xtpl->text('main');
 }
 
-function nv_fileserver_compress($row, $file_id, $file_size_zip, $list, $message)
+function nv_fileserver_compress($file_id, $list, $message, $tree_html)
 {
-    global $module_file, $global_config, $lang_module, $module_name;
+    global $module_file, $global_config, $lang_module;
 
     $xtpl = new XTemplate('compress.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
     $xtpl->assign('FILE_ID', $file_id);
 
-    if ($file_size_zip > 0) {
-        $xtpl->assign('ZIP_FILE_SIZE', nv_convertfromBytes($file_size_zip));
-        $xtpl->parse('main.zip_file_size');
-    }
-
     if (!empty($list)) {
-        foreach ($list as $file) {
-            $file['file_name'] = basename($file['filename']);
-            $file['file_size'] = $file['folder'] ? '-' : nv_convertfromBytes($file['size']);
-            $file['file_type'] = $file['folder'] ? 'fa-folder-o' : 'fa-file-o';
-            $xtpl->assign('FILE', $file);
-            $xtpl->parse('main.file');
-        }
+        $xtpl->assign('TREE_HTML', $tree_html);
     }
 
     if (!empty($message)) {
@@ -235,7 +180,7 @@ function nv_fileserver_compress($row, $file_id, $file_size_zip, $list, $message)
 
 function nv_fileserver_edit_img($row, $file_id, $file_extension)
 {
-    global $module_file, $global_config, $lang_module, $module_name;
+    global $module_file, $global_config, $lang_module;
 
     $xtpl = new XTemplate('edit_img.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);

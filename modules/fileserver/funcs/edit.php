@@ -34,7 +34,8 @@ $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
 $file_content = '';
 if (file_exists($full_path)) {
     if ($file_extension == 'pdf') {
-        $file_content = $file_path;;
+        $file_content = $file_path;
+        ;
     } elseif (in_array($file_extension, ['xlsx', 'xls'])) {
         $spreadsheet = IOFactory::load($full_path);
         $sheet = $spreadsheet->getActiveSheet();
