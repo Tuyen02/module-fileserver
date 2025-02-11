@@ -189,49 +189,40 @@ function compressFiles($fileIds, $zipFilePath)
 }
 
 
-function addToDatabase($files, $parent_id)
+function addToDatabase($dir, $parent_id = 0)
 {
     global $module_data, $db;
 
-    $folderMap = []; // Lưu danh sách thư mục đã được insert để xác định file cha
-
+    $files = scandir($dir);
     foreach ($files as $file) {
-        $isFolder = ($file['folder'] == 1) ? 1 : 0;
-        $filePath = str_replace(NV_ROOTDIR . '/uploads/fileserver/', '', $file['filename']); // Chuẩn hóa đường dẫn
-        $fileName = basename($filePath);
-        $created_at = NV_CURRENTTIME;
-
-        // Xác định thư mục cha dựa trên đường dẫn
-        $parentLev = $parent_id; // Mặc định file cha là $parent_id (thư mục gốc)
-        $folderParentPath = dirname($filePath);
-
-        // Nếu thư mục cha đã có trong $folderMap, lấy file_id của thư mục cha làm lev
-        if ($folderParentPath !== '.' && isset($folderMap[$folderParentPath])) {
-            $parentLev = $folderMap[$folderParentPath];
+        if ($file == '.' || $file == '..') {
+            continue;
         }
 
-        // Chèn vào database
+        $filePath = $dir . '/' . $file;
+        $isFolder = is_dir($filePath) ? 1 : 0;
+        $fileSize = $isFolder ? 0 : filesize($filePath);
+        $created_at = NV_CURRENTTIME;
+
         $insert_sql = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files 
                        (file_name, file_path, file_size, is_folder, created_at, lev, compressed) 
                        VALUES (:file_name, :file_path, :file_size, :is_folder, :created_at, :lev, 0)";
         $insert_stmt = $db->prepare($insert_sql);
-        $insert_stmt->bindParam(':file_name', $fileName, PDO::PARAM_STR);
-        $insert_stmt->bindParam(':file_path', $filePath, PDO::PARAM_STR);
-        $insert_stmt->bindParam(':file_size', $file['size'], PDO::PARAM_INT);
+        $file_name = basename($filePath);
+        $relativePath = str_replace(NV_ROOTDIR, '', $filePath);
+        $insert_stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
+        $insert_stmt->bindParam(':file_path', $relativePath, PDO::PARAM_STR);
+        $insert_stmt->bindParam(':file_size', $fileSize, PDO::PARAM_INT);
         $insert_stmt->bindParam(':is_folder', $isFolder, PDO::PARAM_INT);
         $insert_stmt->bindValue(':created_at', $created_at, PDO::PARAM_INT);
-        $insert_stmt->bindParam(':lev', $parentLev, PDO::PARAM_INT);
+        $insert_stmt->bindParam(':lev', $parent_id, PDO::PARAM_INT);
         $insert_stmt->execute();
 
-        // Lấy file_id vừa chèn vào database
         $file_id = $db->lastInsertId();
+        updateAlias($file_id, $file_name);
 
-        // Cập nhật alias
-        updateAlias($file_id, $fileName);
-
-        // Nếu là thư mục, lưu vào folderMap để xác định file con
         if ($isFolder) {
-            $folderMap[$filePath] = $file_id;
+            addToDatabase($filePath, $file_id);
         }
     }
 }

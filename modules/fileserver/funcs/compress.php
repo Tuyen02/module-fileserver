@@ -43,7 +43,7 @@ if (!$row) {
         $file_size_zip = file_exists($zipFilePath) ? filesize($zipFilePath) : 0;
 
         if ($list) {
-            addToDatabase($list, $file_id);
+            addToDatabase($extractTo, $file_id);
 
             if (nv_deletefile($zipFilePath)) {
                 $status = $lang_module['success'];
