@@ -72,15 +72,10 @@ $xtpl->assign('OP', $op);
 $xtpl->assign('POST', $post);
 
 foreach ($result as $row) {
+    $checked = in_array($row['group_id'], $post['group_ids']) ? 'selected' : '';
     $xtpl->assign('ROW', $row);
+    $xtpl->assign('CHECKED', $checked);
     $xtpl->parse('main.loop');
-    if (in_array($row['group_id'], [1,2,3])) {
-        $xtpl->assign('CHECKED','checked disabled');
-        $xtpl->parse('main.loop.checked');
-    }else{
-        $xtpl->assign('CHECKED','');
-        $xtpl->parse('main.loop.checked');
-    }
 }
 
 if ($mess != '') {
