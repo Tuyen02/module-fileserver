@@ -18,7 +18,7 @@ $group_ids_str = implode(',', $post['group_ids']);
 
 if ($nv_Request->isset_request('submit', 'post')) {
     if (empty($post['group_ids'])) {
-        $err = 'Chưa chọn nhóm nào.';
+        $err = $lang_module['no_group'];
     } else {
         $group_ids_str = implode(',', $post['group_ids']);
         $config_name = 'group_admin_fileserver';
@@ -38,9 +38,9 @@ if ($nv_Request->isset_request('submit', 'post')) {
             $stmt_update->bindParam(':config_value', $group_ids_str, PDO::PARAM_STR);
             $stmt_update->bindParam(':config_name', $config_name, PDO::PARAM_STR);
             if ($stmt_update->execute()) {
-                $mess = 'Cập nhật thành công.';
+                $mess = $lang_module['update_success'];
             } else {
-                $err = 'Cập nhật thất bại.';
+                $err = $lang_module['update_error'];
             }
         } else {
             $lang = 'vi';
@@ -52,11 +52,30 @@ if ($nv_Request->isset_request('submit', 'post')) {
             $stmt_insert->bindParam(':config_name', $config_name, PDO::PARAM_STR);
             $stmt_insert->bindParam(':config_value', $group_ids_str, PDO::PARAM_STR);
             if ($stmt_insert->execute()) {
-                $mess = 'Chèn mới thành công.';
+                $mess = $lang_module['update_success'];
             } else {
-                $err = 'Chèn mới thất bại.';
+                $err = $lang_module['update_error'];
             }
         }
+    }
+} else {
+    $config_name = 'group_admin_fileserver';
+    $sql_get = "SELECT config_value FROM nv4_config WHERE config_name = :config_name";
+    $stmt_get = $db->prepare($sql_get);
+    $stmt_get->bindParam(':config_name', $config_name, PDO::PARAM_STR);
+    $stmt_get->execute();
+    $group_ids_str = $stmt_get->fetchColumn();
+    $post['group_ids'] = !empty($group_ids_str) ? explode(',', $group_ids_str) : [];
+}
+
+$group_titles = [];
+if (!empty($post['group_ids'])) {
+    $placeholders = implode(',', array_fill(0, count($post['group_ids']), '?'));
+    $sql_titles = "SELECT group_id, title FROM nv4_users_groups_detail WHERE group_id IN ($placeholders) AND lang = '" . NV_LANG_DATA . "'";
+    $stmt_titles = $db->prepare($sql_titles);
+    $stmt_titles->execute($post['group_ids']);
+    while ($row = $stmt_titles->fetch(PDO::FETCH_ASSOC)) {
+        $group_titles[$row['group_id']] = $row['title'];
     }
 }
 
@@ -76,6 +95,13 @@ foreach ($result as $row) {
     $xtpl->assign('ROW', $row);
     $xtpl->assign('CHECKED', $checked);
     $xtpl->parse('main.loop');
+}
+
+foreach ($post['group_ids'] as $group_id) {
+    if (isset($group_titles[$group_id])) {
+        $xtpl->assign('GROUP_TITLE', $group_titles[$group_id]);
+        $xtpl->parse('main.selected_groups');
+    }
 }
 
 if ($mess != '') {

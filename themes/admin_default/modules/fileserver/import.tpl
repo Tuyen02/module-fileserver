@@ -30,7 +30,7 @@
 
     <div class="alert alert-warning mt-5">
         <p>{LANG.caution}</p>
-        {LANG.demo_title} <a href="{URL_DOWNLOAD}"><i class="fa fa-file-excel-o"></i>{LANG.demo_file}</a>
+        {LANG.demo_title} <a href="{URL_DOWNLOAD}"><i class="fa fa-file-excel-o"></i> {LANG.demo_file}</a>
     </div>
 </div>
 <!-- END: main -->

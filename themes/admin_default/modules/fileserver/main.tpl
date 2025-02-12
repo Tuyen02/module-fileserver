@@ -29,8 +29,11 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
 <script>
     $(document).ready(function () {
+        var selectedGroups = $('#group_ids').val();
+        var placeholderText = selectedGroups.length > 0 ? '' : "{LANG.choose_group}";
+
         $('.select2').select2({
-            placeholder: "{LANG.choose_group}",
+            placeholder: placeholderText,
             allowClear: true
         });
     });
