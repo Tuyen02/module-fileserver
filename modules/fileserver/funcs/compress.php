@@ -57,7 +57,7 @@ if (!$row) {
                            WHERE file_id = :file_id';
             $update_stmt = $db->prepare($update_sql);
             $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-            $new_name = pathinfo($row['file_name'], PATHINFO_FILENAME);
+            $new_name = nv_unhtmlspecialchars(pathinfo($row['file_name'], PATHINFO_FILENAME));
             $new_path = '/uploads/fileserver/' . $new_name;
             $update_stmt->bindParam(':new_name', $new_name, PDO::PARAM_STR);
             $update_stmt->bindParam(':new_path', $new_path, PDO::PARAM_STR);

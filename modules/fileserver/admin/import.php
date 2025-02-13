@@ -58,7 +58,6 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
                             $stmt_check->execute();
                             $existing_file_id = $stmt_check->fetchColumn();
 
-
                             if ($existing_file_id) {
                                 $counter = 1;
                                 if ($is_folder) {

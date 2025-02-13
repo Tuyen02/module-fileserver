@@ -181,11 +181,8 @@ if ($nv_Request->isset_request('submit', 'post')) {
         ];
 
         // gọi thư viện zip file
-        $tmp_file = $file_folder_path . '/report_'. date('d/m/Y H:i:s', NV_CURRENTTIME) . '.zip';
+        $tmp_file = $file_folder_path . '/report_' . date('d/m/Y H:i:s', NV_CURRENTTIME) . '.zip';
         $zip = new PclZip($tmp_file);
-
-        //chia từng sheet trong excel
-        // Tạo đối tượng objPHPExcel load template
 
         $templatePath = NV_CONSOLE_DIR . '/export_excel/template2.xlsx';
         if (!file_exists($templatePath)) {
@@ -265,8 +262,8 @@ if ($nv_Request->isset_request('submit', 'post')) {
             $stmt->execute();
             $user = $stmt->fetch();
 
-            $username = $user['last_name'].' ' . $user['first_name'] . ' (' . $user['username'] . ')';
-            $objWorksheet->setCellValue($table_char_from++ . $i,  $username);
+            $username = $user['last_name'] . ' ' . $user['first_name'] . ' (' . $user['username'] . ')';
+            $objWorksheet->setCellValue($table_char_from++ . $i, $username);
             $objWorksheet->setCellValue($table_char_from++ . $i, date('d/m/Y H:i:s', $_data2['created_at']));
             $type = ($_data2['is_folder'] == 1) ? 'Thư mục' : 'Tệp tin';
             $objWorksheet->setCellValue($table_char_from++ . $i, $type);
@@ -278,9 +275,9 @@ if ($nv_Request->isset_request('submit', 'post')) {
                 $folderSheet = $objPHPExcel->createSheet();
                 $folderSheet->setTitle($_data2['file_name']);
                 $folderSheet->fromArray(
-                    $arr_header_row, 
-                    null, 
-                    $title_char_from . $title_number_from 
+                    $arr_header_row,
+                    null,
+                    $title_char_from . $title_number_from
                 );
                 $folderSheet->getStyle($title_char_from . $title_number_from . ':' . $title_char_to . $title_number_to)
                     ->applyFromArray($styleTitleArray);
@@ -306,10 +303,10 @@ if ($nv_Request->isset_request('submit', 'post')) {
                     $stmt = $db->prepare($sql);
                     $stmt->execute();
                     $user = $stmt->fetch();
-        
-                    $username = $user['last_name'].' ' . $user['first_name'] . ' (' . $user['username'] . ')';
 
-                    $folderSheet->setCellValue($table_char_from++ . $j,  $username);
+                    $username = $user['last_name'] . ' ' . $user['first_name'] . ' (' . $user['username'] . ')';
+
+                    $folderSheet->setCellValue($table_char_from++ . $j, $username);
                     $folderSheet->setCellValue($table_char_from++ . $j, date('d/m/Y H:i:s', $folderFile['created_at']));
                     $type = ($folderFile['is_folder'] == 1) ? 'Thư mục' : 'Tệp tin';
                     $folderSheet->setCellValue($table_char_from++ . $j, $type);
@@ -354,7 +351,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $objPHPExcel->disconnectWorksheets();
         unset($objPHPExcel);
 
-        $download = new NukeViet\Files\Download($file_path, $file_folder_path, 'report_'. date('d/m/Y', NV_CURRENTTIME) . '.'  . $excel_ext);
+        $download = new NukeViet\Files\Download($file_path, $file_folder_path, 'report_' . date('d/m/Y', NV_CURRENTTIME) . '.' . $excel_ext);
         $download->download_file();
     }
 }
@@ -416,9 +413,9 @@ foreach ($result as $row) {
     $row['stt'] = $stt++;
     $row['url_download'] = NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=export&amp;file_id=' . $row['file_id'] . "&download=1";
     $row['created_at'] = date('d/m/Y', $row['created_at']);
-    if($row['is_folder'] == 1){
+    if ($row['is_folder'] == 1) {
         $row['file_size'] = number_format(calculateFolderSize($row['file_id']) / 1024, 2) . ' KB';
-    }else{
+    } else {
         $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
     }
     $xtpl->assign('ROW', $row);
