@@ -49,63 +49,12 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
                             $file_name = basename($file_path);
                             $file_path = $parent_path . '/' . $file_name;
                             $full_path = NV_ROOTDIR . $file_path;
-                            $file_size = file_exists($full_path) ? filesize($full_path) : 0;
                             $is_folder = pathinfo($file_name, PATHINFO_EXTENSION) == '' ? 1 : 0;
-
-                            $sql_check = "SELECT file_id FROM nv4_vi_fileserver_files WHERE file_path = :file_path";
-                            $stmt_check = $db->prepare($sql_check);
-                            $stmt_check->bindParam(':file_path', $file_path, PDO::PARAM_STR);
-                            $stmt_check->execute();
-                            $existing_file_id = $stmt_check->fetchColumn();
-
-                            if ($existing_file_id) {
-                                $counter = 1;
-                                if ($is_folder) {
-                                    $new_file_name = pathinfo($file_name, PATHINFO_FILENAME) . "($counter)";
-                                } else {
-                                    $new_file_name = pathinfo($file_name, PATHINFO_FILENAME) . "($counter)." . pathinfo($file_name, PATHINFO_EXTENSION);
-                                }
-                                $new_file_path = $parent_path . '/' . $new_file_name;
-                                while (file_exists(NV_ROOTDIR . $new_file_path)) {
-                                    $counter++;
-                                    if ($is_folder) {
-                                        $new_file_name = pathinfo($file_name, PATHINFO_FILENAME) . "($counter)";
-                                    } else {
-                                        $new_file_name = pathinfo($file_name, PATHINFO_FILENAME) . "($counter)." . pathinfo($file_name, PATHINFO_EXTENSION);
-                                    }
-                                    $new_file_path = $parent_path . '/' . $new_file_name;
-                                }
-                                $sql_update = "UPDATE nv4_vi_fileserver_files SET file_name = :new_file_name, file_path = :new_file_path WHERE file_id = :file_id";
-                                $stmt_update = $db->prepare($sql_update);
-                                $stmt_update->bindParam(':new_file_name', $new_file_name, PDO::PARAM_STR);
-                                $stmt_update->bindParam(':new_file_path', $new_file_path, PDO::PARAM_STR);
-                                $stmt_update->bindParam(':file_id', $existing_file_id, PDO::PARAM_INT);
-                                $stmt_update->execute();
-                            }
 
                             $file_content = '';
                             if (!$is_folder && file_exists($real_path)) {
                                 $file_content = file_get_contents($real_path);
                             }
-
-                            $sql = "INSERT INTO nv4_vi_fileserver_files (file_name, file_path, file_size, uploaded_by, created_at, is_folder, lev) 
-                                    VALUES (:file_name, :file_path, :file_size, :uploaded_by, :created_at, :is_folder, :lev)";
-                            $stmt = $db->prepare($sql);
-                            $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
-                            $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
-                            $stmt->bindParam(':file_size', $file_size, PDO::PARAM_STR);
-                            $uploaded_by = 1;
-                            $stmt->bindParam(':uploaded_by', $uploaded_by, PDO::PARAM_INT);
-                            $created_at = NV_CURRENTTIME;
-                            $stmt->bindParam(':created_at', $created_at, PDO::PARAM_INT);
-                            $stmt->bindParam(':is_folder', $is_folder, PDO::PARAM_INT);
-                            $stmt->bindParam(':lev', $parent_id, PDO::PARAM_INT);
-                            $stmt->execute();
-
-                            $file_id = $db->lastInsertId();
-                            updateAlias($file_id, $file_name);
-                            updatePerm($file_id);
-                            updateLog($parent_id);
 
                             if ($is_folder) {
                                 $folder_path = NV_ROOTDIR . $file_path;
@@ -121,6 +70,27 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
                                     file_put_contents($full_path, $file_content);
                                 }
                             }
+
+                            $file_size = file_exists($full_path) ? filesize($full_path) : 0;
+
+                            $sql = "INSERT INTO nv4_vi_fileserver_files (file_name, file_path, file_size, uploaded_by, created_at, is_folder, lev) 
+                                    VALUES (:file_name, :file_path, :file_size, :uploaded_by, :created_at, :is_folder, :lev)";
+                            $stmt = $db->prepare($sql);
+                            $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
+                            $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
+                            $stmt->bindParam(':file_size', $file_size, PDO::PARAM_INT);
+                            $uploaded_by = 1;
+                            $stmt->bindParam(':uploaded_by', $uploaded_by, PDO::PARAM_INT);
+                            $created_at = NV_CURRENTTIME;
+                            $stmt->bindParam(':created_at', $created_at, PDO::PARAM_INT);
+                            $stmt->bindParam(':is_folder', $is_folder, PDO::PARAM_INT);
+                            $stmt->bindParam(':lev', $parent_id, PDO::PARAM_INT);
+                            $stmt->execute();
+
+                            $file_id = $db->lastInsertId();
+                            updateAlias($file_id, $file_name);
+                            updatePerm($file_id);
+                            updateLog($parent_id);
 
                             if ($is_folder && !in_array($file_name, $importedSheets)) {
                                 $sub_sheet = $objPHPExcel->getSheetByName($file_name);

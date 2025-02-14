@@ -125,7 +125,22 @@ function updateLog($lev)
     $stmtInsert->bindValue(':update_size', $stats['size'], PDO::PARAM_INT);
     $stmtInsert->execute();
 }
-function pr($a)
+
+function updateFileSize($file_id)
 {
-    exit('<pre><code>' . htmlspecialchars(print_r($a, true)) . '</code></pre>');
+    global $db;
+    $full_path = NV_ROOTDIR . $file_path;
+    if (file_exists($full_path)) {
+        $file_size = filesize($full_path);
+        $sql = "UPDATE nv4_vi_fileserver_files SET file_size = :file_size WHERE file_path = :file_path";
+        $stmt = $db->prepare($sql);
+        $stmt->bindParam(':file_size', $file_size, PDO::PARAM_INT);
+        $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
+        $stmt->execute();
+    }
 }
+
+// function pr($a)
+// {
+//     exit('<pre><code>' . htmlspecialchars(print_r($a, true)) . '</code></pre>');
+// }
