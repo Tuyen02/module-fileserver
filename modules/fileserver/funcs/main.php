@@ -24,7 +24,7 @@ $breadcrumbs = [];
 $current_lev = $lev;
 
 while ($current_lev > 0) {
-    $sql1 = "SELECT file_name, file_path, lev, alias FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . $current_lev;
+    $sql1 = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
     $result1 = $db->query($sql1);
     $row1 = $result1->fetch();
     $breadcrumbs[] = [
@@ -48,9 +48,9 @@ if (!defined('NV_IS_USER')) {
 $file_ids = array_keys($arr_per);
 $file_ids_placeholder = [];
 
-$sql = "SELECT *    
-        FROM " . NV_PREFIXLANG . '_' . $module_data . "_files f
-        WHERE status = 1 AND lev = :lev";
+$sql = 'SELECT *    
+        FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+        WHERE status = 1 AND lev = :lev';
 
 if (!defined('NV_IS_SPADMIN') && !empty($arr_per)) {
     foreach ($file_ids as $index => $file_id) {
@@ -58,29 +58,29 @@ if (!defined('NV_IS_SPADMIN') && !empty($arr_per)) {
     }
 
     if (!empty($file_ids_placeholder)) {
-        $sql .= " AND file_id IN (" . implode(',', array_keys($file_ids_placeholder)) . ")";
+        $sql .= ' AND file_id IN (' . implode(',', array_keys($file_ids_placeholder)) . ')';
     }
 }
 
 if (!empty($search_term)) {
-    $sql .= " AND file_name LIKE :search_term";
+    $sql .= ' AND file_name LIKE :search_term';
 }
 
 if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
     if ($search_type === 'file') {
-        $sql .= " AND is_folder = 0";
+        $sql .= ' AND is_folder = 0';
     } elseif ($search_type === 'folder') {
-        $sql .= " AND is_folder = 1";
+        $sql .= ' AND is_folder = 1';
     }
 }
 
-$total_sql = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . '_' . $module_data . "_files f WHERE status = 1 AND lev = :lev";
+$total_sql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f WHERE status = 1 AND lev = :lev';
 $total_stmt = $db->prepare($total_sql);
 $total_stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
 $total_stmt->execute();
 $total = $total_stmt->fetchColumn();
 
-$sql .= " ORDER BY file_id ASC LIMIT :limit OFFSET :offset";
+$sql .= ' ORDER BY file_id ASC LIMIT :limit OFFSET :offset';
 $stmt = $db->prepare($sql);
 $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
 $stmt->bindValue(':limit', $perpage, PDO::PARAM_INT);
@@ -97,7 +97,7 @@ $stmt->execute();
 $result = $stmt->fetchAll();
 
 if ($lev > 0) {
-    $base_dir = $db->query("SELECT file_path FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . $lev)->fetchColumn();
+    $base_dir = $db->query('SELECT file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $lev)->fetchColumn();
     $full_dir = NV_ROOTDIR . $base_dir;
     $page_url .= '&amp;lev=' . $lev;
 }
@@ -142,7 +142,7 @@ if (!empty($action)) {
             }
         }
 
-        $sqlCheck = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_name = :file_name AND lev = :lev and status = 1";
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_name = :file_name AND lev = :lev and status = 1';
         $stmtCheck = $db->prepare($sqlCheck);
         $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
         $stmtCheck->bindParam(':lev', $lev, PDO::PARAM_INT);
@@ -164,8 +164,8 @@ if (!empty($action)) {
         }
         $file_path = $base_dir . '/' . $name_f;
 
-        $sql = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
-                    VALUES (:file_name, :file_path, :uploaded_by, :is_folder, :created_at, :lev)";
+        $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
+                    VALUES (:file_name, :file_path, :uploaded_by, :is_folder, :created_at, :lev)';
         $stmt = $db->prepare($sql);
         $stmt->bindParam(':file_name', $name_f, PDO::PARAM_STR);
         $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
@@ -194,8 +194,8 @@ if (!empty($action)) {
             $exe = $stmt->execute();
             $file_id = $db->lastInsertId();
             updateAlias($file_id, $name_f);
-            $sql1 = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
-                        VALUES (:file_id, :p_group, :p_other, :updated_at)";
+            $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
+                        VALUES (:file_id, :p_group, :p_other, :updated_at)';
             $stmta = $db->prepare($sql1);
             $stmta->bindParam(':file_id', $file_id, PDO::PARAM_STR);
             $stmta->bindValue(':p_group', '1', PDO::PARAM_INT);
@@ -263,7 +263,7 @@ if (!empty($action)) {
         $fileId = intval($nv_Request->get_int('file_id', 'post', 0));
         $newName = trim($nv_Request->get_title('new_name', 'post', ''));
 
-        $sql = "SELECT * FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id =" . $fileId;
+        $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id =' . $fileId;
         $stmt = $db->prepare($sql);
         $stmt->execute();
         $file = $stmt->fetch();
@@ -277,27 +277,31 @@ if (!empty($action)) {
             $newFilePath = dirname($oldFilePath) . '/' . $newName;
             $newFullPath = NV_ROOTDIR . '/' . $newFilePath;
 
-            $childCount = $db->query("SELECT COUNT(*) FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE lev = " . $fileId)->fetchColumn();
-            if ($file['is_folder'] == 1 && $childCount > 0) {
-                $mess = $lang_module['cannot_rename_file'];
-            } else {
-                $mess = $lang_module['cannot_rename_file'];
-                if (rename($oldFullPath, $newFullPath)) {
-                    $mess = $lang_module['cannot_update_db'];
-                    $sqlUpdate = "UPDATE " . NV_PREFIXLANG . '_' . $module_data . "_files SET file_name = :new_name,alias=:alias, file_path = :new_path, updated_at = :updated_at WHERE file_id = :file_id";
-                    $stmtUpdate = $db->prepare($sqlUpdate);
-                    $stmtUpdate->bindParam(':new_name', $newName);
-                    $stmtUpdate->bindParam(':alias', change_alias($newName . '_' . $fileId));
-                    $stmtUpdate->bindParam(':new_path', $newFilePath);
-                    $stmtUpdate->bindParam(':file_id', $fileId, PDO::PARAM_INT);
-                    $stmtUpdate->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-                    if ($stmtUpdate->execute()) {
-                        $status = $lang_module['success'];
-                        $mess = $lang_module['rename_ok'];
+            if (rename($oldFullPath, $newFullPath)) {
+                $mess = $lang_module['cannot_update_db'];
+                $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET file_name = :new_name, alias = :alias, file_path = :new_path, updated_at = :updated_at WHERE file_id = :file_id';
+                $stmtUpdate = $db->prepare($sqlUpdate);
+                $stmtUpdate->bindParam(':new_name', $newName);
+                $stmtUpdate->bindParam(':alias', change_alias($newName . '_' . $fileId));
+                $stmtUpdate->bindParam(':new_path', $newFilePath);
+                $stmtUpdate->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+                $stmtUpdate->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+                if ($stmtUpdate->execute()) {
+                    $status = 'success';
+                    $mess = $lang_module['rename_ok'];
+
+                    if ($file['is_folder'] == 1) {
+                        $sqlUpdateChildren = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET file_path = REPLACE(file_path, :old_path, :new_path) WHERE file_path LIKE :like_old_path';
+                        $stmtUpdateChildren = $db->prepare($sqlUpdateChildren);
+                        $stmtUpdateChildren->bindParam(':old_path', $oldFilePath);
+                        $stmtUpdateChildren->bindParam(':new_path', $newFilePath);
+                        $stmtUpdateChildren->bindValue(':like_old_path', $oldFilePath . '/%', PDO::PARAM_STR);
+                        $stmtUpdateChildren->execute();
                     }
                 }
             }
         }
+        nv_jsonOutput(['status' => $status, 'message' => $mess]);
     }
 
     if ($action == 'check_filename') {
@@ -311,7 +315,7 @@ if (!empty($action)) {
             $name_with_zip = $name_f . '.zip';
         }
 
-        $sqlCheck = "SELECT COUNT(*) FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE (file_name = :file_name OR file_name = :file_name_zip) AND lev = :lev and status = 1";
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE (file_name = :file_name OR file_name = :file_name_zip) AND lev = :lev and status = 1';
         $stmtCheck = $db->prepare($sqlCheck);
         $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
         $stmtCheck->bindParam(':file_name_zip', $name_with_zip, PDO::PARAM_STR);
@@ -366,11 +370,11 @@ if (!empty($action)) {
         if ($compressResult['status'] == 'success') {
             $allFileIds = $fileIds;
             foreach ($fileIds as $fileId) {
-                $allFileIds = array_merge($allFileIds, getAllChildFileIds($fileId, $db));
+                $allFileIds = array_merge($allFileIds, getAllChildFileIds($fileId));
             }
-            $compressed = implode(",", $allFileIds);
-            $sqlInsert = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev, compressed) 
-                              VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, :compressed)";
+            $compressed = implode(',', $allFileIds);
+            $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev, compressed) 
+                              VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, :compressed)';
             $stmtInsert = $db->prepare($sqlInsert);
             $stmtInsert->bindParam(':file_name', $zipFileName, PDO::PARAM_STR);
             $stmtInsert->bindParam(':file_path', $zipFilePath, PDO::PARAM_STR);
@@ -382,8 +386,8 @@ if (!empty($action)) {
             if ($stmtInsert->execute()) {
                 $file_id = $db->lastInsertId();
                 updateAlias($file_id, $zipFileName);
-                $sql1 = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
-                             VALUES (:file_id, :p_group, :p_other, :updated_at)";
+                $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
+                             VALUES (:file_id, :p_group, :p_other, :updated_at)';
                 $stmta = $db->prepare($sql1);
                 $stmta->bindParam(':file_id', $file_id, PDO::PARAM_STR);
                 $stmta->bindValue(':p_group', '1', PDO::PARAM_INT);
@@ -398,6 +402,7 @@ if (!empty($action)) {
         }
     }
 
+
     nv_jsonOutput(['status' => $status, 'message' => $mess]);
 }
 
@@ -405,7 +410,7 @@ $download = $nv_Request->get_int('download', 'get', 0);
 if ($download == 1) {
     $file_id = $nv_Request->get_int('file_id', 'get', 0);
 
-    $sql = "SELECT file_path, file_name, is_folder FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = :file_id";
+    $sql = 'SELECT file_path, file_name, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = :file_id';
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
     $stmt->execute();
@@ -485,8 +490,8 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
         $file_name = $upload_info['basename'];
         $file_size = $upload_info['size'];
 
-        $sql = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev) 
-                VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)";
+        $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev) 
+                VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)';
         $stmt = $db->prepare($sql);
         $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
         $stmt->bindParam(':file_path', $relative_path, PDO::PARAM_STR);
@@ -498,8 +503,8 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
         if ($stmt->execute()) {
             $file_id = $db->lastInsertId();
             updateAlias($file_id, $file_name);
-            $sql1 = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
-                VALUES (:file_id, :p_group, :p_other, :updated_at)";
+            $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
+                VALUES (:file_id, :p_group, :p_other, :updated_at)';
             $stmta = $db->prepare($sql1);
             $stmta->bindParam(':file_id', $file_id, PDO::PARAM_STR);
             $stmta->bindValue(':p_group', '1', PDO::PARAM_INT);
@@ -521,13 +526,13 @@ $selected_folder = ($search_type == 'folder') ? ' selected' : '';
 
 if (!empty($result)) {
     foreach ($result as $row) {
-        $sql_logs = "SELECT log_id, total_size, total_files,total_folders FROM " . NV_PREFIXLANG . '_' . $module_data . "_logs WHERE lev = :lev";
+        $sql_logs = 'SELECT log_id, total_size, total_files,total_folders FROM ' . NV_PREFIXLANG . '_' . $module_data . '_logs WHERE lev = :lev';
         $sql_logs = $db->prepare($sql_logs);
         $sql_logs->bindParam(':lev', $row['lev'], PDO::PARAM_INT);
         $sql_logs->execute();
         $logs = $sql_logs->fetch(PDO::FETCH_ASSOC);
 
-        $sql_permissions = "SELECT `p_group`, p_other FROM " . NV_PREFIXLANG . '_' . $module_data . "_permissions WHERE file_id = :file_id";
+        $sql_permissions = 'SELECT `p_group`, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = :file_id';
         $stmt_permissions = $db->prepare($sql_permissions);
         $stmt_permissions->bindParam(':file_id', $row['file_id'], PDO::PARAM_INT);
         $stmt_permissions->execute();

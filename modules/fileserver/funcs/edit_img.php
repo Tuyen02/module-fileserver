@@ -8,7 +8,7 @@ $page_title = $lang_module['edit_img'];
 // $file_id = $nv_Request->get_int('file_id', 'get', 0);
 $page = $nv_Request->get_int('page', 'get', 1);
 
-$sql = "SELECT file_name, file_path, lev, alias FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . $file_id;
+$sql = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $file_id;
 $result = $db->query($sql);
 $row = $result->fetch();
 $page_url = nv_url_rewrite(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=edit_img/' . $row['alias'] . '&page=' . $page);

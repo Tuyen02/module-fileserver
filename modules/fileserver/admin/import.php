@@ -73,8 +73,8 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
 
                             $file_size = file_exists($full_path) ? filesize($full_path) : 0;
 
-                            $sql = "INSERT INTO nv4_vi_fileserver_files (file_name, file_path, file_size, uploaded_by, created_at, is_folder, lev) 
-                                    VALUES (:file_name, :file_path, :file_size, :uploaded_by, :created_at, :is_folder, :lev)";
+                            $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . 'fileserver_files (file_name, file_path, file_size, uploaded_by, created_at, is_folder, lev) 
+                                    VALUES (:file_name, :file_path, :file_size, :uploaded_by, :created_at, :is_folder, :lev)';
                             $stmt = $db->prepare($sql);
                             $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
                             $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
@@ -113,7 +113,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
                     if (!in_array($sheetName, $importedSheets)) {
                         $sheet = $objPHPExcel->getSheet($sheetIndex);
 
-                        $sql = "SELECT file_id, file_path FROM nv4_vi_fileserver_files WHERE file_name = :file_name AND is_folder = 1 AND lev = 0";
+                        $sql = ' SELECT file_id, file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_name = :file_name AND is_folder = 1 AND lev = 0';
                         $stmt = $db->prepare($sql);
                         $stmt->bindParam(':file_name', $sheetName, PDO::PARAM_STR);
                         $stmt->execute();

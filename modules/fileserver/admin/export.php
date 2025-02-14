@@ -67,7 +67,7 @@ function intvaluetostring($int)
     return $end;
 }
 
-$sql = "SELECT * FROM `nv4_vi_fileserver_files` WHERE status = 1 and lev = 0";
+$sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 and lev = 0';
 $stmt = $db->prepare($sql);
 $stmt->execute();
 $result = $stmt->fetchAll();
@@ -257,7 +257,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
             } else {
                 $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_size'] ? number_format($_data2['file_size'] / 1024, 2) . ' KB' : '--');
             }
-            $sql = "SELECT username, first_name, last_name FROM nv4_users WHERE userid = " . $_data2['uploaded_by'];
+            $sql = 'SELECT username, first_name, last_name FROM ' . NV_USERS_GLOBALTABLE . ' WHERE userid = ' . $_data2['uploaded_by'];
             $stmt = $db->prepare($sql);
             $stmt->execute();
             $user = $stmt->fetch();
@@ -283,7 +283,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
                     ->applyFromArray($styleTitleArray);
 
                 // Ghi dữ liệu của thư mục vào sheet mới
-                $folderFiles = $db->query("SELECT * FROM `nv4_vi_fileserver_files` WHERE lev = " . $_data2['file_id'])->fetchAll();
+                $folderFiles = $db->query('SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . $_data2['file_id'])->fetchAll();
                 $j = 4; // bắt đầu từ dòng số 4
                 $folder_stt = 0;
                 foreach ($folderFiles as $folderFile) {
@@ -299,7 +299,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
                     } else {
                         $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_size'] ? number_format($folderFile['file_size'] / 1024, 2) . ' KB' : '--');
                     }
-                    $sql = "SELECT username, first_name, last_name FROM nv4_users WHERE userid = " . $_data2['uploaded_by'];
+                    $sql = 'SELECT username, first_name, last_name FROM ' . NV_USERS_GLOBALTABLE . ' WHERE userid = ' . $_data2['uploaded_by'];
                     $stmt = $db->prepare($sql);
                     $stmt->execute();
                     $user = $stmt->fetch();
@@ -360,7 +360,7 @@ $download = $nv_Request->get_int('download', 'get', 0);
 if ($download == 1) {
     $file_id = $nv_Request->get_int('file_id', 'get', 0);
 
-    $sql = "SELECT file_path, file_name, is_folder FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = :file_id";
+    $sql = 'SELECT file_path, file_name, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = :file_id';
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
     $stmt->execute();
@@ -411,7 +411,7 @@ $xtpl->assign('MODULE_DATA', $module_data);
 
 foreach ($result as $row) {
     $row['stt'] = $stt++;
-    $row['url_download'] = NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=export&amp;file_id=' . $row['file_id'] . "&download=1";
+    $row['url_download'] = NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=export&amp;file_id=' . $row['file_id'] . '&download=1';
     $row['created_at'] = date('d/m/Y', $row['created_at']);
     if ($row['is_folder'] == 1) {
         $row['file_size'] = number_format(calculateFolderSize($row['file_id']) / 1024, 2) . ' KB';

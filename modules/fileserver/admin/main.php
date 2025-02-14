@@ -5,10 +5,10 @@ if (!defined('NV_IS_FILE_ADMIN')) {
 }
 $page_title = 'FILE SERVER';
 
-$sql = "SELECT d.group_id, title FROM nv4_users_groups AS g LEFT JOIN nv4_users_groups_detail d 
-        ON g.group_id = d.group_id AND d.lang = '" . NV_LANG_DATA . "' 
-        WHERE g.idsite = " . $global_config['idsite'] . " OR (g.idsite = 0 AND g.group_id > 3 AND g.siteus = 1) 
-        ORDER BY g.idsite, g.weight ASC";
+$sql = 'SELECT d.group_id, title FROM ' . NV_GROUPS_GLOBALTABLE . ' AS g LEFT JOIN ' . NV_GROUPSDETAIL_GLOBALTABLE . ' d 
+        ON g.group_id = d.group_id AND d.lang = "' . NV_LANG_DATA . '"
+        WHERE g.idsite = ' . $global_config['idsite'] . ' OR (g.idsite = 0 AND g.group_id > 3 AND g.siteus = 1) 
+        ORDER BY g.idsite, g.weight ASC';
 $result = $db->query($sql);
 $post = [];
 $mess = '';
@@ -23,7 +23,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $group_ids_str = implode(',', $post['group_ids']);
         $config_name = 'group_admin_fileserver';
 
-        $sql_check = "SELECT COUNT(*) FROM nv4_config WHERE config_name = :config_name";
+        $sql_check = ' SELECT COUNT(*) FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE config_name = :config_name';
         $stmt_check = $db->prepare($sql_check);
         $stmt_check->bindParam(':config_name', $config_name, PDO::PARAM_STR);
         $stmt_check->execute();
@@ -31,9 +31,9 @@ if ($nv_Request->isset_request('submit', 'post')) {
 
         if ($count > 0) {
             $nv_Cache->delMod($module_name, $lang = 'vi');
-            $sql_update = "UPDATE nv4_config
+            $sql_update = ' UPDATE ' . NV_CONFIG_GLOBALTABLE . '
                            SET config_value = :config_value 
-                           WHERE config_name = :config_name";
+                           WHERE config_name = :config_name';
             $stmt_update = $db->prepare($sql_update);
             $stmt_update->bindParam(':config_value', $group_ids_str, PDO::PARAM_STR);
             $stmt_update->bindParam(':config_name', $config_name, PDO::PARAM_STR);
@@ -44,8 +44,8 @@ if ($nv_Request->isset_request('submit', 'post')) {
             }
         } else {
             $lang = 'vi';
-            $sql_insert = "INSERT INTO nv4_config (lang, module, config_name, config_value) 
-                           VALUES (:lang, :module, :config_name, :config_value)";
+            $sql_insert = ' INSERT INTO ' . NV_CONFIG_GLOBALTABLE . ' (lang, module, config_name, config_value) 
+                           VALUES (:lang, :module, :config_name, :config_value)';
             $stmt_insert = $db->prepare($sql_insert);
             $stmt_insert->bindParam(':lang', $lang, PDO::PARAM_STR);
             $stmt_insert->bindParam(':module', $module_name, PDO::PARAM_STR);
@@ -60,7 +60,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
     }
 } else {
     $config_name = 'group_admin_fileserver';
-    $sql_get = "SELECT config_value FROM nv4_config WHERE config_name = :config_name";
+    $sql_get = ' SELECT config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE config_name = :config_name';
     $stmt_get = $db->prepare($sql_get);
     $stmt_get->bindParam(':config_name', $config_name, PDO::PARAM_STR);
     $stmt_get->execute();
@@ -71,7 +71,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
 $group_titles = [];
 if (!empty($post['group_ids'])) {
     $placeholders = implode(',', array_fill(0, count($post['group_ids']), '?'));
-    $sql_titles = "SELECT group_id, title FROM nv4_users_groups_detail WHERE group_id IN ($placeholders) AND lang = '" . NV_LANG_DATA . "'";
+    $sql_titles = "SELECT group_id, title FROM ". NV_GROUPSDETAIL_GLOBALTABLE. " WHERE group_id IN ($placeholders) AND lang = '" . NV_LANG_DATA . "'";
     $stmt_titles = $db->prepare($sql_titles);
     $stmt_titles->execute($post['group_ids']);
     while ($row = $stmt_titles->fetch(PDO::FETCH_ASSOC)) {

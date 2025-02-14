@@ -10,7 +10,7 @@ $page_title = $lang_module['edit'];
 
 $page = $nv_Request->get_int('page', 'get', 1);
 
-$sql = "SELECT file_name, file_path, lev, alias FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = " . $file_id;
+$sql = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $file_id;
 $result = $db->query($sql);
 $row = $result->fetch();
 
@@ -41,7 +41,7 @@ if (file_exists($full_path)) {
         $sheet = $spreadsheet->getActiveSheet();
         $file_content_array = $sheet->toArray();
         foreach ($file_content_array as $row) {
-            $file_content .= implode("\t", $row) . "\n";
+            $file_content .= implode('\t', $row) . '\n';
         }
     } elseif (in_array($file_extension, ['doc', 'docx'])) {
         $zip = new ZipArchive;
@@ -95,7 +95,7 @@ if (defined('NV_IS_SPADMIN')) {
 
         $file_size = filesize($full_path);
 
-        $sql = "UPDATE " . NV_PREFIXLANG . '_' . $module_data . "_files SET updated_at = :updated_at, file_size = :file_size WHERE file_id = :file_id";
+        $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET updated_at = :updated_at, file_size = :file_size WHERE file_id = :file_id';
         $stmt = $db->prepare($sql);
         $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
         $stmt->bindValue(':file_size', $file_size, PDO::PARAM_INT);
