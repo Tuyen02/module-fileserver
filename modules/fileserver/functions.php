@@ -188,8 +188,6 @@ function compressFiles($fileIds, $zipFilePath)
     }
 }
 
-
-
 function addToDatabase($dir, $parent_id = 0)
 {
     global $module_data, $db;
@@ -405,3 +403,8 @@ function getFileIconClass($file)
         }
     }
 }
+
+// function pr($a)
+// {
+//     exit('<pre><code>' . htmlspecialchars(print_r($a, true)) . '</code></pre>');
+// }
