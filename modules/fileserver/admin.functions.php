@@ -140,6 +140,131 @@ function updateFileSize($file_id)
     }
 }
 
+function importSheetData($sheet, $parent_id, $db, $objPHPExcel, &$importedSheets, $parent_path = '/uploads/fileserver')
+{
+    $Totalrow = $sheet->getHighestRow();
+
+    for ($i = 5; $i <= $Totalrow; $i++) {
+        $real_path = $sheet->getCell('C' . $i)->getValue();
+        $file_path = $real_path;
+        if (!empty($file_path)) {
+            $file_name = basename($file_path);
+            $file_path = $parent_path . '/' . $file_name;
+            $full_path = NV_ROOTDIR . $file_path;
+            $is_folder = pathinfo($file_name, PATHINFO_EXTENSION) == '' ? 1 : 0;
+
+            $file_content = '';
+            if (!$is_folder && file_exists($real_path)) {
+                $file_content = file_get_contents($real_path);
+            }
+
+            if ($is_folder) {
+                $folder_path = NV_ROOTDIR . $file_path;
+                if (!file_exists($folder_path)) {
+                    mkdir($folder_path, 0777, true);
+                }
+            } else {
+                $dir_path = dirname($full_path);
+                if (!file_exists($dir_path)) {
+                    mkdir($dir_path, 0777, true);
+                }
+                if (!file_exists($full_path)) {
+                    file_put_contents($full_path, $file_content);
+                }
+            }
+
+            $file_size = file_exists($full_path) ? filesize($full_path) : 0;
+
+            $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . 'fileserver_files (file_name, file_path, file_size, uploaded_by, created_at, is_folder, lev) 
+                                    VALUES (:file_name, :file_path, :file_size, :uploaded_by, :created_at, :is_folder, :lev)';
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
+            $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
+            $stmt->bindParam(':file_size', $file_size, PDO::PARAM_INT);
+            $uploaded_by = 1;
+            $stmt->bindParam(':uploaded_by', $uploaded_by, PDO::PARAM_INT);
+            $created_at = NV_CURRENTTIME;
+            $stmt->bindParam(':created_at', $created_at, PDO::PARAM_INT);
+            $stmt->bindParam(':is_folder', $is_folder, PDO::PARAM_INT);
+            $stmt->bindParam(':lev', $parent_id, PDO::PARAM_INT);
+            $stmt->execute();
+
+            $file_id = $db->lastInsertId();
+            updateAlias($file_id, $file_name);
+            updatePerm($file_id);
+            updateLog($parent_id);
+
+            if ($is_folder && !in_array($file_name, $importedSheets)) {
+                $sub_sheet = $objPHPExcel->getSheetByName($file_name);
+                if ($sub_sheet) {
+                    $importedSheets[] = $file_name;
+                    importSheetData($sub_sheet, $file_id, $db, $objPHPExcel, $importedSheets, $file_path);
+                }
+            }
+        }
+    }
+}
+
+//hàm viết sẵn
+function get_cell_code_to($cell_char_from = 'A', $arr_header_row = [])
+{
+    if (preg_match('/[A-z]/', $cell_char_from)) {
+        $cell_char_from = strtoupper($cell_char_from);
+        $cell_char_int_from = stringtointvalue($cell_char_from);
+        $cell_char_int_to = count($arr_header_row) + $cell_char_int_from - 1;
+        $cell_char_to = intvaluetostring($cell_char_int_to);
+        return $cell_char_to;
+    } else {
+        return false;
+    }
+}
+
+function getcolumnrange($min, $max)
+{
+    $pointer = strtoupper($min);
+    $output = [];
+    while (positionalcomparison($pointer, strtoupper($max)) <= 0) {
+        array_push($output, $pointer);
+        $pointer++;
+    }
+    return $output;
+}
+
+function positionalcomparison($a, $b)
+{
+    $a1 = stringtointvalue($a);
+    $b1 = stringtointvalue($b);
+    if ($a1 > $b1) {
+        return 1;
+    } else {
+        if ($a1 < $b1) {
+            return -1;
+        } else
+            return 0;
+    }
+}
+
+function stringtointvalue($str)
+{
+    $amount = 0;
+    $strarra = array_reverse(str_split($str));
+
+    for ($i = 0; $i < strlen($str); $i++) {
+        $amount += (ord($strarra[$i]) - 64) * pow(26, $i);
+    }
+    return $amount;
+}
+
+function intvaluetostring($int)
+{
+    $start = 'A';
+    $int = (int) $int;
+    for ($i = 0; $i < $int; $i++) {
+        $end = $start++;
+    }
+    return $end;
+}
+
 // function pr($a)
 // {
 //     exit('<pre><code>' . htmlspecialchars(print_r($a, true)) . '</code></pre>');

@@ -7,66 +7,6 @@ if (!defined('NV_IS_FILE_ADMIN')) {
 }
 define('NV_CONSOLE_DIR', str_replace(DIRECTORY_SEPARATOR, '/', realpath(pathinfo(str_replace(DIRECTORY_SEPARATOR, '/', __FILE__), PATHINFO_DIRNAME))));
 
-//hàm viết sẵn
-function get_cell_code_to($cell_char_from = 'A', $arr_header_row = [])
-{
-    if (preg_match('/[A-z]/', $cell_char_from)) {
-        $cell_char_from = strtoupper($cell_char_from);
-        $cell_char_int_from = stringtointvalue($cell_char_from);
-        $cell_char_int_to = count($arr_header_row) + $cell_char_int_from - 1;
-        $cell_char_to = intvaluetostring($cell_char_int_to);
-        return $cell_char_to;
-    } else {
-        return false;
-    }
-}
-
-function getcolumnrange($min, $max)
-{
-    $pointer = strtoupper($min);
-    $output = [];
-    while (positionalcomparison($pointer, strtoupper($max)) <= 0) {
-        array_push($output, $pointer);
-        $pointer++;
-    }
-    return $output;
-}
-
-function positionalcomparison($a, $b)
-{
-    $a1 = stringtointvalue($a);
-    $b1 = stringtointvalue($b);
-    if ($a1 > $b1) {
-        return 1;
-    } else {
-        if ($a1 < $b1) {
-            return -1;
-        } else
-            return 0;
-    }
-}
-
-function stringtointvalue($str)
-{
-    $amount = 0;
-    $strarra = array_reverse(str_split($str));
-
-    for ($i = 0; $i < strlen($str); $i++) {
-        $amount += (ord($strarra[$i]) - 64) * pow(26, $i);
-    }
-    return $amount;
-}
-
-function intvaluetostring($int)
-{
-    $start = 'A';
-    $int = (int) $int;
-    for ($i = 0; $i < $int; $i++) {
-        $end = $start++;
-    }
-    return $end;
-}
-
 $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 and lev = 0';
 $stmt = $db->prepare($sql);
 $stmt->execute();
