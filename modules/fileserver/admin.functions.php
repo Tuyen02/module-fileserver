@@ -147,22 +147,21 @@ function importSheetData($sheet, $parent_id, $db, $objPHPExcel, &$importedSheets
     for ($i = 5; $i <= $Totalrow; $i++) {
         $real_path = $sheet->getCell('C' . $i)->getValue();
         $file_path = $real_path;
+
         if (!empty($file_path)) {
-            $file_name = basename($file_path);
-            $file_path = $parent_path . '/' . $file_name;
-            $full_path = NV_ROOTDIR . $file_path;
-            $is_folder = pathinfo($file_name, PATHINFO_EXTENSION) == '' ? 1 : 0;
+            $file_name = basename($file_path); 
+            $file_path = $parent_path . '/' . $file_name; 
+            $full_path = NV_ROOTDIR . $file_path; 
+            $is_folder = pathinfo($file_name, PATHINFO_EXTENSION) == '' ? 1 : 0; 
 
             $file_content = '';
             if (!$is_folder && file_exists($real_path)) {
-                $file_content = file_get_contents($real_path);
+                $file_content = file_get_contents($real_path); 
             }
 
-            if ($is_folder) {
-                $folder_path = NV_ROOTDIR . $file_path;
-                if (!file_exists($folder_path)) {
-                    mkdir($folder_path, 0777, true);
-                }
+            $folder_path = NV_ROOTDIR . $file_path;
+            if ($is_folder && !file_exists($folder_path)) {
+                mkdir($folder_path, 0777, true); 
             } else {
                 $dir_path = dirname($full_path);
                 if (!file_exists($dir_path)) {
@@ -176,7 +175,7 @@ function importSheetData($sheet, $parent_id, $db, $objPHPExcel, &$importedSheets
             $file_size = file_exists($full_path) ? filesize($full_path) : 0;
 
             $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . 'fileserver_files (file_name, file_path, file_size, uploaded_by, created_at, is_folder, lev) 
-                                    VALUES (:file_name, :file_path, :file_size, :uploaded_by, :created_at, :is_folder, :lev)';
+                    VALUES (:file_name, :file_path, :file_size, :uploaded_by, :created_at, :is_folder, :lev)';
             $stmt = $db->prepare($sql);
             $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
             $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
