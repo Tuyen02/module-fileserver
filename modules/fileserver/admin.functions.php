@@ -126,22 +126,9 @@ function updateLog($lev)
     $stmtInsert->execute();
 }
 
-function updateFileSize($file_id)
+function importSheetData($sheet, $parent_id, &$importedSheets, $parent_path = '/uploads/fileserver')
 {
-    global $db;
-    $full_path = NV_ROOTDIR . $file_path;
-    if (file_exists($full_path)) {
-        $file_size = filesize($full_path);
-        $sql = "UPDATE nv4_vi_fileserver_files SET file_size = :file_size WHERE file_path = :file_path";
-        $stmt = $db->prepare($sql);
-        $stmt->bindParam(':file_size', $file_size, PDO::PARAM_INT);
-        $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
-        $stmt->execute();
-    }
-}
-
-function importSheetData($sheet, $parent_id, $db, $objPHPExcel, &$importedSheets, $parent_path = '/uploads/fileserver')
-{
+    global $db, $objPHPExcel;
     $Totalrow = $sheet->getHighestRow();
 
     for ($i = 5; $i <= $Totalrow; $i++) {
@@ -149,19 +136,19 @@ function importSheetData($sheet, $parent_id, $db, $objPHPExcel, &$importedSheets
         $file_path = $real_path;
 
         if (!empty($file_path)) {
-            $file_name = basename($file_path); 
-            $file_path = $parent_path . '/' . $file_name; 
-            $full_path = NV_ROOTDIR . $file_path; 
-            $is_folder = pathinfo($file_name, PATHINFO_EXTENSION) == '' ? 1 : 0; 
+            $file_name = basename($file_path);
+            $file_path = $parent_path . '/' . $file_name;
+            $full_path = NV_ROOTDIR . $file_path;
+            $is_folder = pathinfo($file_name, PATHINFO_EXTENSION) == '' ? 1 : 0;
 
             $file_content = '';
             if (!$is_folder && file_exists($real_path)) {
-                $file_content = file_get_contents($real_path); 
+                $file_content = file_get_contents($real_path);
             }
 
             $folder_path = NV_ROOTDIR . $file_path;
             if ($is_folder && !file_exists($folder_path)) {
-                mkdir($folder_path, 0777, true); 
+                mkdir($folder_path, 0777, true);
             } else {
                 $dir_path = dirname($full_path);
                 if (!file_exists($dir_path)) {
@@ -197,7 +184,7 @@ function importSheetData($sheet, $parent_id, $db, $objPHPExcel, &$importedSheets
                 $sub_sheet = $objPHPExcel->getSheetByName($file_name);
                 if ($sub_sheet) {
                     $importedSheets[] = $file_name;
-                    importSheetData($sub_sheet, $file_id, $db, $objPHPExcel, $importedSheets, $file_path);
+                    importSheetData($sub_sheet, $file_id, $importedSheets, $file_path);
                 }
             }
         }
