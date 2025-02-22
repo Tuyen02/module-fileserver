@@ -423,28 +423,35 @@ if ($download == 1) {
         $zip = '';
 
         if ($is_folder == 1) {
-            $zipFileName = $file_name . '.zip';
+            $zipFileName = $file_name . '.zip';  
             $zipFilePath = '/data/tmp/' . $zipFileName;
             $zipFullPath = NV_ROOTDIR . $zipFilePath;
-            
+
             $zipArchive = new ZipArchive();
-            if ($zipArchive->open($zipFullPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
-                $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($file_path), RecursiveIteratorIterator::LEAVES_ONLY);
-                
-                foreach ($files as $name => $fileInfo) {
-                    if (!$fileInfo->isDir()) {
-                        $fileRealPath = $fileInfo->getRealPath();
-                        $relativePath = substr($fileRealPath, strlen($file_path) + 1);
-                        $zipArchive->addFile($fileRealPath, $relativePath);
+            if ($zipArchive->open($zipFullPath, ZipArchive::CREATE) === TRUE) {
+                $files = new RecursiveIteratorIterator(
+                    new RecursiveDirectoryIterator($file_path),
+                    RecursiveIteratorIterator::LEAVES_ONLY
+                );
+
+                foreach ($files as $name => $file) {
+                    if (!$file->isDir()) {
+                        $filePath = $file->getRealPath();
+                        $relativePath = substr($filePath, strlen($file_path) + 1);
+                        $zipArchive->addFile($filePath, $relativePath);
+                    } else {
+                        $relativePath = substr($name, strlen($file_path) + 1);
+                        $zipArchive->addEmptyDir($relativePath);
                     }
                 }
+
                 $zipArchive->close();
-                
+
                 if (file_exists($zipFullPath)) {
                     $zip = $zipFullPath;
                 }
             }
-        } elseif (pathinfo($file_path, PATHINFO_EXTENSION) == 'zip') {
+        } elseif (pathinfo($file_path, PATHINFO_EXTENSION) === 'zip') {
             if (file_exists($file_path)) {
                 $zip = $file_path;
             }

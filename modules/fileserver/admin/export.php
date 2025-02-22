@@ -313,15 +313,33 @@ if ($download == 1) {
         $zip = '';
 
         if ($is_folder == 1) {
-            $zipFileName = $file_name . '_' . NV_CURRENTTIME . '.zip';
+            $zipFileName = $file_name . '.zip';  
             $zipFilePath = '/data/tmp/' . $zipFileName;
             $zipFullPath = NV_ROOTDIR . $zipFilePath;
 
-            $zipArchive = new PclZip($zipFullPath);
-            $zipArchive->create($file_path, PCLZIP_OPT_REMOVE_PATH, dirname($file_path));
+            $zipArchive = new ZipArchive();
+            if ($zipArchive->open($zipFullPath, ZipArchive::CREATE) === TRUE) {
+                $files = new RecursiveIteratorIterator(
+                    new RecursiveDirectoryIterator($file_path),
+                    RecursiveIteratorIterator::LEAVES_ONLY
+                );
 
-            if (file_exists($zipFullPath)) {
-                $zip = $zipFullPath;
+                foreach ($files as $name => $file) {
+                    if (!$file->isDir()) {
+                        $filePath = $file->getRealPath();
+                        $relativePath = substr($filePath, strlen($file_path) + 1);
+                        $zipArchive->addFile($filePath, $relativePath);
+                    } else {
+                        $relativePath = substr($name, strlen($file_path) + 1);
+                        $zipArchive->addEmptyDir($relativePath);
+                    }
+                }
+
+                $zipArchive->close();
+
+                if (file_exists($zipFullPath)) {
+                    $zip = $zipFullPath;
+                }
             }
         } elseif (pathinfo($file_path, PATHINFO_EXTENSION) === 'zip') {
             if (file_exists($file_path)) {
