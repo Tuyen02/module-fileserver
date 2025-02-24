@@ -15,12 +15,6 @@ $page_url = nv_url_rewrite(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '
 
 $array_mod_title[] = [
     'catid' => 0,
-    'title' => $lang_module['edit_img'],
-    'link' => $page_url
-];
-
-$array_mod_title[] = [
-    'catid' => 0,
     'title' => $row['file_name'],
     'link' => $page_url
 ];

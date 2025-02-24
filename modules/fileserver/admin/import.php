@@ -5,131 +5,66 @@ if (!defined('NV_IS_FILE_ADMIN')) {
 
 $error = '';
 $success = '';
-$admin_info['allow_files_type'][] = 'xlsx';
-$admin_info['allow_files_type'][] = 'xls';
 
-function importSheetData($sheet, $parent_id, &$importedSheets, $parent_path = '/uploads/fileserver')
-{
-    global $db, $objPHPExcel;
-    $Totalrow = $sheet->getHighestRow();
-
-    for ($i = 5; $i <= $Totalrow; $i++) {
-        $real_path = $sheet->getCell('C' . $i)->getValue();
-        $file_path = $real_path;
-
-        if (!empty($file_path)) {
-            $file_name = basename($file_path);
-            $file_path = $parent_path . '/' . $file_name;
-            $full_path = NV_ROOTDIR . $file_path;
-            $is_folder = pathinfo($file_name, PATHINFO_EXTENSION) == '' ? 1 : 0;
-
-            $file_content = '';
-            if (!$is_folder && file_exists($real_path)) {
-                $file_content = file_get_contents($real_path);
-            }
-
-            $folder_path = NV_ROOTDIR . $file_path;
-            if ($is_folder && !file_exists($folder_path)) {
-                mkdir($folder_path, 0777, true);
-            } else {
-                $dir_path = dirname($full_path);
-                if (!file_exists($dir_path)) {
-                    mkdir($dir_path, 0777, true);
-                }
-                if (!file_exists($full_path)) {
-                    file_put_contents($full_path, $file_content);
-                }
-            }
-
-            $file_size = file_exists($full_path) ? filesize($full_path) : 0;
-
-            $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . 'fileserver_files (file_name, file_path, file_size, uploaded_by, created_at, is_folder, lev) 
-                    VALUES (:file_name, :file_path, :file_size, :uploaded_by, :created_at, :is_folder, :lev)';
-            $stmt = $db->prepare($sql);
-            $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
-            $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
-            $stmt->bindParam(':file_size', $file_size, PDO::PARAM_INT);
-            $uploaded_by = 1;
-            $stmt->bindParam(':uploaded_by', $uploaded_by, PDO::PARAM_INT);
-            $created_at = NV_CURRENTTIME;
-            $stmt->bindParam(':created_at', $created_at, PDO::PARAM_INT);
-            $stmt->bindParam(':is_folder', $is_folder, PDO::PARAM_INT);
-            $stmt->bindParam(':lev', $parent_id, PDO::PARAM_INT);
-            $stmt->execute();
-
-            $file_id = $db->lastInsertId();
-            updateAlias($file_id, $file_name);
-            updatePerm($file_id);
-            updateLog($parent_id);
-
-            if ($is_folder && !in_array($file_name, $importedSheets)) {
-                $sub_sheet = $objPHPExcel->getSheetByName($file_name);
-                if ($sub_sheet) {
-                    $importedSheets[] = $file_name;
-                    importSheetData($sub_sheet, $file_id, $importedSheets, $file_path);
-                }
-            }
-        }
-    }
-}
+$apikey = 'r2GE8fx40FxtVjXU6b9ONBKpS12u40dC';
+$apisecret = 'g6FEqSZL0Ggyt87om7tiM694oxqEOs5w';
+$apiurl = 'http://demo.my/api.php'; // Thay bằng URL thực tế của bạn
+date_default_timezone_set('Asia/Ho_Chi_Minh');
 
 if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['uploadfile']) && is_uploaded_file($_FILES['uploadfile']['tmp_name'])) {
-    $file_extension = pathinfo($_FILES['uploadfile']['name'], PATHINFO_EXTENSION);
+    $file_extension = strtolower(pathinfo($_FILES['uploadfile']['name'], PATHINFO_EXTENSION));
     if (!in_array($file_extension, ['xlsx', 'xls'])) {
-        $error = $lang_module['error_file_type'];
+        $error = $lang_module['error_file_type'] ?? 'Chỉ hỗ trợ file Excel (.xlsx, .xls)';
     } else {
-        $upload = new NukeViet\Files\Upload(
-            $admin_info['allow_files_type'],
-            $global_config['forbid_extensions'],
-            $global_config['forbid_mimes'],
-            NV_UPLOAD_MAX_FILESIZE,
-            NV_MAX_WIDTH,
-            NV_MAX_HEIGHT
-        );
-        $upload->setLanguage($lang_global);
+        $timestamp = time();
+        $agent = 'NukeViet Remote API Lib';
 
-        $upload_dir = NV_ROOTDIR . '/data/tmp/import-file';
-        if (!file_exists($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
+        $request = [
+            'apikey' => $apikey,
+            'hashsecret' => password_hash($apisecret . '_' . $timestamp, PASSWORD_DEFAULT),
+            'language' => 'vi',
+            'module' => 'fileserver',
+            'action' => 'UploadFile',
+            'file' => new CURLFile($_FILES['uploadfile']['tmp_name'], mime_content_type($_FILES['uploadfile']['tmp_name']), $_FILES['uploadfile']['name']),
+            'lev' => 0,
+            'timestamp' => $timestamp
+        ];
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $apiurl);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        $safe_mode = (ini_get('safe_mode') == '1' || strtolower(ini_get('safe_mode')) == 'on') ? 1 : 0;
+        $open_basedir = ini_get('open_basedir') ? true : false;
+        if (!$safe_mode && !$open_basedir) {
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+            curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
         }
+        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_USERAGENT, $agent);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $request); 
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
 
-        $upload_info = $upload->save_file($_FILES['uploadfile'], $upload_dir, false, $global_config['nv_auto_resize']);
 
-        if ($upload_info['error'] == '') {
-            $link_file = $upload_info['name'];
+        $res = curl_exec($ch);
+        $curl_error = curl_error($ch);
+        curl_close($ch);
 
-            try {
-                $objPHPExcel = \PhpOffice\PhpSpreadsheet\IOFactory::load($link_file);
-                $sheetNames = $objPHPExcel->getSheetNames();
-                $importedSheets = [];
-
-                $sheet = $objPHPExcel->getSheet(0);
-                importSheetData($sheet, 0,  $importedSheets);
-
-                foreach ($sheetNames as $sheetIndex => $sheetName) {
-                    if ($sheetIndex == 0)
-                        continue;
-
-                    if (!in_array($sheetName, $importedSheets)) {
-                        $sheet = $objPHPExcel->getSheet($sheetIndex);
-
-                        $sql = ' SELECT file_id, file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_name = :file_name AND is_folder = 1 AND lev = 0';
-                        $stmt = $db->prepare($sql);
-                        $stmt->bindParam(':file_name', $sheetName, PDO::PARAM_STR);
-                        $stmt->execute();
-                        $parent = $stmt->fetch(PDO::FETCH_ASSOC);
-
-                        if ($parent) {
-                            importSheetData($sheet, $parent['file_id'],  $importedSheets, $parent['file_path']);
-                        }
-                    }
-                }
-                $success = $lang_module['import_success'];
-            } catch (Exception $e) {
-                $error = $e->getMessage();
-            }
+        if ($curl_error) {
+            $error = "Lỗi khi gọi API: " . $curl_error;
         } else {
-            $error = $upload_info['error'];
+            $response = json_decode($res, true);
+            if ($response && isset($response['status'])) {
+                if ($response['status'] === 'success') {
+                    $success = $response['message'] ?? 'Import dữ liệu từ file Excel thành công.';
+                } else {
+                    $error = $response['message'] ?? 'Lỗi không xác định từ API.';
+                }
+            } else {
+                $error = "Không thể phân tích phản hồi từ API.";
+            }
         }
     }
 }
@@ -140,8 +75,9 @@ if ($download == 1) {
     if (file_exists($file_path)) {
         $download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . '/themes/default/images/fileserver/', 'import_file.xlsx', true, 0);
         $download->download_file();
+        exit();
     } else {
-        $error = $lang_module['error_file_not_found'];
+        $error = $lang_module['error_file_not_found'] ?? 'File mẫu không tồn tại';
     }
 }
 
@@ -149,8 +85,8 @@ $xtpl = new XTemplate('import.tpl', NV_ROOTDIR . '/themes/' . $global_config['mo
 $xtpl->assign('LANG', $lang_module);
 $xtpl->assign('OP', $op);
 $xtpl->assign('MODULE_NAME', $module_name);
-$xtpl->assign('FORM_ACTION', NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op);
-$xtpl->assign('URL_DOWNLOAD', NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=import&download=1');
+$xtpl->assign('FORM_ACTION', NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op);
+$xtpl->assign('URL_DOWNLOAD', NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=import&download=1');
 
 if (!empty($error)) {
     $xtpl->assign('ERROR', $error);

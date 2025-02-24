@@ -27,6 +27,7 @@ $lang_module['api_fileserver_DeleteFile'] = 'Xóa file (DeleteFile)';
 $lang_module['api_fileserver_AddFile'] = 'Thêm file (AddFile)';
 $lang_module['api_fileserver_UpdateFile'] = 'Cập nhật file (UpdateFile)';
 $lang_module['api_fileserver_UploadFile'] = 'Upload file (UploadFile)';
+$lang_module['api_fileserver_UploadfromExcel'] = 'Upload data từ Excel(UploadfromExcel)';
 $lang_module['export'] = 'Export';
 $lang_module['import'] = 'Import';
 $lang_module['error_file_type'] = 'File không đúng định dạng';
