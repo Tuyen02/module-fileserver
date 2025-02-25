@@ -160,7 +160,7 @@ if (!empty($action)) {
                 $count = $stmtCheck->fetchColumn();
                 $i++;
             } while ($count > 0);
-            nv_jsonOutput(['status' => 'error', 'message' => 'Tên file đã tồn tại. Gợi ý: ' . $name_f]);
+            nv_jsonOutput(['status' => 'error', 'message' => 'T�n file &#273;� t&#7891;n t&#7841;i. G&#7907;i �: ' . $name_f]);
         }
         $file_path = $base_dir . '/' . $name_f;
 
@@ -336,9 +336,9 @@ if (!empty($action)) {
                 $count = $stmtCheck->fetchColumn();
                 $i++;
             } while ($count > 0);
-            nv_jsonOutput(['status' => 'error', 'message' => 'Tên file đã tồn tại. Gợi ý: ' . $name_f]);
+            nv_jsonOutput(['status' => 'error', 'message' => 'T�n file &#273;� t&#7891;n t&#7841;i. G&#7907;i �: ' . $name_f]);
         } else {
-            nv_jsonOutput(['status' => 'success', 'message' => 'Tên file hợp lệ.']);
+            nv_jsonOutput(['status' => 'success', 'message' => 'T�n file h&#7907;p l&#7879;.']);
         }
     }
 
@@ -486,9 +486,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
         NV_MAX_HEIGHT
     );
     $upload->setLanguage($lang_global);
-
     $upload_info = $upload->save_file($_FILES['uploadfile'], $full_dir, false, $global_config['nv_auto_resize']);
-
     if ($upload_info['error'] == '') {
         $full_path = $upload_info['name'];
 
