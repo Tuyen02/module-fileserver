@@ -126,7 +126,6 @@ function updateLog($lev)
     $stmtInsert->execute();
 }
 
-//hàm viết sẵn
 function get_cell_code_to($cell_char_from = 'A', $arr_header_row = [])
 {
     if (preg_match('/[A-z]/', $cell_char_from)) {

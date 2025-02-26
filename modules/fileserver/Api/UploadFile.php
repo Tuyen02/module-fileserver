@@ -35,92 +35,96 @@ class UploadFile implements IApi
     {
         global $nv_Request, $db, $user_info, $global_config, $lang_global;
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_FILES['file']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_FILES['excel_file'])) {
             $this->result->setError()
                 ->setCode('1006')
-                ->setMessage('KhÃ´ng cÃ³ file Ä‘Æ°á»£c táº£i lÃªn.');
-            return $this->result->getResult();
-        }
+                ->setMessage('Không có file Excel du?c t?i lên.');
+ 
+        } else {
+            $excelTmpPath = $_FILES['excel_file']['tmp_name'];
+            $excelSize = $_FILES['excel_file']['size'] ?? 0;
+            $excelError = $_FILES['excel_file']['error'] ?? UPLOAD_ERR_NO_FILE;
+            $lev = $nv_Request->get_int("lev", "get,post", 0);
 
-        $fileTmpPath = $_FILES['file']['tmp_name'];
-        $fileSize = $_FILES['file']['size'];
-        $fileError = $_FILES['file']['error'];
-        $lev = $nv_Request->get_int("lev", "get,post", 0);
-
-        if ($fileError !== UPLOAD_ERR_OK) {
-            $this->result->setError()
-                ->setCode('1001')
-                ->setMessage('Lá»—i khi táº£i lÃªn file.');
-            return $this->result->getResult();
-        }
-
-        if ($fileSize > NV_UPLOAD_MAX_FILESIZE) {
-            $this->result->setError()
-                ->setCode('1002')
-                ->setMessage('File vÆ°á»£t quÃ¡ kÃ­ch thÆ°á»›c cho phÃ©p.');
-            return $this->result->getResult();
-        }
-
-        try {
-            $objSpreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($fileTmpPath);
-            $sheetNames = $objSpreadsheet->getSheetNames();
-            $importedSheets = [];
-
-            $sheet = $objSpreadsheet->getSheet(0);
-            $this->importSheetData($sheet, $lev, $importedSheets);
-
-            foreach ($sheetNames as $sheetIndex => $sheetName) {
-                if ($sheetIndex == 0)
-                    continue;
-
-                if (!in_array($sheetName, $importedSheets)) {
-                    $sheet = $objSpreadsheet->getSheet($sheetIndex);
-
-                    $sql = "SELECT file_id, file_path FROM " . NV_PREFIXLANG . "_fileserver_files 
-                            WHERE file_name = :file_name AND is_folder = 1 AND lev = :lev";
-                    $stmt = $db->prepare($sql);
-                    $stmt->bindParam(':file_name', $sheetName, PDO::PARAM_STR);
-                    $stmt->bindParam(':lev', $lev, PDO::PARAM_INT);
-                    $stmt->execute();
-                    $parent = $stmt->fetch(PDO::FETCH_ASSOC);
-
-                    if ($parent) {
-                        $this->importSheetData($sheet, $parent['file_id'], $importedSheets, $parent['file_path']);
+            if ($excelError !== UPLOAD_ERR_OK) {
+                $this->result->setError()
+                    ->setCode('1001')
+                    ->setMessage('L?i khi t?i lên file Excel: ' . $excelError);
+            } elseif ($excelSize > NV_UPLOAD_MAX_FILESIZE) {
+                $this->result->setError()
+                    ->setCode('1002')
+                    ->setMessage('File Excel vu?t quá kích thu?c cho phép.');
+                file_put_contents($log_file, "Step 5: Kích thu?c vu?t quá - $excelSize > " . NV_UPLOAD_MAX_FILESIZE . "\n", FILE_APPEND);
+            } elseif (!file_exists($excelTmpPath) || !is_readable($excelTmpPath)) {
+                $this->result->setError()
+                    ->setCode('1009')
+                    ->setMessage('File Excel t?m không t?n t?i ho?c không d?c du?c: ' . $excelTmpPath);
+            } else {
+                try {
+                    if (!class_exists('\PhpOffice\PhpSpreadsheet\IOFactory')) {
+                        throw new \Exception("Thu vi?n PhpSpreadsheet không du?c cài d?t.");
                     }
+
+                    $objSpreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($excelTmpPath);
+                    $sheetNames = $objSpreadsheet->getSheetNames();
+                    $importedSheets = [];
+
+
+                    $sheet = $objSpreadsheet->getSheet(0);
+                    $this->importSheetData($sheet, $lev, $importedSheets);
+
+                    foreach ($sheetNames as $sheetIndex => $sheetName) {
+                        if ($sheetIndex == 0) continue;
+
+                        if (!in_array($sheetName, $importedSheets)) {
+                            $sheet = $objSpreadsheet->getSheet($sheetIndex);
+
+                            $sql = "SELECT file_id, file_path FROM " . NV_PREFIXLANG . "_fileserver_files 
+                                    WHERE file_name = :file_name AND is_folder = 1 AND lev = :lev";
+                            $stmt = $db->prepare($sql);
+                            $stmt->bindParam(':file_name', $sheetName, PDO::PARAM_STR);
+                            $stmt->bindParam(':lev', $lev, PDO::PARAM_INT);
+                            $stmt->execute();
+                            $parent = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                            if ($parent) {
+                                $this->importSheetData($sheet, $parent['file_id'], $importedSheets, $parent['file_path']);
+                            }
+                        }
+                    }
+
+                    $this->result->setSuccess()
+                        ->setMessage('Import danh sách file/folder t? Excel thành công.');
+                } catch (\Exception $e) {
+                    $this->result->setError()
+                        ->setCode('1007')
+                        ->setMessage('L?i khi d?c file Excel: ' . $e->getMessage());
                 }
             }
-
-            $this->result->setSuccess()
-                ->setMessage('Import dá»¯ liá»‡u tá»« file Excel thÃ nh cÃ´ng.');
-        } catch (\Exception $e) {
-            $this->result->setError()
-                ->setCode('1007')
-                ->setMessage('Lá»—i khi Ä‘á»c file Excel: ' . $e->getMessage());
         }
 
-        return $this->result->getResult();
+        $result_data = $this->result->getResult();
     }
 
     private function importSheetData($sheet, $parent_id, &$importedSheets, $parent_path = '/uploads/fileserver')
     {
         global $db, $global_config, $lang_global, $module_data, $user_info;
 
+        $log_file = NV_ROOTDIR . '/data/tmp/import-file/api_debug.log';
+        file_put_contents($log_file, "ImportSheetData: B?t d?u - Parent ID: $parent_id, Parent Path: $parent_path\n", FILE_APPEND);
+
         $Totalrow = $sheet->getHighestRow();
         $uploadDir = NV_ROOTDIR . $parent_path;
 
-        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0777, true)) {
-            return;
+        if (!is_dir($uploadDir)) {
+            if (!mkdir($uploadDir, 0777, true)) {
+                $this->result->setError()
+                    ->setCode('1008')
+                    ->setMessage('Không th? t?o thu m?c luu tr?: ' . $uploadDir);
+                return;
+            }
         }
-
-        $upload = new Upload(
-            $global_config['file_allowed_ext'],
-            $global_config['forbid_extensions'],
-            $global_config['forbid_mimes'],
-            NV_UPLOAD_MAX_FILESIZE,
-            NV_MAX_WIDTH,
-            NV_MAX_HEIGHT
-        );
-        $upload->setLanguage($lang_global);
 
         for ($i = 5; $i <= $Totalrow; $i++) {
             $real_path = $sheet->getCell('C' . $i)->getValue();
@@ -138,27 +142,8 @@ class UploadFile implements IApi
                         mkdir($full_path, 0777, true);
                     }
                 } else {
-                    if (filter_var($real_path, FILTER_VALIDATE_URL)) {
-                        $upload_info = $upload->save_urlfile($real_path, NV_ROOTDIR . $parent_path, false, $global_config['nv_auto_resize']);
-                    } elseif (file_exists($real_path)) {
-                        $file_info = [
-                            'name' => $file_name,
-                            'type' => mime_content_type($real_path),
-                            'tmp_name' => $real_path,
-                            'error' => 0,
-                            'size' => filesize($real_path)
-                        ];
-                        $upload_info = $upload->save_file($file_info, NV_ROOTDIR . $parent_path, false, $global_config['nv_auto_resize']);
-                    } else {
-                        continue;
-                    }
-
-                    if ($upload_info['error'] == '') {
-                        $full_path = $upload_info['name'];
-                        $file_path = str_replace(NV_ROOTDIR, '', $full_path);
-                        $file_size = $upload_info['size'];
-                    } else {
-                        continue;
+                    if (!file_exists($full_path)) {
+                        file_put_contents($full_path, ''); // T?o file r?ng
                     }
                 }
 

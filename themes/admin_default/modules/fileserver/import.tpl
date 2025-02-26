@@ -17,14 +17,7 @@
             <h2 class="card-title">{LANG.import_file}</h2>
         </div>
         <div class="card-body">
-            <form action="{FORM_ACTION}" method="post" enctype="multipart/form-data" id="uploadForm">
-                <div class="form-group">
-                    <label>{LANG.choose_file}</label>
-                    <input type="file" name="uploadfile" id="uploadfile" required>
-                </div>
-                <input type="hidden" name="submit_upload" value="1">
-                <button type="submit" class="btn btn-success" id="submitForm">{LANG.submit}</button>
-            </form>
+            <form action="{FORM_ACTION}" method="post" enctype="multipart/form-data">    <div class="form-group">        <label>File Excel chứa danh sách:</label>        <input type="file" name="excel_file" class="form-control" accept=".xlsx,.xls" required>    </div>    <button type="submit" name="submit_upload" class="btn btn-primary">Import từ Excel</button></form>
         </div>
     </div>
 
