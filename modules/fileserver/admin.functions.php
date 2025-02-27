@@ -24,8 +24,8 @@ define('NV_IS_FILE_ADMIN', true);
 function updatePerm($file_id)
 {
     global $db, $module_data;
-    $sql = "INSERT INTO " . NV_PREFIXLANG . '_' . $module_data . "_permissions (file_id, p_group, p_other, updated_at) 
-                        VALUES (:file_id, :p_group, :p_other, :updated_at)";
+    $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
+                        VALUES (:file_id, :p_group, :p_other, :updated_at)';
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':file_id', $file_id, PDO::PARAM_STR);
     $stmt->bindValue(':p_group', '1', PDO::PARAM_INT);
@@ -39,7 +39,7 @@ function updateAlias($file_id, $file_name)
 {
     global $db, $module_data;
     $alias = change_alias($file_name . '_' . $file_id);
-    $sqlUpdate = "UPDATE " . NV_PREFIXLANG . '_' . $module_data . "_files SET alias=:alias WHERE file_id = :file_id";
+    $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET alias=:alias WHERE file_id = :file_id';
     $stmtUpdate = $db->prepare($sqlUpdate);
     $stmtUpdate->bindValue(':alias', $alias, PDO::PARAM_INT);
     $stmtUpdate->bindValue(':file_id', $file_id, PDO::PARAM_INT);
@@ -52,7 +52,7 @@ function calculateFolderSize($folderId)
     global $db, $module_data;
     $totalSize = 0;
 
-    $sql = "SELECT file_id, is_folder, file_size FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE lev = :lev";
+    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = :lev';
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':lev', $folderId, PDO::PARAM_INT);
     $stmt->execute();
@@ -76,7 +76,7 @@ function calculateFileFolderStats($lev)
     $total_folders = 0;
     $total_size = 0;
 
-    $sql = "SELECT file_id, is_folder, file_size FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE lev = :lev AND status = 1 ";
+    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = :lev AND status = 1 ';
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':lev', $lev, PDO::PARAM_INT);
     $stmt->execute();

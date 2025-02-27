@@ -2,10 +2,12 @@
 if (!defined('NV_IS_FILE_ADMIN')) {
     die('Stop!!!');
 }
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 $error = '';
 $success = '';
 $admin_info['allow_files_type'] = ['xlsx', 'xls'];
+global $module_name;
 
 function downloadFromUrl($fileUrl, $dir = './data/tmp/import-file') {
     if (!file_exists($dir)) {
@@ -61,7 +63,7 @@ function importSheetData($sheet, $parent_id, &$importedSheets, $parent_path = '/
     global $db;
     $Totalrow = $sheet->getHighestRow();
 
-    for ($i = 5; $i <= $Totalrow; $i++) { // Bắt đầu từ hàng 2 (giả sử hàng 1 là tiêu đề)
+    for ($i = 5; $i <= $Totalrow; $i++) {
         $file_name = $sheet->getCell('B' . $i)->getValue();
         $drive_url = $sheet->getCell('C' . $i)->getValue();
         if (empty($file_name)) continue;
@@ -82,7 +84,6 @@ function importSheetData($sheet, $parent_id, &$importedSheets, $parent_path = '/
             }
         }
 
-        // Tạo thư mục nếu là folder
         if ($is_folder && !file_exists($full_path)) {
             mkdir($full_path, 0777, true);
         }
@@ -143,7 +144,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['excel_
                 if (!in_array($sheetName, $importedSheets)) {
                     $sheet = $objPHPExcel->getSheet($sheetIndex);
 
-                    $sql = 'SELECT file_id, file_path FROM ' . NV_PREFIXLANG . '_fileserver_files WHERE file_name = :file_name AND is_folder = 1 AND lev = 0';
+                    $sql = 'SELECT file_id, file_path FROM ' . NV_PREFIXLANG . '_fileserver_files_files WHERE file_name = :file_name AND is_folder = 1 AND lev = 0';
                     $stmt = $db->prepare($sql);
                     $stmt->bindParam(':file_name', $sheetName, PDO::PARAM_STR);
                     $stmt->execute();
@@ -154,12 +155,23 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['excel_
                     }
                 }
             }
-            $success = 'Import danh sách từ Excel và tải file từ Google Drive thành công!';
+            $success = $lang_module['import_success'];
         } catch (Exception $e) {
-            $error = 'Lỗi đọc file Excel: ' . $e->getMessage();
+            $error = $lang_module['error'] . $e->getMessage();
         }
 
         unlink($excel_path);
+    }
+}
+
+$download = $nv_Request->get_int('download', 'get', 0);
+if ($download == 1) {
+    $file_path = NV_ROOTDIR . '/themes/default/images/fileserver/import_file.xlsx';
+    if (file_exists($file_path)) {
+        $download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . '/themes/default/images/fileserver/', 'import_file.xlsx', true, 0);
+        $download->download_file();
+    } else {
+        $error = $lang_module['error_file_not_found'];
     }
 }
 
@@ -168,6 +180,7 @@ $xtpl->assign('LANG', $lang_module);
 $xtpl->assign('OP', $op);
 $xtpl->assign('MODULE_NAME', $module_name);
 $xtpl->assign('FORM_ACTION', NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op);
+$xtpl->assign('URL_DOWNLOAD', NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=import&download=1');
 
 if (!empty($error)) {
     $xtpl->assign('ERROR', $error);
