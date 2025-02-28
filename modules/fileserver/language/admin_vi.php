@@ -19,7 +19,6 @@ $lang_translator['copyright'] = '@Copyright (C) 2009-2021 VINADES.,JSC. All righ
 $lang_translator['info'] = '';
 $lang_translator['langtype'] = 'lang_module';
 
-
 $lang_module['total_file'] = 'Tổng số file & folder';
 $lang_module['api_fileserver'] = 'API File Server';
 $lang_module['api_fileserver_GetFile'] = 'Lấy thông tin file (GetFile)';
@@ -29,6 +28,7 @@ $lang_module['api_fileserver_UpdateFile'] = 'Cập nhật file (UpdateFile)';
 $lang_module['api_fileserver_UploadFile'] = 'Upload file (UploadFile)';
 $lang_module['export'] = 'Export';
 $lang_module['import'] = 'Import';
+$lang_module['del_history'] = 'Lịch sử xóa file';
 $lang_module['error_file_type'] = 'File không đúng định dạng';
 $lang_module['import_success'] = 'Import dữ liệu thành công';
 $lang_module['error_file_not_found'] = 'File không tồn tại';

@@ -160,7 +160,7 @@ if (!empty($action)) {
                 $count = $stmtCheck->fetchColumn();
                 $i++;
             } while ($count > 0);
-            nv_jsonOutput(['status' => 'error', 'message' => 'Tên file &#273;ã t&#7891;n t&#7841;i. G&#7907;i ý: ' . $name_f]);
+            nv_jsonOutput(['status' => 'error', 'message' => 'Tï¿½n file &#273;ï¿½ t&#7891;n t&#7841;i. G&#7907;i ï¿½: ' . $name_f]);
         }
         $file_path = $base_dir . '/' . $name_f;
 
@@ -336,9 +336,9 @@ if (!empty($action)) {
                 $count = $stmtCheck->fetchColumn();
                 $i++;
             } while ($count > 0);
-            nv_jsonOutput(['status' => 'error', 'message' => 'Tên file &#273;ã t&#7891;n t&#7841;i. G&#7907;i ý: ' . $name_f]);
+            nv_jsonOutput(['status' => 'error', 'message' => 'Tï¿½n file &#273;ï¿½ t&#7891;n t&#7841;i. G&#7907;i ï¿½: ' . $name_f]);
         } else {
-            nv_jsonOutput(['status' => 'success', 'message' => 'Tên file h&#7907;p l&#7879;.']);
+            nv_jsonOutput(['status' => 'success', 'message' => 'Tï¿½n file h&#7907;p l&#7879;.']);
         }
     }
 

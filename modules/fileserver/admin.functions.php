@@ -17,6 +17,7 @@ $allow_func = [
     'main',
     'export',
     'import',
+    'del_history'
 ];
 
 define('NV_IS_FILE_ADMIN', true);

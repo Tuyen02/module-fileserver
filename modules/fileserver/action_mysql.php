@@ -50,6 +50,8 @@ $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_
 
 $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_logs (
     log_id INT PRIMARY KEY AUTO_INCREMENT,
+    action varchar(250) NOT NULL DEFAULT \'\',
+    value varchar(250) NOT NULL DEFAULT \'\',
     lev INT NOT NULL,
     total_files INT NOT NULL,
     total_folders INT NOT NULL,
