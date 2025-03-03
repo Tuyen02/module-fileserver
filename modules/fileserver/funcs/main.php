@@ -4,6 +4,10 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
+if (!defined('NV_IS_USER')) {
+    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
+}
+
 $page_title = $module_info['site_title'];
 $key_words = $module_info['keywords'];
 $description = $module_info['description'];
@@ -39,10 +43,6 @@ $breadcrumbs = array_reverse($breadcrumbs);
 
 foreach ($breadcrumbs as $breadcrumb) {
     $array_mod_title[] = $breadcrumb;
-}
-
-if (!defined('NV_IS_USER')) {
-    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
 }
 
 $file_ids = array_keys($arr_per);
@@ -122,9 +122,9 @@ if (!empty($action)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty']]);
         }
 
-        $allowed_extensions = ['txt', 'doc', 'docx', 'pdf', 'xlsx', 'xls','jpg'
-        ,'png','gif','jpeg','zip','rar','7z','html','css','js','php'
-        ,'sql','mp3','mp4','avi','flv','mkv','mov','wav','wma','wmv','ppt','pptx','ps'];
+        $allowed_extensions = [
+            'doc', 'txt', 'docx', 'pdf', 'xlsx', 'xls', 'jpg', 'png', 'gif', 'jpeg', 'zip', 'rar','html', 'css', 'js', 'php', 'sql', 'mp3', 'mp4', 'ppt', 'pptx',
+        ];
 
         $extension = pathinfo($name_f, PATHINFO_EXTENSION);
         if ($type == 0 && ($extension == '' || !in_array($extension, $allowed_extensions))) {
@@ -160,7 +160,7 @@ if (!empty($action)) {
                 $count = $stmtCheck->fetchColumn();
                 $i++;
             } while ($count > 0);
-            nv_jsonOutput(['status' => 'error', 'message' => 'T�n file &#273;� t&#7891;n t&#7841;i. G&#7907;i �: ' . $name_f]);
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_exist'] . $name_f]);
         }
         $file_path = $base_dir . '/' . $name_f;
 
@@ -202,7 +202,7 @@ if (!empty($action)) {
             $stmta->bindValue(':p_other', '1', PDO::PARAM_INT);
             $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmta->execute();
-            updateLog($lev);
+            updateLog($lev, $action, $file_id);
             $mess = $lang_module['create_ok'];
         }
         nv_jsonOutput(['status' => $status, 'message' => $mess]);
@@ -218,8 +218,9 @@ if (!empty($action)) {
             $deleted = deleteFileOrFolder($fileId);
             if ($deleted) {
                 $status = 'success';
-                updateLog($lev);
+                updateLog($lev, $action, $fileId);
                 $mess = $lang_module['delete_ok'];
+
             } else {
                 $status = 'error';
                 $mess = $lang_module['delete_false'];
@@ -233,10 +234,13 @@ if (!empty($action)) {
         }
 
         $checksessArray = $nv_Request->get_array('checksess', 'post', []);
-
         if (empty($fileIds)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
         }
+
+        $deletedFileIds = [];
+        $status = 'success';
+        $mess = $lang_module['delete_ok'];
 
         foreach ($fileIds as $index => $fileId) {
             $fileId = (int) $fileId;
@@ -245,14 +249,21 @@ if (!empty($action)) {
             if ($fileId > 0 && $checksess == md5($fileId . NV_CHECK_SESSION)) {
                 $deleted = deleteFileOrFolder($fileId);
                 if ($deleted) {
-                    updateLog($lev);
-                    $mess = $lang_module['delete_ok'];
+                    $deletedFileIds[] = $fileId;
                 } else {
-                    $mess_content = $lang_module['delete_false'];
+                    $status = 'error';
+                    $mess = $lang_module['delete_false'];
+                    break;
                 }
             } else {
+                $status = 'error';
                 $mess = $lang_module['checksess_invalid'];
+                break;
             }
+        }
+
+        if ($status == 'success' && !empty($deletedFileIds)) {
+            updateLog($lev, $action, implode(',', $deletedFileIds));
         }
     }
 
@@ -298,6 +309,7 @@ if (!empty($action)) {
                         $stmtUpdateChildren->bindValue(':like_old_path', $oldFilePath . '/%', PDO::PARAM_STR);
                         $stmtUpdateChildren->execute();
                     }
+                    updateLog($lev, $action, $fileId);
                 }
             }
         }
@@ -336,9 +348,9 @@ if (!empty($action)) {
                 $count = $stmtCheck->fetchColumn();
                 $i++;
             } while ($count > 0);
-            nv_jsonOutput(['status' => 'error', 'message' => 'T�n file &#273;� t&#7891;n t&#7841;i. G&#7907;i �: ' . $name_f]);
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_exist'] . $name_f]);
         } else {
-            nv_jsonOutput(['status' => 'success', 'message' => 'T�n file h&#7907;p l&#7879;.']);
+            nv_jsonOutput(['status' => 'success', 'message' => $lang_module['file_name_valid']]);
         }
     }
 
@@ -394,7 +406,7 @@ if (!empty($action)) {
                 $stmta->bindValue(':p_other', '1', PDO::PARAM_INT);
                 $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 $stmta->execute();
-                updateLog($lev);
+                updateLog($lev, $action, $compressed);
             }
             $mess = $compressResult['message'];
         } else {
@@ -423,7 +435,7 @@ if ($download == 1) {
         $zip = '';
 
         if ($is_folder == 1) {
-            $zipFileName = $file_name . '.zip';  
+            $zipFileName = $file_name . '.zip';
             $zipFilePath = '/data/tmp/' . $zipFileName;
             $zipFullPath = NV_ROOTDIR . $zipFilePath;
 
@@ -516,8 +528,8 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
             $stmta->bindValue(':p_other', '1', PDO::PARAM_INT);
             $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmta->execute();
+            updateLog($lev, 'upload', $file_id);
         }
-        updateLog($lev);
         nv_redirect_location($page_url);
         $success = $lang_module['upload_ok'];
     } else {
@@ -531,11 +543,15 @@ $selected_folder = ($search_type == 'folder') ? ' selected' : '';
 
 if (!empty($result)) {
     foreach ($result as $row) {
-        $sql_logs = 'SELECT log_id, total_size, total_files,total_folders FROM ' . NV_PREFIXLANG . '_' . $module_data . '_logs WHERE lev = :lev';
-        $sql_logs = $db->prepare($sql_logs);
-        $sql_logs->bindParam(':lev', $row['lev'], PDO::PARAM_INT);
-        $sql_logs->execute();
-        $logs = $sql_logs->fetch(PDO::FETCH_ASSOC);
+        $sql_logs = 'SELECT log_id, action, value, lev, total_files, total_folders, total_size, total_files_del, total_folders_del, total_size_del, log_time 
+                    FROM ' . NV_PREFIXLANG . '_' . $module_data . '_logs 
+                    WHERE lev = :lev 
+                    ORDER BY log_time DESC 
+                    LIMIT 1';
+        $stmt_logs = $db->prepare($sql_logs);
+        $stmt_logs->bindParam(':lev', $row['lev'], PDO::PARAM_INT);
+        $stmt_logs->execute();
+        $logs = $stmt_logs->fetch(PDO::FETCH_ASSOC);
 
         $sql_permissions = 'SELECT `p_group`, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = :file_id';
         $stmt_permissions = $db->prepare($sql_permissions);

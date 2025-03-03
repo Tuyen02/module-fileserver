@@ -115,6 +115,9 @@
     <a href="#" class="btn btn-primary" id="compressButton" data-toggle="modal" data-target="#compressModal">
         <i class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}
     </a>
+    <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll"><i class="fa fa-trash"
+        aria-hidden="true"></i> {LANG.delete_btn}
+    </button>
 
     <div class="modal fade" id="compressModal" tabindex="-1" role="dialog" aria-labelledby="compressModalLabel"
         aria-hidden="true">
@@ -136,9 +139,6 @@
             </div>
         </div>
     </div>
-    <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll"><i class="fa fa-trash"
-            aria-hidden="true"></i> {LANG.delete_btn}
-    </button>
 </div>
 <div class="text-center">{GENERATE_PAGE}</div>
 
