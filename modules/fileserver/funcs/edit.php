@@ -102,7 +102,7 @@ if (defined('NV_IS_SPADMIN')) {
         $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
         $stmt->execute();
 
-        updateLog($row['lev'],'edit',$file_id);
+        updateLog($row['lev']);
         $status = $lang_module['success'];
         $message = $lang_module['update_ok'];
     }

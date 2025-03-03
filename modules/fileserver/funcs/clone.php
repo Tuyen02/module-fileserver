@@ -108,7 +108,7 @@ if (defined('NV_IS_SPADMIN')) {
                     $stmt_permissions_insert->bindParam(':p_other', $permissions['p_other']);
                     $stmt_permissions_insert->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                     $stmt_permissions_insert->execute();
-                    updateLog($target_lev,'copy',$new_file_id);
+                    updateLog($target_lev);
                 }
             }
         }
@@ -157,7 +157,7 @@ if (defined('NV_IS_SPADMIN')) {
                     $stmt_permissions_insert->bindParam(':p_other', $permissions['p_other']);
                     $stmt_permissions_insert->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                     $stmt_permissions_insert->execute();
-                    updateLog($target_lev,'move',$new_file_id);
+                    updateLog($target_lev);
                 }
             }
         }

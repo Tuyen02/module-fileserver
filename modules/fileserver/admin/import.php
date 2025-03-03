@@ -105,7 +105,7 @@ function importSheetData($sheet, $parent_id, &$importedSheets, $parent_path = '/
         $file_id = $db->lastInsertId();
         updateAlias($file_id, $file_name);
         updatePerm($file_id);
-        updateLog($parent_id, 'import', $file_id);
+        updateLog($parent_id);
 
         if ($is_folder && !in_array($file_name, $importedSheets)) {
             $sub_sheet = $sheet->getParent()->getSheetByName($file_name);
