@@ -123,7 +123,27 @@ if (!empty($action)) {
         }
 
         $allowed_extensions = [
-            'doc', 'txt', 'docx', 'pdf', 'xlsx', 'xls', 'jpg', 'png', 'gif', 'jpeg', 'zip', 'rar','html', 'css', 'js', 'php', 'sql', 'mp3', 'mp4', 'ppt', 'pptx',
+            'doc',
+            'txt',
+            'docx',
+            'pdf',
+            'xlsx',
+            'xls',
+            'jpg',
+            'png',
+            'gif',
+            'jpeg',
+            'zip',
+            'rar',
+            'html',
+            'css',
+            'js',
+            'php',
+            'sql',
+            'mp3',
+            'mp4',
+            'ppt',
+            'pptx',
         ];
 
         $extension = pathinfo($name_f, PATHINFO_EXTENSION);

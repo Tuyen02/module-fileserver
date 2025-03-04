@@ -58,8 +58,6 @@ $lang_module['zip_file_name_empty'] = 'Tên file nén không được để tr�
 $lang_module['zip_false'] = 'Có lỗi khi nén file: ';
 $lang_module['zip_ok'] = 'Nén thành công ';
 $lang_module['file_invalid'] = 'Không có file hợp lệ để nén.';
-
-
 $lang_module['module_title'] = 'Module File Server';
 $lang_module['all'] = 'Tất cả';
 $lang_module['file'] = 'Tệp';
@@ -99,7 +97,6 @@ $lang_module['move'] = 'Di chuyển';
 $lang_module['cancel'] = 'Hủy bỏ';
 $lang_module['choose_folder'] = 'Chọn thư mục';
 $lang_module['file_extension_not_allowed'] = 'Phần mở rộng của file không được phép. Danh sach phần mở rộng được phép: docx, pdf, png, mp3, mp4, ...';
-
 $lang_module['copy_or_move'] = 'Sao chép hoặc di chuyển';
 $lang_module['compress'] = 'Nén';
 $lang_module['edit_img'] = 'Chỉnh sửa ảnh';

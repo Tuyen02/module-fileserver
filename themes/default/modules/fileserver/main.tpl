@@ -21,8 +21,7 @@
     </form>
 
     <br>
-    <form action="" method="post" enctype="multipart/form-data" id="uploadForm"
-        class="form-inline my-2 my-lg-0">
+    <form action="" method="post" enctype="multipart/form-data" id="uploadForm" class="form-inline my-2 my-lg-0">
         <!-- BEGIN: back -->
         <button type="button" class="btn btn-warning" id="backButton">
             <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
@@ -116,7 +115,7 @@
         <i class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}
     </a>
     <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll"><i class="fa fa-trash"
-        aria-hidden="true"></i> {LANG.delete_btn}
+            aria-hidden="true"></i> {LANG.delete_btn}
     </button>
 
     <div class="modal fade" id="compressModal" tabindex="-1" role="dialog" aria-labelledby="compressModalLabel"

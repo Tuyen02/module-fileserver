@@ -7,7 +7,6 @@ if (!defined('NV_IS_FILE_ADMIN')) {
 $error = '';
 $success = '';
 
-// Hàm xóa mục quá 30 ngày trong thùng rác và ghi log
 function purgeOldTrashItems()
 {
     global $db, $module_data;
@@ -135,7 +134,7 @@ if (!empty($action)) {
         $fileId = $nv_Request->get_int('file_id', 'post', 0);
         $checksess = $nv_Request->get_title('checksess', 'get', '');
         if ($fileId <= 0 || $checksess != md5($fileId . NV_CHECK_SESSION)) {
-            $mess = 'Thông tin không hợp lệ hoặc phiên làm việc không đúng';
+            $mess = $lang_module['checksess_false'];
         } else {
             $deleted = deletePermanently($fileId);
             if ($deleted) {
@@ -179,15 +178,15 @@ if (!empty($action)) {
     if ($action == 'restore') {
         $fileId = $nv_Request->get_int('file_id', 'post', 0);
         if ($fileId <= 0) {
-            $mess = 'File ID không hợp lệ';
+            $mess = $lang_module['file_id_false'];
         } else {
             $restored = restoreFileOrFolder($fileId);
             if ($restored) {
                 $status = 'success';
                 updateLog($lev, 'restore', $fileId);
-                $mess = $lang_module['restore_ok'] ?? 'Khôi phục thành công';
+                $mess = $lang_module['restore_ok'];
             } else {
-                $mess = $lang_module['restore_false'] ?? 'Khôi phục thất bại';
+                $mess = $lang_module['restore_false'];
             }
         }
         nv_jsonOutput(['status' => $status, 'message' => $mess]);
@@ -212,17 +211,16 @@ if (!empty($action)) {
         if (!empty($restoredFileIds)) {
             $status = 'success';
             updateLog($lev, 'restore_all', implode(',', $restoredFileIds));
-            $mess = $lang_module['restore_ok'] ?? 'Khôi phục thành công';
+            $mess = $lang_module['restore_ok'];
         } else {
-            $mess = $lang_module['restore_false'] ?? 'Không có mục nào được khôi phục';
+            $mess = $lang_module['restore_false'];
         }
         nv_jsonOutput(['status' => $status, 'message' => $mess]);
     }
 
-    nv_jsonOutput(['status' => 'error', 'message' => 'Hành động không hợp lệ']);
+    nv_jsonOutput(['status' => 'error', 'message' => $lang_module['action_invalid']]);
 }
 
-// Hàm xóa vĩnh viễn từ thùng rác (giữ nguyên)
 function deletePermanently($fileId)
 {
     global $db, $module_data;
@@ -252,26 +250,6 @@ function deletePermanently($fileId)
     return true;
 }
 
-// Hàm xử lý trùng tên khi khôi phục (giữ nguyên)
-function getUniqueRestorePath($destPath)
-{
-    $originalPath = $destPath;
-    $counter = 1;
-    $pathInfo = pathinfo($destPath);
-    $dir = $pathInfo['dirname'];
-    $filename = $pathInfo['filename'];
-    $extension = isset($pathInfo['extension']) ? '.' . $pathInfo['extension'] : '';
-
-    while (file_exists($destPath)) {
-        $newFilename = $filename . '_' . $counter . $extension;
-        $destPath = $dir . '/' . $newFilename;
-        $counter++;
-    }
-
-    return $destPath;
-}
-
-// Hàm khôi phục từ thùng rác về _files, bao gồm file/folder con (giữ nguyên)
 function restoreFileOrFolder($fileId)
 {
     global $db, $module_data;
@@ -287,11 +265,10 @@ function restoreFileOrFolder($fileId)
     }
 
     $oldPath = NV_ROOTDIR . $row['file_path'];
-    $newPathBase = str_replace('/themes/default/images/fileserver/', '/uploads/fileserver/', $row['file_path']);
+    $newPathBase = str_replace('/data/tmp/trash/', '/uploads/fileserver/', $row['file_path']);
     $newPath = NV_ROOTDIR . $newPathBase;
 
     if (file_exists($newPath)) {
-        $newPath = getUniqueRestorePath($newPath);
         $newPathBase = str_replace(NV_ROOTDIR, '', $newPath);
     }
 
@@ -338,7 +315,6 @@ function restoreFileOrFolder($fileId)
     return true;
 }
 
-// Hàm khôi phục file/folder con (giữ nguyên)
 function restoreChildItems($parentId, $parentNewPath)
 {
     global $db, $module_data;
@@ -351,12 +327,11 @@ function restoreChildItems($parentId, $parentNewPath)
 
     foreach ($children as $child) {
         $oldChildPath = NV_ROOTDIR . $child['file_path'];
-        $relativePath = str_replace('/themes/default/images/fileserver/', '', $child['file_path']);
+        $relativePath = str_replace('/data/tmp/trash/', '', $child['file_path']);
         $newChildPathBase = $parentNewPath . '/' . basename($relativePath);
         $newChildPath = NV_ROOTDIR . $newChildPathBase;
 
         if (file_exists($newChildPath)) {
-            $newChildPath = getUniqueRestorePath($newChildPath);
             $newChildPathBase = str_replace(NV_ROOTDIR, '', $newChildPath);
         }
 
@@ -402,7 +377,6 @@ function restoreChildItems($parentId, $parentNewPath)
     }
 }
 
-// Giao diện
 $selected_all = ($search_type == 'all') ? ' selected' : '';
 $selected_file = ($search_type == 'file') ? ' selected' : '';
 $selected_folder = ($search_type == 'folder') ? ' selected' : '';

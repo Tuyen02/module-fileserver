@@ -1,6 +1,6 @@
 <!-- BEGIN: main -->
 <div class="container mt-4 mb-5 pb-5">
-    <h1 class="text-center">Thùng rác</h1>
+    <h1 class="text-center">{LANG.recycle_bin}</h1>
     <br>
     <!-- BEGIN: error -->
     <div class="alert alert-warning">{ERROR}</div>
@@ -19,13 +19,14 @@
         <input type="hidden" name="{NV_NAME_VARIABLE}" value="{MODULE_NAME}">
         <input type="hidden" name="{NV_OP_VARIABLE}" value="recycle_bin">
         <input type="hidden" name="lev" value="{LEV}">
-        <input type="text" class="form-control" placeholder="Tìm kiếm" id="searchInput" name="search" value="{SEARCH_TERM}">
+        <input type="text" class="form-control" placeholder="Tìm kiếm" id="searchInput" name="search"
+            value="{SEARCH_TERM}">
         <select class="form-control ml-2" name="search_type">
-            <option value="all" {SELECTED_ALL}>Tất cả</option>
-            <option value="file" {SELECTED_FILE}>File</option>
-            <option value="folder" {SELECTED_FOLDER}>Folder</option>
+            <option value="all" {SELECTED_ALL}>{LANG.all}</option>
+            <option value="file" {SELECTED_FILE}>{LANG.file}</option>
+            <option value="folder" {SELECTED_FOLDER}>{LANG.folder}</option>
         </select>
-        <button type="submit" class="btn btn-primary ml-2">Tìm kiếm</button>
+        <button type="submit" class="btn btn-primary ml-2">{LANG.search}</button>
     </form>
 
     <br>
@@ -35,10 +36,10 @@
         <thead class="thead-dark">
             <tr>
                 <th scope="col"><input class="form-check-input" type="checkbox" id="selectAll"></th>
-                <th scope="col">Tên</th>
-                <th scope="col">Kích cỡ</th>
-                <th scope="col">Ngày xóa</th>
-                <th scope="col">Tùy chọn</th>
+                <th scope="col">{LANG.file_name}</th>
+                <th scope="col">{LANG.file_size}</th>
+                <th scope="col">{LANG.deleted_at}</th>
+                <th scope="col">{LANG.option}</th>
             </tr>
         </thead>
         <tbody>
@@ -52,10 +53,12 @@
                 <td>{ROW.file_size}</td>
                 <td>{ROW.deleted_at}</td>
                 <td>
-                    <button class="btn btn-sm btn-danger delete" data-file-id="{ROW.file_id}" data-checksess="{ROW.checksess}" data-url="{ROW.url_delete}" title="{LANG.delete_btn}">
+                    <button class="btn btn-sm btn-danger delete" data-file-id="{ROW.file_id}"
+                        data-checksess="{ROW.checksess}" data-url="{ROW.url_delete}" title="{LANG.delete_btn}">
                         <i class="fa fa-trash-o"></i>
                     </button>
-                    <button class="btn btn-sm btn-success restore" data-file-id="{ROW.file_id}" data-url="{ROW.url_restore}" title="Khôi phục">
+                    <button class="btn btn-sm btn-success restore" data-file-id="{ROW.file_id}"
+                        data-url="{ROW.url_restore}" title="{LANG.restore}">
                         <i class="fa fa-reply"></i>
                     </button>
                 </td>
@@ -63,8 +66,10 @@
             <!-- END: file_row -->
         </tbody>
     </table>
-    <button type="button" class="btn btn-primary mt-2" id="restoreAll"><i class="fa fa-reply" aria-hidden="true"></i> Khôi phục tất cả</button>
-    <button type="button" class="btn btn-danger mt-2" id="deleteAll"><i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}</button>
+    <button type="button" class="btn btn-primary mt-2" id="restoreAll"><i class="fa fa-reply" aria-hidden="true"></i>
+        {LANG.restore}</button>
+    <button type="button" class="btn btn-danger mt-2" id="deleteAll"><i class="fa fa-trash" aria-hidden="true"></i>
+        {LANG.delete_btn}</button>
     <hr>
 
     <!-- BEGIN: generate_page -->
@@ -148,11 +153,11 @@
                         location.reload();
                     }
                 } else {
-                    alert('Phản hồi không hợp lệ từ server');
+                    alert(res.message);
                 }
             },
             error: function (xhr, status, error) {
-                alert('Đã có lỗi xảy ra: ' + (xhr.responseText || 'Không rõ nguyên nhân'));
+                alert(res.message);
             }
         });
     }
@@ -174,11 +179,11 @@
                         location.reload();
                     }
                 } else {
-                    alert('Phản hồi không hợp lệ từ server');
+                    alert(res.message);
                 }
             },
             error: function (xhr, status, error) {
-                alert('Đã có lỗi xảy ra: ' + (xhr.responseText || 'Không rõ nguyên nhân'));
+                alert(res.message);
             }
         });
     }

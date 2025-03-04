@@ -42,9 +42,9 @@ function deleteFileOrFolder($fileId)
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':file_id', $fileId, PDO::PARAM_INT);
     $stmt->execute();
-    $row = $stmt->fetch();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (empty($row)) {
+    if (!is_array($row) || empty($row)) {
         return false;
     }
 
@@ -54,32 +54,41 @@ function deleteFileOrFolder($fileId)
     $lev = $row['lev'];
 
     $parts = explode('/uploads/fileserver/', $filePath);
-    $relativePath = end($parts); 
+    $relativePath = end($parts);
     $relativePath = ltrim($relativePath, '/');
-    
+
     $newFolderName = $isFolder ? getUniqueFolderName($relativePath, $lev) : basename($relativePath);
     $newRelativePath = $isFolder ? $newFolderName : dirname($relativePath) . '/' . getUniqueFolderName($relativePath, $lev);
     $backupPath = NV_ROOTDIR . '/data/tmp/trash/' . $newRelativePath;
-
 
     $backupDir = dirname($backupPath);
     if (!file_exists($backupDir)) {
         mkdir($backupDir, 0777, true);
     }
 
+    if (file_exists($fullPath)) {
+        if (!rename($fullPath, $backupPath)) {
+            return false;
+        }
+    } else {
+        return false;
+    }
+
+    $fileSize = $isFolder ? calculateFolderSize($fileId) : filesize($backupPath);
+
     $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_trash 
         (file_id, file_name, alias, file_path, file_size, uploaded_by, deleted_at, updated_at, is_folder, status, lev, view, share, compressed) 
         VALUES (:file_id, :file_name, :alias, :file_path, :file_size, :uploaded_by, :deleted_at, :updated_at, :is_folder, :status, :lev, :view, :share, :compressed)';
-    
+
     $stmtInsert = $db->prepare($sqlInsert);
     $stmtInsert->execute([
         ':file_id' => $row['file_id'],
         ':file_name' => $isFolder ? $newFolderName : $row['file_name'],
         ':alias' => $row['alias'],
         ':file_path' => '/data/tmp/trash/' . $newRelativePath,
-        ':file_size' => $row['file_size'],
+        ':file_size' => $fileSize,
         ':uploaded_by' => $row['uploaded_by'],
-        ':deleted_at' => time(),
+        ':deleted_at' => NV_CURRENTTIME,
         ':updated_at' => $row['updated_at'],
         ':is_folder' => $row['is_folder'],
         ':status' => 0,
@@ -91,13 +100,6 @@ function deleteFileOrFolder($fileId)
 
     if ($isFolder) {
         updateDirectoryStatus($fileId, $newFolderName);
-        if (is_dir($fullPath)) {
-            nv_copyfile($fullPath, $backupPath); 
-        }
-    } else {
-        if (file_exists($fullPath)) {
-            copy($fullPath, $backupPath); 
-        }
     }
 
     $sqlDelete = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = :file_id';
@@ -116,14 +118,11 @@ function updateDirectoryStatus($parentId, $parentNewName = null)
     $stmtParent = $db->prepare($sqlParent);
     $stmtParent->bindParam(':file_id', $parentId, PDO::PARAM_INT);
     $stmtParent->execute();
-    $parent = $stmtParent->fetch();
+    $parent = $stmtParent->fetch(PDO::FETCH_ASSOC);
 
-    if (empty($parent)) {
+    if (!is_array($parent) || empty($parent)) {
         return false;
     }
-
-    $parentPath = $parent['file_path'];
-    $fullParentPath = NV_ROOTDIR . $parentPath;
 
     $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = :lev AND status = 1';
     $stmt = $db->prepare($sql);
@@ -150,24 +149,21 @@ function updateDirectoryStatus($parentId, $parentNewName = null)
         $newRelativeFilePath = $isFolder ? $newName : $parentNewName . '/' . getUniqueFolderName($relativeFilePath, $lev);
         $backupFilePath = NV_ROOTDIR . '/data/tmp/trash/' . $newRelativeFilePath;
 
-        $backupDir = dirname($backupFilePath);
-        if (!file_exists($backupDir)) {
-            mkdir($backupDir, 0777, true);
-        }
+        $fileSize = $isFolder ? calculateFolderSize($fileId) : $file['file_size'];
 
         $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_trash 
             (file_id, file_name, alias, file_path, file_size, uploaded_by, deleted_at, updated_at, is_folder, status, lev, view, share, compressed) 
             VALUES (:file_id, :file_name, :alias, :file_path, :file_size, :uploaded_by, :deleted_at, :updated_at, :is_folder, :status, :lev, :view, :share, :compressed)';
-        
+
         $stmtInsert = $db->prepare($sqlInsert);
         $stmtInsert->execute([
             ':file_id' => $file['file_id'],
             ':file_name' => $isFolder ? $newName : $file['file_name'],
             ':alias' => $file['alias'],
             ':file_path' => '/data/tmp/trash/' . $newRelativeFilePath,
-            ':file_size' => $file['file_size'],
+            ':file_size' => $fileSize,
             ':uploaded_by' => $file['uploaded_by'],
-            ':deleted_at' => time(),
+            ':deleted_at' => NV_CURRENTTIME,
             ':updated_at' => $file['updated_at'],
             ':is_folder' => $file['is_folder'],
             ':status' => 0,
@@ -179,13 +175,6 @@ function updateDirectoryStatus($parentId, $parentNewName = null)
 
         if ($isFolder) {
             updateDirectoryStatus($fileId, $newName);
-            if (is_dir($fullFilePath)) {
-                rename($fullFilePath, $backupFilePath); 
-            }
-        } else {
-            if (file_exists($fullFilePath)) {
-                rename($fullFilePath, $backupFilePath); 
-            }
         }
 
         $sqlDelete = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = :file_id';
@@ -196,7 +185,6 @@ function updateDirectoryStatus($parentId, $parentNewName = null)
 
     return true;
 }
-
 function getUniqueFolderName($baseName, $lev)
 {
     global $db, $module_data;
