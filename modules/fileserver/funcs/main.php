@@ -1,5 +1,4 @@
 <?php
-
 if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
@@ -14,13 +13,12 @@ $description = $module_info['description'];
 
 $perpage = 20;
 $page = $nv_Request->get_int('page', 'get', 1);
-
 $search_term = $nv_Request->get_title('search', 'get', '');
 $search_type = $nv_Request->get_title('search_type', 'get', 'all');
 
 $base_dir = '/uploads/fileserver';
 $full_dir = NV_ROOTDIR . $base_dir;
-$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
+$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name;
 
 $page_url = $base_url;
 
@@ -34,7 +32,7 @@ while ($current_lev > 0) {
     $breadcrumbs[] = [
         'catid' => $current_lev,
         'title' => $row1['file_name'],
-        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main/' . $row1['alias'] . '&page=' . $page
+        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=main/' . $row1['alias'] . '&page=' . $page
     ];
     $current_lev = $row1['lev'];
 }
@@ -46,55 +44,74 @@ foreach ($breadcrumbs as $breadcrumb) {
 }
 
 $file_ids = array_keys($arr_per);
-$file_ids_placeholder = [];
 
-$sql = 'SELECT *    
-        FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
-        WHERE status = 1 AND lev = :lev';
+$searchParams = [
+    'index' => 'fileserver',
+    'body' => [
+        'from' => ($page - 1) * $perpage,
+        'size' => $perpage,
+        'query' => [
+            'bool' => [
+                'filter' => [
+                    ['term' => ['status' => 1]],
+                    ['term' => ['lev' => $lev]]
+                ]
+            ]
+        ],
+        'sort' => [
+            'file_id' => ['order' => 'asc']
+        ]
+    ]
+];
 
 if (!defined('NV_IS_SPADMIN') && !empty($arr_per)) {
-    foreach ($file_ids as $index => $file_id) {
-        $file_ids_placeholder[':file_id_' . $index] = $file_id;
-    }
-
-    if (!empty($file_ids_placeholder)) {
-        $sql .= ' AND file_id IN (' . implode(',', array_keys($file_ids_placeholder)) . ')';
-    }
+    $searchParams['body']['query']['bool']['filter'][] = [
+        'terms' => ['file_id' => $file_ids]
+    ];
 }
 
 if (!empty($search_term)) {
-    $sql .= ' AND file_name LIKE :search_term';
+    $searchParams['body']['query']['bool']['filter'][] = [
+        'wildcard' => ['file_name' => '*' . $search_term . '*']
+    ];
 }
 
 if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
-    if ($search_type === 'file') {
-        $sql .= ' AND is_folder = 0';
-    } elseif ($search_type === 'folder') {
-        $sql .= ' AND is_folder = 1';
+    $is_folder = ($search_type === 'file') ? 0 : 1;
+    $searchParams['body']['query']['bool']['filter'][] = [
+        'term' => ['is_folder' => $is_folder]
+    ];
+}
+
+try {
+    $response = $client->search($searchParams);
+    
+    $total = $response['hits']['total']['value'];
+    
+    $result = [];
+    foreach ($response['hits']['hits'] as $hit) {
+        $source = $hit['_source'];
+        $result[] = [
+            'file_id' => $source['file_id'],
+            'file_name' => $source['file_name'],
+            'alias' => $source['alias'],
+            'file_path' => $source['file_path'],
+            'file_size' => $source['file_size'],
+            'uploaded_by' => $source['uploaded_by'],
+            'created_at' => strtotime($source['created_at']),
+            'updated_at' => strtotime($source['updated_at']),
+            'is_folder' => $source['is_folder'],
+            'status' => $source['status'],
+            'lev' => $source['lev'],
+            'view' => $source['view'],
+            'share' => $source['share'],
+            'compressed' => $source['compressed']
+        ];
     }
+    
+} catch (Exception $e) {
+    die("Lỗi tìm kiếm Elasticsearch: " . $e->getMessage());
 }
-
-$total_sql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f WHERE status = 1 AND lev = :lev';
-$total_stmt = $db->prepare($total_sql);
-$total_stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
-$total_stmt->execute();
-$total = $total_stmt->fetchColumn();
-
-$sql .= ' ORDER BY file_id ASC LIMIT :limit OFFSET :offset';
-$stmt = $db->prepare($sql);
-$stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
-$stmt->bindValue(':limit', $perpage, PDO::PARAM_INT);
-$stmt->bindValue(':offset', ($page - 1) * $perpage, PDO::PARAM_INT);
-
-foreach ($file_ids_placeholder as $param => $file_id) {
-    $stmt->bindValue($param, $file_id, PDO::PARAM_INT);
-}
-
-if (!empty($search_term)) {
-    $stmt->bindValue(':search_term', '%' . $search_term . '%', PDO::PARAM_STR);
-}
-$stmt->execute();
-$result = $stmt->fetchAll();
 
 if ($lev > 0) {
     $base_dir = $db->query('SELECT file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $lev)->fetchColumn();
@@ -123,27 +140,8 @@ if (!empty($action)) {
         }
 
         $allowed_extensions = [
-            'doc',
-            'txt',
-            'docx',
-            'pdf',
-            'xlsx',
-            'xls',
-            'jpg',
-            'png',
-            'gif',
-            'jpeg',
-            'zip',
-            'rar',
-            'html',
-            'css',
-            'js',
-            'php',
-            'sql',
-            'mp3',
-            'mp4',
-            'ppt',
-            'pptx',
+            'doc', 'txt', 'docx', 'pdf', 'xlsx', 'xls', 'jpg', 'png', 'gif', 'jpeg',
+            'zip', 'rar', 'html', 'css', 'js', 'php', 'sql', 'mp3', 'mp4', 'ppt', 'pptx'
         ];
 
         $extension = pathinfo($name_f, PATHINFO_EXTENSION);
@@ -184,8 +182,8 @@ if (!empty($action)) {
         }
         $file_path = $base_dir . '/' . $name_f;
 
-        $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
-                    VALUES (:file_name, :file_path, :uploaded_by, :is_folder, :created_at, :lev)';
+        $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, uploaded_by, is_folder, created_at, lev, compressed) 
+                VALUES (:file_name, :file_path, :uploaded_by, :is_folder, :created_at, :lev, :compressed)';
         $stmt = $db->prepare($sql);
         $stmt->bindParam(':file_name', $name_f, PDO::PARAM_STR);
         $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
@@ -193,6 +191,7 @@ if (!empty($action)) {
         $stmt->bindParam(':is_folder', $type, PDO::PARAM_INT);
         $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
         $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
+        $stmt->bindValue(':compressed', 0, PDO::PARAM_INT);
 
         if ($type == 1) {
             $full_dir = NV_ROOTDIR . $file_path;
@@ -214,6 +213,18 @@ if (!empty($action)) {
             $exe = $stmt->execute();
             $file_id = $db->lastInsertId();
             updateAlias($file_id, $name_f);
+            $file_data = [
+                'file_id' => $file_id,
+                'file_name' => $name_f,
+                'alias' => change_alias($name_f . '_' . $file_id),
+                'file_path' => $file_path,
+                'uploaded_by' => $user_info['userid'],
+                'created_at' => NV_CURRENTTIME,
+                'is_folder' => $type,
+                'lev' => $lev,
+                'compressed' => 0
+            ];
+            updateElasticSearch($client, 'create', $file_data);
             $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
                         VALUES (:file_id, :p_group, :p_other, :updated_at)';
             $stmta = $db->prepare($sql1);
@@ -240,7 +251,8 @@ if (!empty($action)) {
                 $status = 'success';
                 updateLog($lev, $action, $fileId);
                 $mess = $lang_module['delete_ok'];
-
+                $file_data = ['file_id' => $fileId];
+                updateElasticSearch($client, 'delete', $file_data);
             } else {
                 $status = 'error';
                 $mess = $lang_module['delete_false'];
@@ -284,6 +296,8 @@ if (!empty($action)) {
 
         if ($status == 'success' && !empty($deletedFileIds)) {
             updateLog($lev, $action, implode(',', $deletedFileIds));
+            $file_data = ['file_ids' => $deletedFileIds];
+            updateElasticSearch($client, 'deleteAll', $file_data);
         }
     }
 
@@ -320,6 +334,17 @@ if (!empty($action)) {
                 if ($stmtUpdate->execute()) {
                     $status = 'success';
                     $mess = $lang_module['rename_ok'];
+
+                    $file_data = [
+                        'file_id' => $fileId,
+                        'file_name' => $newName,
+                        'alias' => change_alias($newName . '_' . $fileId),
+                        'file_path' => $newFilePath,
+                        'updated_at' => NV_CURRENTTIME,
+                        'is_folder' => $file['is_folder'],
+                        'old_file_path' => $oldFilePath
+                    ];
+                    updateElasticSearch($client, 'rename', $file_data);
 
                     if ($file['is_folder'] == 1) {
                         $sqlUpdateChildren = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET file_path = REPLACE(file_path, :old_path, :new_path) WHERE file_path LIKE :like_old_path';
@@ -418,6 +443,20 @@ if (!empty($action)) {
             if ($stmtInsert->execute()) {
                 $file_id = $db->lastInsertId();
                 updateAlias($file_id, $zipFileName);
+
+                $file_data = [
+                    'file_id' => $file_id,
+                    'file_name' => $zipFileName,
+                    'alias' => change_alias($zipFileName . '_' . $file_id),
+                    'file_path' => $zipFilePath,
+                    'file_size' => $file_size,
+                    'uploaded_by' => $user_info['userid'],
+                    'created_at' => NV_CURRENTTIME,
+                    'lev' => $lev,
+                    'compressed' => $compressed
+                ];
+                updateElasticSearch($client, 'compress', $file_data);
+
                 $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
                              VALUES (:file_id, :p_group, :p_other, :updated_at)';
                 $stmta = $db->prepare($sql1);
@@ -433,7 +472,6 @@ if (!empty($action)) {
             $mess = $compressResult['message'];
         }
     }
-
 
     nv_jsonOutput(['status' => $status, 'message' => $mess]);
 }
@@ -527,8 +565,8 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
         $file_name = $upload_info['basename'];
         $file_size = $upload_info['size'];
 
-        $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev) 
-                VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)';
+        $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev, compressed) 
+            VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, :compressed)';
         $stmt = $db->prepare($sql);
         $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
         $stmt->bindParam(':file_path', $relative_path, PDO::PARAM_STR);
@@ -536,10 +574,23 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
         $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_STR);
         $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
         $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
+        $stmt->bindValue(':compressed', 0, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
             $file_id = $db->lastInsertId();
             updateAlias($file_id, $file_name);
+            $file_data = [
+                'file_id' => $file_id,
+                'file_name' => $file_name,
+                'alias' => change_alias($file_name . '_' . $file_id),
+                'file_path' => $relative_path,
+                'file_size' => $file_size,
+                'uploaded_by' => $user_info['userid'],
+                'created_at' => NV_CURRENTTIME,
+                'lev' => $lev,
+                'compressed' => 0
+            ];
+            updateElasticSearch($client, 'upload', $file_data);
             $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
                 VALUES (:file_id, :p_group, :p_other, :updated_at)';
             $stmta = $db->prepare($sql1);

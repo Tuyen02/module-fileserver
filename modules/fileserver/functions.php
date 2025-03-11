@@ -6,6 +6,26 @@ if (!defined('NV_SYSTEM')) {
 
 define('NV_IS_MOD_FILESERVER', true);
 
+require 'vendor/autoload.php';
+use Elastic\Elasticsearch\ClientBuilder;
+
+$config_elastic = [
+    'elas_host' => 'https://localhost',
+    'elas_port' => '9200',
+    'elas_user' => 'elastic',
+    'elas_pass' => 'vSml*ViLoSh1OGM1KxXk'
+];
+
+try {
+    $client = ClientBuilder::create()
+        ->setHosts([$config_elastic['elas_host'] . ':' . $config_elastic['elas_port']])
+        ->setBasicAuthentication($config_elastic['elas_user'], $config_elastic['elas_pass'])
+        ->setSSLVerification(false)
+        ->build();
+} catch (Exception $e) {
+    die("Lỗi kết nối Elasticsearch: " . $e->getMessage());
+}
+
 if (!empty($array_op)) {
     preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m);
     $lev = $m[2];
@@ -481,6 +501,143 @@ function getFileIconClass($file)
             $extension = pathinfo($file['file_name'], PATHINFO_EXTENSION);
             return isset($file_icons[$extension]) ? $file_icons[$extension] : 'fa-file-o';
         }
+    }
+}
+
+function updateElasticSearch($client, $action, $file_data) {
+    global $db, $module_data;
+
+    try {
+        switch ($action) {
+            case 'create':
+            case 'upload':
+                $params = [
+                    'index' => 'fileserver',
+                    'id' => $file_data['file_id'],
+                    'body' => [
+                        'file_id' => $file_data['file_id'],
+                        'file_name' => $file_data['file_name'],
+                        'alias' => $file_data['alias'],
+                        'file_path' => $file_data['file_path'],
+                        'file_size' => $file_data['file_size'] ?? 0,
+                        'uploaded_by' => $file_data['uploaded_by'],
+                        'created_at' => date('c', $file_data['created_at']),
+                        'updated_at' => date('c', $file_data['updated_at'] ?? $file_data['created_at']),
+                        'is_folder' => $file_data['is_folder'],
+                        'status' => 1,
+                        'lev' => $file_data['lev'],
+                        'view' => 0,
+                        'share' => 0,
+                        'compressed' => $file_data['compressed']
+                    ]
+                ];
+                $client->index($params);
+                break;
+
+            case 'delete':
+                $params = [
+                    'index' => 'fileserver',
+                    'id' => $file_data['file_id']
+                ];
+                $client->delete($params);
+                break;
+
+            case 'deleteAll':
+                foreach ($file_data['file_ids'] as $file_id) {
+                    $params = [
+                        'index' => 'fileserver',
+                        'id' => $file_id
+                    ];
+                    $client->delete($params);
+                }
+                break;
+
+            case 'rename':
+                $params = [
+                    'index' => 'fileserver',
+                    'id' => $file_data['file_id'],
+                    'body' => [
+                        'doc' => [
+                            'file_name' => $file_data['file_name'],
+                            'alias' => $file_data['alias'],
+                            'file_path' => $file_data['file_path'],
+                            'updated_at' => date('c', $file_data['updated_at'])
+                        ]
+                    ]
+                ];
+                $client->update($params);
+                
+                if ($file_data['is_folder']) {
+                    $bulk_params = [
+                        'body' => []
+                    ];
+                    $sql = 'SELECT file_id, file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_path LIKE :old_path';
+                    $stmt = $db->prepare($sql);
+                    $stmt->bindValue(':old_path', $file_data['old_file_path'] . '/%', PDO::PARAM_STR);
+                    $stmt->execute();
+                    $children = $stmt->fetchAll();
+                    
+                    foreach ($children as $child) {
+                        $new_child_path = str_replace($file_data['old_file_path'], $file_data['file_path'], $child['file_path']);
+                        $bulk_params['body'][] = [
+                            'update' => [
+                                '_index' => 'fileserver',
+                                '_id' => $child['file_id']
+                            ]
+                        ];
+                        $bulk_params['body'][] = [
+                            'doc' => [
+                                'file_path' => $new_child_path,
+                                'updated_at' => date('c', NV_CURRENTTIME)
+                            ]
+                        ];
+                    }
+                    if (!empty($bulk_params['body'])) {
+                        $client->bulk($bulk_params);
+                    }
+                }
+                break;
+
+            case 'compress':
+                $params = [
+                    'index' => 'fileserver',
+                    'id' => $file_data['file_id'],
+                    'body' => [
+                        'file_id' => $file_data['file_id'],
+                        'file_name' => $file_data['file_name'],
+                        'alias' => $file_data['alias'],
+                        'file_path' => $file_data['file_path'],
+                        'file_size' => $file_data['file_size'],
+                        'uploaded_by' => $file_data['uploaded_by'],
+                        'created_at' => date('c', $file_data['created_at']),
+                        'updated_at' => date('c', $file_data['updated_at'] ?? $file_data['created_at']),
+                        'is_folder' => 0,
+                        'status' => 1,
+                        'lev' => $file_data['lev'],
+                        'view' => 0,
+                        'share' => 0,
+                        'compressed' => $file_data['compressed']
+                    ]
+                ];
+                $client->index($params);
+                break;
+
+            case 'edit':
+                $params = [
+                    'index' => 'fileserver',
+                    'id' => $file_data['file_id'],
+                    'body' => [
+                        'doc' => [
+                            'file_size' => $file_data['file_size'],
+                            'updated_at' => date('c', $file_data['updated_at'])
+                        ]
+                    ]
+                ];
+                $client->update($params);
+                break;
+        }
+    } catch (Exception $e) {
+        error_log("Error updating Elasticsearch for action $action: " . $e->getMessage());
     }
 }
 

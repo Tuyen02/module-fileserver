@@ -2,8 +2,6 @@
 if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
-
-require NV_ROOTDIR . '/vendor/autoload.php';
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 $page_title = $lang_module['edit'];
@@ -21,10 +19,10 @@ if (empty($row)) {
 $array_mod_title[] = [
     'catid' => 0,
     'title' => $row['file_name'],
-    'link' => nv_url_rewrite(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=edit/' . $row['alias'] . '&page=' . $page)
+    'link' => nv_url_rewrite(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=edit/' . $row['alias'] . '&page=' . $page)
 ];
 
-$view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&amp;lev=' . $row['lev'];
+$view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=main&lev=' . $row['lev'];
 
 $file_name = $row['file_name'];
 $file_path = $row['file_path'];
@@ -35,7 +33,6 @@ $file_content = '';
 if (file_exists($full_path)) {
     if ($file_extension == 'pdf') {
         $file_content = $file_path;
-        ;
     } elseif (in_array($file_extension, ['xlsx', 'xls'])) {
         $spreadsheet = IOFactory::load($full_path);
         $sheet = $spreadsheet->getActiveSheet();
@@ -100,11 +97,20 @@ if (defined('NV_IS_SPADMIN')) {
         $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
         $stmt->bindValue(':file_size', $file_size, PDO::PARAM_INT);
         $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-        $stmt->execute();
+        
+        if ($stmt->execute()) {
+            updateLog($row['lev'], 'edit', $file_id);
+            $status = $lang_module['success'];
+            $message = $lang_module['update_ok'];
 
-        updateLog($row['lev'],'edit',$file_id);
-        $status = $lang_module['success'];
-        $message = $lang_module['update_ok'];
+            // Cập nhật Elasticsearch
+            $file_data = [
+                'file_id' => $file_id,
+                'file_size' => $file_size,
+                'updated_at' => NV_CURRENTTIME
+            ];
+            updateElasticSearch($client, 'edit', $file_data);
+        }
     }
 } else {
     $status = $lang_module['error'];
