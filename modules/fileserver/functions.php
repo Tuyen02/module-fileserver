@@ -16,12 +16,78 @@ $config_elastic = [
     'elas_pass' => 'vSml*ViLoSh1OGM1KxXk'
 ];
 
+$db_host = 'localhost';         // Địa chỉ MySQL
+$db_name = 'nukeviet_demo';     // Tên database
+$db_user = 'root';              // Tên người dùng MySQL
+$db_pass = '';
+
+// Kiểm tra config trước
+if (!isset($config_elastic) || !is_array($config_elastic)) {
+    die("Cấu hình Elasticsearch không hợp lệ");
+}
+
 try {
+    // Khởi tạo Elasticsearch client
     $client = ClientBuilder::create()
         ->setHosts([$config_elastic['elas_host'] . ':' . $config_elastic['elas_port']])
         ->setBasicAuthentication($config_elastic['elas_user'], $config_elastic['elas_pass'])
         ->setSSLVerification(false)
         ->build();
+
+    // Kết nối database
+    $dsn = "mysql:host=$db_host;dbname=$db_name;charset=utf8mb4";
+    $options = [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+    ];
+    
+    $db = new PDO($dsn, $db_user, $db_pass, $options);
+
+    // Thực hiện query
+    $query = $db->query('SELECT * FROM nv4_vi_fileserver_files WHERE status = 1 ORDER BY file_id ASC LIMIT 100');
+    if ($query === false) {
+        throw new Exception("Query thất bại: " . implode(' ', $db->errorInfo()));
+    }
+
+    $rows = $query->fetchAll();
+    
+    if (empty($rows)) {
+        echo "Không có dữ liệu để đẩy lên Elasticsearch.\n";
+        exit;
+    }
+
+    foreach ($rows as $row) {
+        $params = [
+            'index' => 'fileserver',
+            'id' => $row['file_id'],
+            'body' => [
+                'file_id' => $row['file_id'],
+                'file_name' => $row['file_name'],
+                'alias' => $row['alias'],
+                'file_path' => $row['file_path'],
+                'file_size' => $row['file_size'],
+                'uploaded_by' => $row['uploaded_by'],
+                'created_at' => isset($row['created_at']) ? date('c', $row['created_at']) : null,
+                'updated_at' => isset($row['updated_at']) ? date('c', $row['updated_at']) : null,
+                'is_folder' => $row['is_folder'],
+                'status' => $row['status'],
+                'lev' => $row['lev'],
+                'view' => $row['view'],
+                'share' => $row['share'],
+                'compressed' => $row['compressed']
+            ]
+        ];
+
+        try {
+            $response = $client->index($params);
+        } catch (Exception $e) {
+            echo "Lỗi khi thêm dữ liệu cho file_id {$row['file_id']}: " . $e->getMessage() . "\n";
+            continue; // Tiếp tục với bản ghi tiếp theo thay vì die
+        }
+    }
+
+} catch (PDOException $e) {
+    die("Lỗi kết nối Database: " . $e->getMessage());
 } catch (Exception $e) {
     die("Lỗi kết nối Elasticsearch: " . $e->getMessage());
 }
