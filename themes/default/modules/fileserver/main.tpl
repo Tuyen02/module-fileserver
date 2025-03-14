@@ -149,7 +149,8 @@
                 <h3 class="modal-title col-lg-11" id="createModalLabel">{LANG.create_btn}</h3>
             </div>
             <div class="modal-body">
-                <form id="createForm" method="post" action="" onsubmit="submitCreateForm(event);">
+                <form id="createForm" method="post" action="" onsubmit="submitCreateForm(event);" <!-- BEGIN: recaptcha3
+                    -->data-recaptcha3="1"<!-- END: recaptcha3 -->>
                     <div class="form-group">
                         <label for="type">{LANG.type}:</label>
                         <select class="form-control" id="type" name="type">
@@ -161,16 +162,45 @@
                         <label for="name">{LANG.f_name}:</label>
                         <input type="text" class="form-control" id="name_f" name="name_f" required>
                     </div>
-                    <input type="hidden" name="create_action" value="create">
+                    <input type="hidden" name="action" value="create">
+                    <!-- BEGIN: captcha -->
+                    <div class="form-group">
+                        <div class="middle text-right clearfix">
+                            <img width="{GFX_WIDTH}" height="{GFX_HEIGHT}" title="{LANG.captcha}" alt="{LANG.captcha}"
+                                src="{NV_BASE_SITEURL}index.php?scaptcha=captcha&t={NV_CURRENTTIME}"
+                                class="captchaImg display-inline-block">
+                            <em onclick="change_captcha('.fcode');" title="{GLANG.captcharefresh}"
+                                class="fa fa-pointer fa-refresh margin-left margin-right"></em>
+                            <input type="text" placeholder="{LANG.captcha}" maxlength="{NV_GFX_NUM}" value=""
+                                name="fcode" class="fcode required form-control display-inline-block"
+                                style="width:100px;" data-pattern="/^(.){{NV_GFX_NUM},{NV_GFX_NUM}}$/"
+                                onkeypress="nv_validErrorHidden(this);" data-mess="{LANG.error_captcha}" />
+                        </div>
+                    </div>
+                    <!-- END: captcha -->
+                    <!-- BEGIN: recaptcha2 -->
+                    <div class="form-group">
+                        <div class="middle text-center clearfix">
+                            <div class="g-recaptcha" data-sitekey="{GLOBAL_CONFIG.recaptcha_sitekey}"></div>
+                        </div>
+                    </div>
+                    <!-- END: recaptcha2 -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">{LANG.close_btn}</button>
+                        <button type="submit" class="btn btn-primary">{LANG.create_btn}</button>
+                    </div>
                 </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">{LANG.close_btn}</button>
-                <button type="button" class="btn btn-primary" onclick="submitCreateForm();">{LANG.create_btn}</button>
             </div>
         </div>
     </div>
 </div>
+<!-- BEGIN: recaptcha2 -->
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+<!-- END: recaptcha2 -->
+<!-- BEGIN: recaptcha3 -->
+<script src="https://www.google.com/recaptcha/api.js?render={GLOBAL_CONFIG.recaptcha_sitekey}" async defer></script>
+<!-- END: recaptcha3 -->
+
 
 <div class="modal fade" id="renameModal" tabindex="-1" role="dialog" aria-labelledby="renameModalLabel"
     aria-hidden="true">
@@ -198,43 +228,71 @@
 </div>
 
 <script>
-    function submitCreateForm() {
+    function submitCreateForm(event) {
+        event.preventDefault();
+
         var name_f = $("#name_f").val();
         var type = $("#type").val();
         var extension = name_f.split('.').pop().toLowerCase();
+        var fcode = $("#createForm input[name='fcode']").val() || '';
+        var recaptchaResponse = '';
 
         if (type == '0' && (extension == '')) {
             alert('Tên file không hợp lệ. Vui lòng nhập tên file có đuôi hợp lệ.');
             return;
         }
-
         if (name_f.trim() == '') {
             alert('Tên file không được để trống.');
             return;
         }
 
-        var data = {
-            'action': 'create',
-            'name_f': name_f,
-            'type': type,
-        };
+        function sendRequest(token) {
+            var data = {
+                'action': 'create',
+                'name_f': name_f,
+                'type': type,
+                'fcode': fcode,
+                'g-recaptcha-response': token
+            };
 
-        $.ajax({
-            type: 'POST',
-            url: "",
-            data: data,
-            success: function (res) {
-                if (res.status == 'error') {
-                    alert(res.message);
-                } else {
-                    location.reload();
-                    alert(res.message);
+            $.ajax({
+                type: 'POST',
+                url: "",
+                data: data,
+                success: function (res) {
+                    if (res.status == 'error') {
+                        alert(res.message);
+                    } else {
+                        alert(res.message);
+                        location.reload();
+                    }
+                },
+                error: function () {
+                    alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
                 }
-            },
-            error: function () {
-                alert(res.message);
-            },
-        });
+            });
+        }
+
+        if (typeof grecaptcha !== 'undefined') {
+            if ($("#createForm").data('recaptcha3')) {
+                grecaptcha.ready(function () {
+                    grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', { action: 'create' }).then(function (token) {
+                        sendRequest(token);
+                    });
+                });
+            } else if ($(".g-recaptcha").length) {
+                recaptchaResponse = grecaptcha.getResponse();
+                if (!recaptchaResponse) {
+                    alert('Vui lòng xác minh reCaptcha.');
+                    return;
+                }
+                sendRequest(recaptchaResponse);
+            } else {
+                sendRequest('');
+            }
+        } else {
+            sendRequest('');
+        }
     }
 
     $(document).on('click', '.delete', function () {

@@ -121,6 +121,7 @@ if ($lev > 0) {
 
 $action = $nv_Request->get_title('action', 'post', '');
 $fileIds = $nv_Request->get_array('files', 'post', []);
+$reCaptchaPass = (!empty($global_config['recaptcha_sitekey']) and !empty($global_config['recaptcha_secretkey']) and ($global_config['recaptcha_ver'] == 2 or $global_config['recaptcha_ver'] == 3));
 
 if (!empty($action)) {
 
@@ -138,6 +139,20 @@ if (!empty($action)) {
         if ($name_f == '') {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty']]);
         }
+
+        $fcaptcha = '';
+        if ($module_config[$module_name]['captcha_type'] == 'recaptcha' && $reCaptchaPass) {
+            $fcaptcha = $nv_Request->get_title('g-recaptcha-response', 'post', '');
+            if (empty($fcaptcha) || !nv_capcha_txt($fcaptcha, 'recaptcha')) {
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_global['securitycodeincorrect1']]);
+            }
+        } elseif ($module_config[$module_name]['captcha_type'] == 'captcha') {
+            $fcaptcha = $nv_Request->get_title('fcode', 'post', '');
+            if (empty($fcaptcha) || !nv_capcha_txt($fcaptcha, 'captcha')) {
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_global['securitycodeincorrect']]);
+            }
+        }
+
 
         $allowed_extensions = [
             'doc', 'txt', 'docx', 'pdf', 'xlsx', 'xls', 'jpg', 'png', 'gif', 'jpeg',
