@@ -153,7 +153,6 @@ if (!empty($action)) {
             }
         }
 
-
         $allowed_extensions = [
             'doc', 'txt', 'docx', 'pdf', 'xlsx', 'xls', 'jpg', 'png', 'gif', 'jpeg',
             'zip', 'rar', 'html', 'css', 'js', 'php', 'sql', 'mp3', 'mp4', 'ppt', 'pptx'
@@ -650,7 +649,7 @@ if (!empty($result)) {
     $permissions = [];
 }
 $nv_BotManager->setFollow()->setNoIndex();
-$contents = nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs);
+$contents = nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs,$reCaptchaPass);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

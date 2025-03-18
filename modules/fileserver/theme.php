@@ -13,9 +13,9 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
-function nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs)
+function nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs, $reCaptchaPass)
 {
-    global $module_file, $global_config, $lang_module, $module_name;
+    global $module_file, $global_config, $lang_module, $module_name, $module_config, $lang_global;
 
     $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
@@ -110,6 +110,23 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
     if (($_SERVER['REQUEST_URI'] != '/' . $module_name . '/') && ($_SERVER['REQUEST_URI'] != '/' . NV_LANG_DATA . '/' . $module_name . '/')) {
         $xtpl->assign('BACK', '');
         $xtpl->parse('main.back');
+    }
+
+    if ($module_config[$module_name]['captcha_type'] == 'recaptcha' and $reCaptchaPass and $global_config['recaptcha_ver'] == 3) {
+        $xtpl->parse('main.recaptcha3');
+    }
+    // Nếu dùng reCaptcha v2
+    elseif ($module_config[$module_name]['captcha_type'] == 'recaptcha' and $reCaptchaPass and $global_config['recaptcha_ver'] == 2) {
+        $xtpl->assign('RECAPTCHA_ELEMENT', 'recaptcha' . nv_genpass(8));
+        $xtpl->assign('N_CAPTCHA', $lang_global['securitycode1']);
+        $xtpl->parse('main.recaptcha');
+    } elseif ($module_config[$module_name]['captcha_type'] == 'captcha') {
+        $xtpl->assign('GFX_WIDTH', NV_GFX_WIDTH);
+        $xtpl->assign('GFX_HEIGHT', NV_GFX_HEIGHT);
+        $xtpl->assign('NV_BASE_SITEURL', NV_BASE_SITEURL);
+        $xtpl->assign('CAPTCHA_REFRESH', $lang_global['captcharefresh']);
+        $xtpl->assign('NV_GFX_NUM', NV_GFX_NUM);
+        $xtpl->parse('main.captcha');
     }
 
     $xtpl->parse('main');
