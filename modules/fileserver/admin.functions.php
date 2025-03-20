@@ -486,6 +486,195 @@ function displayTree($tree)
 }
 
 
+function restoreChildItems($parentId, $parentNewPath)
+{
+    global $db, $module_data;
+
+    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE lev = :lev';
+    $stmt = $db->prepare($sql);
+    $stmt->bindParam(':lev', $parentId, PDO::PARAM_INT);
+    $stmt->execute();
+    $children = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($children as $child) {
+        $oldChildPath = NV_ROOTDIR . $child['file_path'];
+        $relativePath = str_replace('/data/tmp/trash/', '', $child['file_path']);
+        $newChildPathBase = $parentNewPath . '/' . basename($relativePath);
+        $newChildPath = NV_ROOTDIR . $newChildPathBase;
+
+        if (file_exists($newChildPath)) {
+            $newChildPathBase = str_replace(NV_ROOTDIR, '', $newChildPath);
+        }
+
+        $childParentDir = dirname($newChildPath);
+        if (!file_exists($childParentDir)) {
+            mkdir($childParentDir, 0777, true);
+        }
+
+        if (file_exists($oldChildPath)) {
+            if (!rename($oldChildPath, $newChildPath)) {
+                continue;
+            }
+        }
+
+        $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                      (file_id, file_name, alias, file_path, file_size, uploaded_by, created_at, updated_at, is_folder, status, lev, view, share, compressed) 
+                      VALUES (:file_id, :file_name, :alias, :file_path, :file_size, :uploaded_by, :created_at, :updated_at, :is_folder, 1, :lev, :view, :share, :compressed)';
+        $stmtInsert = $db->prepare($sqlInsert);
+        $stmtInsert->execute([
+            ':file_id' => $child['file_id'],
+            ':file_name' => $child['file_name'],
+            ':alias' => $child['alias'],
+            ':file_path' => $newChildPathBase,
+            ':file_size' => $child['file_size'],
+            ':uploaded_by' => $child['uploaded_by'],
+            ':created_at' => NV_CURRENTTIME,
+            ':updated_at' => 0,
+            ':is_folder' => $child['is_folder'],
+            ':lev' => $child['lev'],
+            ':view' => $child['view'],
+            ':share' => $child['share'],
+            ':compressed' => $child['compressed']
+        ]);
+
+        $sqlDelete = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = :file_id';
+        $stmtDelete = $db->prepare($sqlDelete);
+        $stmtDelete->bindValue(':file_id', $child['file_id'], PDO::PARAM_INT);
+        $stmtDelete->execute();
+
+        if ($child['is_folder'] == 1) {
+            restoreChildItems($child['file_id'], $newChildPathBase);
+        }
+    }
+}
+
+function deletePermanently($fileId)
+{
+    global $db, $module_data;
+
+    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = :file_id';
+    $stmt = $db->prepare($sql);
+    $stmt->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+    $stmt->execute();
+    $row = $stmt->fetch();
+
+    if (empty($row)) {
+        return false;
+    }
+
+    $fullPath = NV_ROOTDIR . $row['file_path'];
+    if ($row['is_folder'] == 1 && is_dir($fullPath)) {
+        nv_deletefile($fullPath, true);
+    } elseif (file_exists($fullPath)) {
+        unlink($fullPath);
+    }
+
+    $sqlDelete = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = :file_id';
+    $stmtDelete = $db->prepare($sqlDelete);
+    $stmtDelete->bindValue(':file_id', $fileId, PDO::PARAM_INT);
+    $stmtDelete->execute();
+
+    return true;
+}
+
+function restoreFileOrFolder($fileId)
+{
+    global $db, $module_data;
+
+    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = :file_id';
+    $stmt = $db->prepare($sql);
+    $stmt->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+    $stmt->execute();
+    $row = $stmt->fetch();
+
+    if (empty($row)) {
+        return false;
+    }
+
+    $oldPath = NV_ROOTDIR . $row['file_path'];
+    $newPathBase = str_replace('/data/tmp/trash/', '/uploads/fileserver/', $row['file_path']);
+    $newPath = NV_ROOTDIR . $newPathBase;
+
+    if (file_exists($newPath)) {
+        $newPathBase = str_replace(NV_ROOTDIR, '', $newPath);
+    }
+
+    $parentDir = dirname($newPath);
+    if (!file_exists($parentDir)) {
+        mkdir($parentDir, 0777, true);
+    }
+
+    if (file_exists($oldPath)) {
+        if (!rename($oldPath, $newPath)) {
+            return false;
+        }
+    }
+
+    $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                  (file_id, file_name, alias, file_path, file_size, uploaded_by, created_at, updated_at, is_folder, status, lev, view, share, compressed) 
+                  VALUES (:file_id, :file_name, :alias, :file_path, :file_size, :uploaded_by, :created_at, :updated_at, :is_folder, 1, :lev, :view, :share, :compressed)';
+    $stmtInsert = $db->prepare($sqlInsert);
+    $stmtInsert->execute([
+        ':file_id' => $row['file_id'],
+        ':file_name' => $row['file_name'],
+        ':alias' => $row['alias'],
+        ':file_path' => $newPathBase,
+        ':file_size' => $row['file_size'],
+        ':uploaded_by' => $row['uploaded_by'],
+        ':created_at' => NV_CURRENTTIME,
+        ':updated_at' => 0,
+        ':is_folder' => $row['is_folder'],
+        ':lev' => $row['lev'],
+        ':view' => $row['view'],
+        ':share' => $row['share'],
+        ':compressed' => $row['compressed']
+    ]);
+
+    $sqlDelete = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = :file_id';
+    $stmtDelete = $db->prepare($sqlDelete);
+    $stmtDelete->bindValue(':file_id', $fileId, PDO::PARAM_INT);
+    $stmtDelete->execute();
+
+    if ($row['is_folder'] == 1) {
+        restoreChildItems($fileId, $newPathBase);
+    }
+
+    return true;
+}
+
+function purgeOldTrashItems()
+{
+    global $db, $module_data;
+
+    $threshold = NV_CURRENTTIME - (30 * 24 * 60 * 60);
+    $sql = 'SELECT file_id, file_path, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE deleted_at < :threshold';
+    $stmt = $db->prepare($sql);
+    $stmt->bindValue(':threshold', $threshold, PDO::PARAM_INT);
+    $stmt->execute();
+    $oldItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $deletedFileIds = [];
+    foreach ($oldItems as $item) {
+        $fullPath = NV_ROOTDIR . $item['file_path'];
+        if ($item['is_folder'] == 1 && is_dir($fullPath)) {
+            nv_deletefile($fullPath, true);
+        } elseif (file_exists($fullPath)) {
+            unlink($fullPath);
+        }
+
+        $sqlDelete = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = :file_id';
+        $stmtDelete = $db->prepare($sqlDelete);
+        $stmtDelete->bindValue(':file_id', $item['file_id'], PDO::PARAM_INT);
+        $stmtDelete->execute();
+
+        $deletedFileIds[] = $item['file_id'];
+    }
+
+    if (!empty($deletedFileIds)) {
+        updateLog(0, 'auto_purge', implode(',', $deletedFileIds));
+    }
+}
+
 
 // function pr($a)
 // {

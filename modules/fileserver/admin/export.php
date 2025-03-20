@@ -13,24 +13,16 @@ $stmt->execute();
 $result = $stmt->fetchAll();
 
 if ($nv_Request->isset_request('submit', 'post')) {
-    /*
-     * L&#432;u d&#7919; li&#7879;u vào file excel
-     */
-    // B&#7887; time limit
+
     set_time_limit(0);
-    // ki&#7875;m tra Library
     if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpspreadsheet')) {
         trigger_error('No phpspreadsheet lib. Run command &quot;composer require phpoffice/phpspreadsheet&quot; to install phpspreadsheet', 256);
     }
 
-    // &#272;&#7863;t tên file, &#273;&#432;&#7901;ng d&#7851;n
-    // Lo&#7841;i file l&#432;u
     $excel_ext = 'xlsx';
-    // &#273;&#7863;t tên file excel
     $file_folder = 'export-file';
     $file_folder_path = NV_ROOTDIR . '/' . NV_TEMP_DIR . '/' . $file_folder;
 
-    // x&#7917; lý xóa d&#7919; li&#7879;u c&#361; tr&#432;&#7899;c khi t&#7841;o m&#7899;i
     if (file_exists($file_folder_path)) {
         $check = nv_deletefile($file_folder_path, true);
         if ($check[0] != 1) {
@@ -38,7 +30,6 @@ if ($nv_Request->isset_request('submit', 'post')) {
         }
     }
 
-    //t&#7841;o th&#432; m&#7909;c
     if (empty($error)) {
         $check = nv_mkdir(NV_ROOTDIR . '/' . NV_TEMP_DIR, $file_folder);
         if ($check[0] != 1) {
@@ -46,35 +37,29 @@ if ($nv_Request->isset_request('submit', 'post')) {
         }
     }
 
-    $page_title = 'Xu&#7845;t excel';
+    $page_title = 'Xuáº¥t excel';
     $module_name = 'fileserver';
 
-    // Ghi d&#7919; li&#7879;u vào file
     if (empty($error)) {
         if ($sys_info['ini_set_support']) {
             set_time_limit(0);
             ini_set('memory_limit', '1028M');
         }
 
-        // l&#7845;y d&#7919; li&#7879;u
-
-        // T&#7841;o dòng tiêu &#273;&#7873;
         $arr_header_row = [
             'STT',
-            'Tên File',
-            '&#272;&#432;&#7901;ng d&#7851;n',
-            'Kích th&#432;&#7899;c',
-            'Ng&#432;&#7901;i t&#7843;i lên',
-            'Ngày t&#7843;i lên',
-            'Là th&#432; m&#7909;c',
-            'Tr&#7841;ng thái',
+            'TÃªn File',
+            'ÄÆ°á»ng dáº«n',
+            'KÃ­ch thÆ°á»›c',
+            'NgÆ°á»i táº£i lÃªn',
+            'NgÃ y táº£i lÃªn',
+            'LÃ  thÆ° má»¥c',
+            'Tráº¡ng thÃ¡i',
         ];
-        // b&#7855;t &#273;&#7847;u in t&#7915; ô
         $title_char_from = 'A';
         $title_number_from = 4;
 
 
-        // style tiêu &#273;&#7873;
         $styleTitleArray = [
             'font' => [
                 'bold' => true,
@@ -93,13 +78,11 @@ if ($nv_Request->isset_request('submit', 'post')) {
                 ]
             ]
         ];
-        // l&#7845;y ô cu&#7889;i cùng
         $title_char_to = get_cell_code_to($title_char_from, $arr_header_row);
         $title_number_to = $title_number_from;
         if (empty($title_char_to)) {
             $title_char_to = 'A';
         }
-        // style table
         $styleTableArray = [
             'borders' => [
                 'outline' => [
@@ -120,7 +103,6 @@ if ($nv_Request->isset_request('submit', 'post')) {
             ]
         ];
 
-        // g&#7885;i th&#432; vi&#7879;n zip file
         $tmp_file = $file_folder_path . '/report_' . date('d/m/Y H:i:s', NV_CURRENTTIME) . '.zip';
         $zip = new PclZip($tmp_file);
 
@@ -128,11 +110,8 @@ if ($nv_Request->isset_request('submit', 'post')) {
         if (!file_exists($templatePath)) {
             die('Template file does not exist.');
         }
+        $objPHPExcel = IOFactory::load($templatePath);
 
-        // T&#7841;o &#273;&#7889;i t&#432;&#7907;ng objPHPExcel load template
-        $objPHPExcel = IOFactory::load($templatePath); //load template m&#7851;u
-
-        // Setting a spreadsheet’s metadata
         $objPHPExcel->getProperties()->setCreator('NukeViet CMS');
         $objPHPExcel->getProperties()->setLastModifiedBy('NukeViet CMS');
         $objPHPExcel->getProperties()->setTitle($page_title . time());
@@ -142,10 +121,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $objPHPExcel->getProperties()->setCategory($module_name);
 
         $objWorksheet = $objPHPExcel->getActiveSheet();
-
-        // Rename sheet
         $objWorksheet->setTitle('Main');
-        // Set page orientation and size
         $objWorksheet->getPageSetup()
             ->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE);
         $objWorksheet->getPageSetup()
@@ -154,41 +130,35 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $objWorksheet->getPageSetup()
             ->setRowsToRepeatAtTopByStartAndEnd(1, 3);
 
-        //x&#7917; lý tiêu &#273;&#7873; cho file excel
         $style_title = [
             'font' => [
                 'bold' => true,
                 'size' => 14
             ]
         ];
-        $objWorksheet->setCellValue('A1', 'Danh sách file t&#7843;i lên')
+        $objWorksheet->setCellValue('A1', 'Danh sÃ¡ch file táº£i lÃªn')
             ->getStyle('A1')
             ->applyFromArray($style_title);
-        // in tiêu &#273;&#7873;
         $objWorksheet->fromArray(
-            $arr_header_row, // The data to set
-            null, // Array values with this value will not be set
-            $title_char_from . $title_number_from // Top left coordinate of the worksheet range where
-            // we want to set these values (default is A1)
+            $arr_header_row,
+            null,
+            $title_char_from . $title_number_from
         );
         $objWorksheet->getStyle($title_char_from . $title_number_from . ':' . $title_char_to . $title_number_to)
             ->applyFromArray($styleTitleArray);
 
 
-        $i = 4; // b&#7855;t &#273;&#7847;u t&#7915; dòng s&#7889; 4
+        $i = 4;
         $stt = 0;
         $row_id = 0;
-        // in t&#7915;ng dòng d&#7919; li&#7879;u vào file excel
         $data_sbj = $db->query($sql);
 
         while ($_data2 = $data_sbj->fetch()) {
             $i++;
             $stt++;
             $row_id++;
-            // b&#7855;t &#273;&#7847;u in t&#7915; ô
             $table_char_from = $title_char_from;
 
-            // các d&#7919; li&#7879;u row k&#7871;t qu&#7843;
             $objWorksheet->setCellValue($table_char_from++ . $i, $stt);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_name']);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_path']);
@@ -205,11 +175,10 @@ if ($nv_Request->isset_request('submit', 'post')) {
             $username = $user['last_name'] . ' ' . $user['first_name'] . ' (' . $user['username'] . ')';
             $objWorksheet->setCellValue($table_char_from++ . $i, $username);
             $objWorksheet->setCellValue($table_char_from++ . $i, date('d/m/Y H:i:s', $_data2['created_at']));
-            $type = ($_data2['is_folder'] == 1) ? 'Th&#432; m&#7909;c' : 'T&#7879;p tin';
-            $objWorksheet->setCellValue($table_char_from++ . $i, $type);
-            $status = ($_data2['status'] == 1) ? 'Ho&#7841;t &#273;&#7897;ng' : 'Không ho&#7841;t &#273;&#7897;ng';
-            $objWorksheet->setCellValue($table_char_from++ . $i, $status);
-
+            $type = ($folderFile['is_folder'] == 1) ? 'ThÆ° má»¥c' : 'Tá»‡p tin';
+            $folderSheet->setCellValue($table_char_from++ . $j, $type);
+            $status = ($folderFile['status'] == 1) ? 'Hoáº¡t Ä‘á»™ng' : 'KhÃ´ng hoáº¡t Ä‘á»™ng';
+            $folderSheet->setCellValue($table_char_from++ . $j, $status);
             $objWorksheet->getRowDimension($i)->setRowHeight(20);
             if ($_data2['is_folder'] == 1) {
                 $folderSheet = $objPHPExcel->createSheet();
@@ -222,9 +191,8 @@ if ($nv_Request->isset_request('submit', 'post')) {
                 $folderSheet->getStyle($title_char_from . $title_number_from . ':' . $title_char_to . $title_number_to)
                     ->applyFromArray($styleTitleArray);
 
-                // Ghi d&#7919; li&#7879;u c&#7911;a th&#432; m&#7909;c vào sheet m&#7899;i
                 $folderFiles = $db->query('SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . $_data2['file_id'])->fetchAll();
-                $j = 4; // b&#7855;t &#273;&#7847;u t&#7915; dòng s&#7889; 4
+                $j = 4;
                 $folder_stt = 0;
                 foreach ($folderFiles as $folderFile) {
                     $j++;
@@ -250,15 +218,14 @@ if ($nv_Request->isset_request('submit', 'post')) {
                     $folderSheet->setCellValue($table_char_from++ . $j, date('d/m/Y H:i:s', $folderFile['created_at']));
                     $type = ($folderFile['is_folder'] == 1) ? 'Th&#432; m&#7909;c' : 'T&#7879;p tin';
                     $folderSheet->setCellValue($table_char_from++ . $j, $type);
-                    $status = ($folderFile['status'] == 1) ? 'Ho&#7841;t &#273;&#7897;ng' : 'Không ho&#7841;t &#273;&#7897;ng';
+                    $status = ($folderFile['status'] == 1) ? 'Ho&#7841;t &#273;&#7897;ng' : 'Khï¿½ng ho&#7841;t &#273;&#7897;ng';
                     $folderSheet->setCellValue($table_char_from++ . $j, $status);
 
                     $folderSheet->getRowDimension($j)->setRowHeight(20);
                 }
-                // style table cho sheet m&#7899;i
+
                 $folderSheet->getStyle('A4:H' . $j)
                     ->applyFromArray($styleTableArray);
-                // auto size cho sheet m&#7899;i
                 $folderSheet->getColumnDimension('A')->setWidth(5);
                 $folderSheet->getColumnDimension('B')->setWidth(50);
                 $folderSheet->getColumnDimension('C')->setWidth(50);
@@ -269,10 +236,8 @@ if ($nv_Request->isset_request('submit', 'post')) {
                 $folderSheet->getColumnDimension('H')->setWidth(15);
             }
         }
-        // style table
         $objWorksheet->getStyle('A4:H' . $i)
             ->applyFromArray($styleTableArray);
-        // auto size
         $objWorksheet->getColumnDimension('A')->setWidth(5);
         $objWorksheet->getColumnDimension('B')->setWidth(50);
         $objWorksheet->getColumnDimension('C')->setWidth(50);
@@ -282,7 +247,6 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $objWorksheet->getColumnDimension('G')->setWidth(15);
         $objWorksheet->getColumnDimension('H')->setWidth(15);
 
-        // l&#432;u file
         $file_path = $file_folder_path . '/ssssss' . $key . '.' . $excel_ext;
 
         $objWriter = IOFactory::createWriter($objPHPExcel, ucfirst($excel_ext));
@@ -313,7 +277,7 @@ if ($download == 1) {
         $zip = '';
 
         if ($is_folder == 1) {
-            $zipFileName = $file_name . '.zip';  
+            $zipFileName = $file_name . '.zip';
             $zipFilePath = '/data/tmp/' . $zipFileName;
             $zipFullPath = NV_ROOTDIR . $zipFilePath;
 
