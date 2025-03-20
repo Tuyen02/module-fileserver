@@ -675,7 +675,6 @@ function purgeOldTrashItems()
     }
 }
 
-
 // function pr($a)
 // {
 //     exit('<pre><code>' . htmlspecialchars(print_r($a, true)) . '</code></pre>');

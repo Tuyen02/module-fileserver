@@ -216,9 +216,9 @@ if ($nv_Request->isset_request('submit', 'post')) {
 
                     $folderSheet->setCellValue($table_char_from++ . $j, $username);
                     $folderSheet->setCellValue($table_char_from++ . $j, date('d/m/Y H:i:s', $folderFile['created_at']));
-                    $type = ($folderFile['is_folder'] == 1) ? 'Th&#432; m&#7909;c' : 'T&#7879;p tin';
+                    $type = ($folderFile['is_folder'] == 1) ? 'Thư mục' : 'Tệp tin';
                     $folderSheet->setCellValue($table_char_from++ . $j, $type);
-                    $status = ($folderFile['status'] == 1) ? 'Ho&#7841;t &#273;&#7897;ng' : 'Kh�ng ho&#7841;t &#273;&#7897;ng';
+                    $status = ($folderFile['status'] == 1) ? 'Hoạt động' : 'Không hoạt động';
                     $folderSheet->setCellValue($table_char_from++ . $j, $status);
 
                     $folderSheet->getRowDimension($j)->setRowHeight(20);
