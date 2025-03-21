@@ -17,4 +17,5 @@ if (defined('NV_IS_SPADMIN')) {
     $submenu['export'] = $lang_module['export'];
     $submenu['import'] = $lang_module['import'];
     $submenu['recycle_bin'] = $lang_module['recycle_bin'];
+    $submenu['config'] = $lang_module['config'];
 }

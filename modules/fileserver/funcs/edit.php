@@ -6,6 +6,14 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 $page_title = $lang_module['edit'];
 
+try {
+    $query = $db->query("SELECT config_value FROM " . NV_CONFIG_GLOBALTABLE . " WHERE module = 'fileserver' AND config_name = 'use_elastic' AND lang = '" . NV_LANG_DATA . "'");
+    $use_elastic = $query->fetchColumn() == 1;
+} catch (Exception $e) {
+    trigger_error("Lỗi khi lấy cấu hình use_elastic: " . $e->getMessage());
+    $use_elastic = false;
+}
+
 $page = $nv_Request->get_int('page', 'get', 1);
 
 $sql = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $file_id;
@@ -103,13 +111,14 @@ if (defined('NV_IS_SPADMIN')) {
             $status = $lang_module['success'];
             $message = $lang_module['update_ok'];
 
-            // Cập nhật Elasticsearch
             $file_data = [
                 'file_id' => $file_id,
                 'file_size' => $file_size,
                 'updated_at' => NV_CURRENTTIME
             ];
-            updateElasticSearch($client, 'edit', $file_data);
+            if ($use_elastic) {
+                updateElasticSearch($client, 'edit', $file_data);
+            }
         }
     }
 } else {

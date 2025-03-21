@@ -1,4 +1,5 @@
 <?php
+
 if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
@@ -6,6 +7,9 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 if (!defined('NV_IS_USER')) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
 }
+
+require 'vendor/autoload.php';
+use Elastic\Elasticsearch\ClientBuilder;
 
 $page_title = $module_info['site_title'];
 $key_words = $module_info['keywords'];
@@ -45,72 +49,171 @@ foreach ($breadcrumbs as $breadcrumb) {
 
 $file_ids = array_keys($arr_per);
 
-$searchParams = [
-    'index' => 'fileserver',
-    'body' => [
-        'from' => ($page - 1) * $perpage,
-        'size' => $perpage,
-        'query' => [
-            'bool' => [
-                'filter' => [
-                    ['term' => ['status' => 1]],
-                    ['term' => ['lev' => $lev]]
+try {
+    $query = $db->query("SELECT config_value FROM " . NV_CONFIG_GLOBALTABLE . " WHERE module = 'fileserver' AND config_name = 'use_elastic' AND lang = '" . NV_LANG_DATA . "'");
+    $use_elastic = $query->fetchColumn() == 1;
+} catch (Exception $e) {
+    trigger_error("Lỗi khi lấy cấu hình use_elastic: " . $e->getMessage());
+    $use_elastic = false;
+}
+
+if ($use_elastic) {
+    try {
+        $query = $db->query("SELECT config_name, config_value FROM " . NV_CONFIG_GLOBALTABLE . " WHERE module = 'fileserver' AND lang = '" . NV_LANG_DATA . "'");
+        while ($row = $query->fetch()) {
+            $config_elastic[$row['config_name']] = $row['config_value'];
+        }
+    } catch (Exception $e) {
+        trigger_error("Lỗi khi lấy cấu hình từ database: " . $e->getMessage());
+    }
+
+    if (!isset($config_elastic) || !is_array($config_elastic)) {
+        die("Cấu hình Elasticsearch không hợp lệ");
+    }
+
+    try {
+        $client = ClientBuilder::create()
+            ->setHosts([$config_elastic['elas_host'] . ':' . $config_elastic['elas_port']])
+            ->setBasicAuthentication($config_elastic['elas_user'], $config_elastic['elas_pass'])
+            ->setSSLVerification(false)
+            ->build();
+
+        $searchParams = [
+            'index' => 'fileserver',
+            'body' => [
+                'from' => ($page - 1) * $perpage,
+                'size' => $perpage,
+                'query' => [
+                    'bool' => [
+                        'filter' => [
+                            ['term' => ['status' => 1]],
+                            ['term' => ['lev' => $lev]]
+                        ]
+                    ]
+                ],
+                'sort' => [
+                    'file_id' => ['order' => 'asc']
                 ]
             ]
-        ],
-        'sort' => [
-            'file_id' => ['order' => 'asc']
-        ]
-    ]
-];
-
-if (!defined('NV_IS_SPADMIN') && !empty($arr_per)) {
-    $searchParams['body']['query']['bool']['filter'][] = [
-        'terms' => ['file_id' => $file_ids]
-    ];
-}
-
-if (!empty($search_term)) {
-    $searchParams['body']['query']['bool']['filter'][] = [
-        'wildcard' => ['file_name' => '*' . $search_term . '*']
-    ];
-}
-
-if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
-    $is_folder = ($search_type === 'file') ? 0 : 1;
-    $searchParams['body']['query']['bool']['filter'][] = [
-        'term' => ['is_folder' => $is_folder]
-    ];
-}
-
-try {
-    $response = $client->search($searchParams);
-    
-    $total = $response['hits']['total']['value'];
-    
-    $result = [];
-    foreach ($response['hits']['hits'] as $hit) {
-        $source = $hit['_source'];
-        $result[] = [
-            'file_id' => $source['file_id'],
-            'file_name' => $source['file_name'],
-            'alias' => $source['alias'],
-            'file_path' => $source['file_path'],
-            'file_size' => $source['file_size'],
-            'uploaded_by' => $source['uploaded_by'],
-            'created_at' => strtotime($source['created_at']),
-            'updated_at' => strtotime($source['updated_at']),
-            'is_folder' => $source['is_folder'],
-            'status' => $source['status'],
-            'lev' => $source['lev'],
-            'view' => $source['view'],
-            'share' => $source['share'],
-            'compressed' => $source['compressed']
         ];
+
+        if (!defined('NV_IS_SPADMIN') && !empty($arr_per)) {
+            $searchParams['body']['query']['bool']['filter'][] = [
+                'terms' => ['file_id' => $file_ids]
+            ];
+        }
+
+        if (!empty($search_term)) {
+            $searchParams['body']['query']['bool']['filter'][] = [
+                'wildcard' => ['file_name' => '*' . $search_term . '*']
+            ];
+        }
+
+        if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
+            $is_folder = ($search_type === 'file') ? 0 : 1;
+            $searchParams['body']['query']['bool']['filter'][] = [
+                'term' => ['is_folder' => $is_folder]
+            ];
+        }
+
+        $response = $client->search($searchParams);
+        $total = $response['hits']['total']['value'];
+
+        $result = [];
+        foreach ($response['hits']['hits'] as $hit) {
+            $source = $hit['_source'];
+            $result[] = [
+                'file_id' => $source['file_id'],
+                'file_name' => $source['file_name'],
+                'alias' => $source['alias'],
+                'file_path' => $source['file_path'],
+                'file_size' => $source['file_size'],
+                'uploaded_by' => $source['uploaded_by'],
+                'created_at' => strtotime($source['created_at']),
+                'updated_at' => strtotime($source['updated_at']),
+                'is_folder' => $source['is_folder'],
+                'status' => $source['status'],
+                'lev' => $source['lev'],
+                'view' => $source['view'],
+                'share' => $source['share'],
+                'compressed' => $source['compressed']
+            ];
+        }
+
+    } catch (Exception $e) {
+        die("Lỗi tìm kiếm Elasticsearch: " . $e->getMessage());
     }
-    
-} catch (Exception $e) {
-    die("Lỗi tìm kiếm Elasticsearch: " . $e->getMessage());
+} else {
+    try {
+        $sql = 'SELECT * FROM nv4_vi_fileserver_files WHERE status = 1 AND lev = :lev';
+        $params = [':lev' => $lev];
+
+        if (!defined('NV_IS_SPADMIN') && !empty($arr_per)) {
+            $sql .= ' AND file_id IN (' . implode(',', array_fill(0, count($file_ids), '?')) . ')';
+            $params = array_merge($params, $file_ids);
+        }
+
+        if (!empty($search_term)) {
+            $sql .= ' AND file_name LIKE :search_term';
+            $params[':search_term'] = '%' . $search_term . '%';
+        }
+
+        if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
+            $is_folder = ($search_type === 'file') ? 0 : 1;
+            $sql .= ' AND is_folder = :is_folder';
+            $params[':is_folder'] = $is_folder;
+        }
+
+        $sql .= ' ORDER BY file_id ASC LIMIT :offset, :perpage';
+
+        $stmt = $db->prepare($sql);
+
+        foreach ($params as $key => $value) {
+            if (is_int($key)) {
+                $stmt->bindValue($key + 1, $value, PDO::PARAM_INT);
+            } else {
+                $stmt->bindValue($key, $value);
+            }
+        }
+
+        $stmt->bindValue(':offset', ($page - 1) * $perpage, PDO::PARAM_INT);
+        $stmt->bindValue(':perpage', $perpage, PDO::PARAM_INT);
+
+        $stmt->execute();
+        $result = $stmt->fetchAll();
+
+        $count_sql = 'SELECT COUNT(*) FROM nv4_vi_fileserver_files WHERE status = 1 AND lev = :lev';
+        $count_params = [':lev' => $lev];
+
+        if (!defined('NV_IS_SPADMIN') && !empty($arr_per)) {
+            $count_sql .= ' AND file_id IN (' . implode(',', array_fill(0, count($file_ids), '?')) . ')';
+            $count_params = array_merge($count_params, $file_ids);
+        }
+
+        if (!empty($search_term)) {
+            $count_sql .= ' AND file_name LIKE :search_term';
+            $count_params[':search_term'] = '%' . $search_term . '%';
+        }
+
+        if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
+            $count_sql .= ' AND is_folder = :is_folder';
+            $count_params[':is_folder'] = $is_folder;
+        }
+
+        $count_stmt = $db->prepare($count_sql);
+        foreach ($count_params as $key => $value) {
+            if (is_int($key)) {
+                $count_stmt->bindValue($key + 1, $value, PDO::PARAM_INT);
+            } else {
+                $count_stmt->bindValue($key, $value);
+            }
+        }
+        $count_stmt->execute();
+        $total = $count_stmt->fetchColumn();
+
+    } catch (PDOException $e) {
+        die("Lỗi truy vấn Database: " . $e->getMessage());
+    }
 }
 
 if ($lev > 0) {
@@ -238,7 +341,9 @@ if (!empty($action)) {
                 'lev' => $lev,
                 'compressed' => 0
             ];
-            updateElasticSearch($client, 'create', $file_data);
+            if ($use_elastic) {
+                updateElasticSearch($client, 'create', $file_data);
+            }
             $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
                         VALUES (:file_id, :p_group, :p_other, :updated_at)';
             $stmta = $db->prepare($sql1);
@@ -266,7 +371,9 @@ if (!empty($action)) {
                 updateLog($lev, $action, $fileId);
                 $mess = $lang_module['delete_ok'];
                 $file_data = ['file_id' => $fileId];
-                updateElasticSearch($client, 'delete', $file_data);
+                if ($use_elastic) {
+                    updateElasticSearch($client, 'delete', $file_data);
+                }
             } else {
                 $status = 'error';
                 $mess = $lang_module['delete_false'];
@@ -311,7 +418,9 @@ if (!empty($action)) {
         if ($status == 'success' && !empty($deletedFileIds)) {
             updateLog($lev, $action, implode(',', $deletedFileIds));
             $file_data = ['file_ids' => $deletedFileIds];
-            updateElasticSearch($client, 'deleteAll', $file_data);
+            if ($use_elastic) {
+                updateElasticSearch($client, 'deleteAll', $file_data);
+            }
         }
     }
 
@@ -358,7 +467,9 @@ if (!empty($action)) {
                         'is_folder' => $file['is_folder'],
                         'old_file_path' => $oldFilePath
                     ];
-                    updateElasticSearch($client, 'rename', $file_data);
+                    if ($use_elastic) {
+                        updateElasticSearch($client, 'rename', $file_data);
+                    }
 
                     if ($file['is_folder'] == 1) {
                         $sqlUpdateChildren = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET file_path = REPLACE(file_path, :old_path, :new_path) WHERE file_path LIKE :like_old_path';
@@ -469,7 +580,10 @@ if (!empty($action)) {
                     'lev' => $lev,
                     'compressed' => $compressed
                 ];
-                updateElasticSearch($client, 'compress', $file_data);
+
+                if ($use_elastic) {
+                    updateElasticSearch($client, 'compress', $file_data);
+                }
 
                 $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
                              VALUES (:file_id, :p_group, :p_other, :updated_at)';
@@ -604,7 +718,9 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
                 'lev' => $lev,
                 'compressed' => 0
             ];
-            updateElasticSearch($client, 'upload', $file_data);
+            if ($use_elastic) {
+                updateElasticSearch($client, 'upload', $file_data);
+            }
             $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
                 VALUES (:file_id, :p_group, :p_other, :updated_at)';
             $stmta = $db->prepare($sql1);
@@ -649,7 +765,7 @@ if (!empty($result)) {
     $permissions = [];
 }
 $nv_BotManager->setFollow()->setNoIndex();
-$contents = nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs,$reCaptchaPass);
+$contents = nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs, $reCaptchaPass);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

@@ -18,6 +18,7 @@ $allow_func = [
     'export',
     'import',
     'recycle_bin',
+    'config',
 ];
 
 define('NV_IS_FILE_ADMIN', true);
