@@ -8,9 +8,6 @@ if (!defined('NV_IS_USER')) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
 }
 
-require 'vendor/autoload.php';
-use Elastic\Elasticsearch\ClientBuilder;
-
 $page_title = $module_info['site_title'];
 $key_words = $module_info['keywords'];
 $description = $module_info['description'];
@@ -49,35 +46,8 @@ foreach ($breadcrumbs as $breadcrumb) {
 
 $file_ids = array_keys($arr_per);
 
-try {
-    $query = $db->query("SELECT config_value FROM " . NV_CONFIG_GLOBALTABLE . " WHERE module = 'fileserver' AND config_name = 'use_elastic' AND lang = '" . NV_LANG_DATA . "'");
-    $use_elastic = $query->fetchColumn() == 1;
-} catch (Exception $e) {
-    trigger_error("Lỗi khi lấy cấu hình use_elastic: " . $e->getMessage());
-    $use_elastic = false;
-}
-
-if ($use_elastic) {
+if ($use_elastic == 1) {
     try {
-        $query = $db->query("SELECT config_name, config_value FROM " . NV_CONFIG_GLOBALTABLE . " WHERE module = 'fileserver' AND lang = '" . NV_LANG_DATA . "'");
-        while ($row = $query->fetch()) {
-            $config_elastic[$row['config_name']] = $row['config_value'];
-        }
-    } catch (Exception $e) {
-        trigger_error("Lỗi khi lấy cấu hình từ database: " . $e->getMessage());
-    }
-
-    if (!isset($config_elastic) || !is_array($config_elastic)) {
-        die("Cấu hình Elasticsearch không hợp lệ");
-    }
-
-    try {
-        $client = ClientBuilder::create()
-            ->setHosts([$config_elastic['elas_host'] . ':' . $config_elastic['elas_port']])
-            ->setBasicAuthentication($config_elastic['elas_user'], $config_elastic['elas_pass'])
-            ->setSSLVerification(false)
-            ->build();
-
         $searchParams = [
             'index' => 'fileserver',
             'body' => [
@@ -119,33 +89,28 @@ if ($use_elastic) {
         $response = $client->search($searchParams);
         $total = $response['hits']['total']['value'];
 
-        $result = [];
+        $file_ids_from_es = [];
         foreach ($response['hits']['hits'] as $hit) {
-            $source = $hit['_source'];
-            $result[] = [
-                'file_id' => $source['file_id'],
-                'file_name' => $source['file_name'],
-                'alias' => $source['alias'],
-                'file_path' => $source['file_path'],
-                'file_size' => $source['file_size'],
-                'uploaded_by' => $source['uploaded_by'],
-                'created_at' => strtotime($source['created_at']),
-                'updated_at' => strtotime($source['updated_at']),
-                'is_folder' => $source['is_folder'],
-                'status' => $source['status'],
-                'lev' => $source['lev'],
-                'view' => $source['view'],
-                'share' => $source['share'],
-                'compressed' => $source['compressed']
-            ];
+            $file_ids_from_es[] = $hit['_source']['file_id'];
         }
 
+        if (!empty($file_ids_from_es)) {
+            $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id IN (' . implode(',', array_fill(0, count($file_ids_from_es), '?')) . ') ORDER BY file_id ASC';
+            $stmt = $db->prepare($sql);
+            foreach ($file_ids_from_es as $i => $file_id) {
+                $stmt->bindValue($i + 1, $file_id, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } else {
+            $result = [];
+        }
     } catch (Exception $e) {
         die("Lỗi tìm kiếm Elasticsearch: " . $e->getMessage());
     }
 } else {
     try {
-        $sql = 'SELECT * FROM nv4_vi_fileserver_files WHERE status = 1 AND lev = :lev';
+        $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev = :lev';
         $params = [':lev' => $lev];
 
         if (!defined('NV_IS_SPADMIN') && !empty($arr_per)) {
@@ -180,9 +145,9 @@ if ($use_elastic) {
         $stmt->bindValue(':perpage', $perpage, PDO::PARAM_INT);
 
         $stmt->execute();
-        $result = $stmt->fetchAll();
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $count_sql = 'SELECT COUNT(*) FROM nv4_vi_fileserver_files WHERE status = 1 AND lev = :lev';
+        $count_sql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev = :lev';
         $count_params = [':lev' => $lev];
 
         if (!defined('NV_IS_SPADMIN') && !empty($arr_per)) {
@@ -210,7 +175,6 @@ if ($use_elastic) {
         }
         $count_stmt->execute();
         $total = $count_stmt->fetchColumn();
-
     } catch (PDOException $e) {
         die("Lỗi truy vấn Database: " . $e->getMessage());
     }
@@ -219,7 +183,7 @@ if ($use_elastic) {
 if ($lev > 0) {
     $base_dir = $db->query('SELECT file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $lev)->fetchColumn();
     $full_dir = NV_ROOTDIR . $base_dir;
-    $page_url .= '&amp;lev=' . $lev;
+    $page_url .= '&lev=' . $lev;
 }
 
 $action = $nv_Request->get_title('action', 'post', '');
@@ -227,7 +191,6 @@ $fileIds = $nv_Request->get_array('files', 'post', []);
 $reCaptchaPass = (!empty($global_config['recaptcha_sitekey']) and !empty($global_config['recaptcha_secretkey']) and ($global_config['recaptcha_ver'] == 2 or $global_config['recaptcha_ver'] == 3));
 
 if (!empty($action)) {
-
     $status = $lang_module['error'];
     $mess = $lang_module['sys_err'];
 
@@ -277,7 +240,7 @@ if (!empty($action)) {
             }
         }
 
-        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_name = :file_name AND lev = :lev and status = 1';
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_name = :file_name AND lev = :lev AND status = 1';
         $stmtCheck = $db->prepare($sqlCheck);
         $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
         $stmtCheck->bindParam(':lev', $lev, PDO::PARAM_INT);
@@ -333,15 +296,11 @@ if (!empty($action)) {
             $file_data = [
                 'file_id' => $file_id,
                 'file_name' => $name_f,
-                'alias' => change_alias($name_f . '_' . $file_id),
-                'file_path' => $file_path,
-                'uploaded_by' => $user_info['userid'],
-                'created_at' => NV_CURRENTTIME,
                 'is_folder' => $type,
                 'lev' => $lev,
-                'compressed' => 0
+                'created_at' => NV_CURRENTTIME
             ];
-            if ($use_elastic) {
+            if ($use_elastic == 1) {
                 updateElasticSearch($client, 'create', $file_data);
             }
             $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
@@ -371,7 +330,7 @@ if (!empty($action)) {
                 updateLog($lev, $action, $fileId);
                 $mess = $lang_module['delete_ok'];
                 $file_data = ['file_id' => $fileId];
-                if ($use_elastic) {
+                if ($use_elastic == 1) {
                     updateElasticSearch($client, 'delete', $file_data);
                 }
             } else {
@@ -418,7 +377,7 @@ if (!empty($action)) {
         if ($status == 'success' && !empty($deletedFileIds)) {
             updateLog($lev, $action, implode(',', $deletedFileIds));
             $file_data = ['file_ids' => $deletedFileIds];
-            if ($use_elastic) {
+            if ($use_elastic == 1) {
                 updateElasticSearch($client, 'deleteAll', $file_data);
             }
         }
@@ -461,13 +420,11 @@ if (!empty($action)) {
                     $file_data = [
                         'file_id' => $fileId,
                         'file_name' => $newName,
-                        'alias' => change_alias($newName . '_' . $fileId),
-                        'file_path' => $newFilePath,
                         'updated_at' => NV_CURRENTTIME,
                         'is_folder' => $file['is_folder'],
                         'old_file_path' => $oldFilePath
                     ];
-                    if ($use_elastic) {
+                    if ($use_elastic == 1) {
                         updateElasticSearch($client, 'rename', $file_data);
                     }
 
@@ -497,7 +454,7 @@ if (!empty($action)) {
             $name_with_zip = $name_f . '.zip';
         }
 
-        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE (file_name = :file_name OR file_name = :file_name_zip) AND lev = :lev and status = 1';
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE (file_name = :file_name OR file_name = :file_name_zip) AND lev = :lev AND status = 1';
         $stmtCheck = $db->prepare($sqlCheck);
         $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
         $stmtCheck->bindParam(':file_name_zip', $name_with_zip, PDO::PARAM_STR);
@@ -572,16 +529,11 @@ if (!empty($action)) {
                 $file_data = [
                     'file_id' => $file_id,
                     'file_name' => $zipFileName,
-                    'alias' => change_alias($zipFileName . '_' . $file_id),
-                    'file_path' => $zipFilePath,
-                    'file_size' => $file_size,
-                    'uploaded_by' => $user_info['userid'],
-                    'created_at' => NV_CURRENTTIME,
                     'lev' => $lev,
-                    'compressed' => $compressed
+                    'created_at' => NV_CURRENTTIME
                 ];
 
-                if ($use_elastic) {
+                if ($use_elastic == 1) {
                     updateElasticSearch($client, 'compress', $file_data);
                 }
 
@@ -710,15 +662,11 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
             $file_data = [
                 'file_id' => $file_id,
                 'file_name' => $file_name,
-                'alias' => change_alias($file_name . '_' . $file_id),
-                'file_path' => $relative_path,
-                'file_size' => $file_size,
-                'uploaded_by' => $user_info['userid'],
-                'created_at' => NV_CURRENTTIME,
+                'is_folder' => 0,
                 'lev' => $lev,
-                'compressed' => 0
+                'created_at' => NV_CURRENTTIME
             ];
-            if ($use_elastic) {
+            if ($use_elastic == 1) {
                 updateElasticSearch($client, 'upload', $file_data);
             }
             $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 

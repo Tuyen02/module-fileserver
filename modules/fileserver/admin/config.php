@@ -20,29 +20,27 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $array_config['elas_pass'] = $nv_Request->get_title('elas_pass', 'post', '');
     }
 
-    $success = true;
+    $status = false;
     foreach ($array_config as $config_name => $config_value) {
-        $sql = "INSERT INTO " . NV_CONFIG_GLOBALTABLE . " (lang, module, config_name, config_value) 
-                VALUES (:lang, :module, :config_name, :config_value) 
-                ON DUPLICATE KEY UPDATE config_value = :config_value_update";
+        $sql = "UPDATE " . NV_CONFIG_GLOBALTABLE . " SET config_value = :config_value 
+            WHERE lang = :lang AND module = :module AND config_name = :config_name";
         $sth = $db->prepare($sql);
         $sth->bindValue(':lang', NV_LANG_DATA);
         $sth->bindValue(':module', $module_name);
         $sth->bindValue(':config_name', $config_name);
         $sth->bindValue(':config_value', $config_value);
-        $sth->bindValue(':config_value_update', $config_value);
 
         try {
-            if (!$sth->execute()) {
-                $success = false;
+            if ($sth->execute()) {
+                $status = true;
             }
         } catch (PDOException $e) {
-            $success = false;
+            $status = false;
             trigger_error("Error updating config: " . $e->getMessage());
         }
     }
 
-    if ($success) {
+    if ($status) {
         $message = $lang_module['config_updated'];
         $message_type = 'success';
     } else {
@@ -52,16 +50,11 @@ if ($nv_Request->isset_request('submit', 'post')) {
 }
 
 $array_config = [];
-$query = $db->query("SELECT config_name, config_value FROM " . NV_CONFIG_GLOBALTABLE . " WHERE module = 'fileserver' AND lang = '" . NV_LANG_DATA . "'");
-while ($row = $query->fetch()) {
+$query = $db->query("SELECT config_name, config_value FROM " . NV_CONFIG_GLOBALTABLE . " WHERE module = 'fileserver' AND lang = " . $db->quote(NV_LANG_DATA));
+$result = $query->fetchAll();
+foreach ($result as $row) {
     $array_config[$row['config_name']] = $row['config_value'];
 }
-
-$array_config['use_elastic'] = isset($array_config['use_elastic']) ? (int)$array_config['use_elastic'] : 0;
-$array_config['elas_host'] = isset($array_config['elas_host']) ? $array_config['elas_host'] : 'https://localhost';
-$array_config['elas_port'] = isset($array_config['elas_port']) ? $array_config['elas_port'] : '9200';
-$array_config['elas_user'] = isset($array_config['elas_user']) ? $array_config['elas_user'] : 'elastic';
-$array_config['elas_pass'] = isset($array_config['elas_pass']) ? $array_config['elas_pass'] : '';
 
 $xtpl = new XTemplate('config.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
 $xtpl->assign('LANG', $lang_module);
@@ -71,7 +64,6 @@ $xtpl->assign('NV_OP_VARIABLE', NV_OP_VARIABLE);
 $xtpl->assign('MODULE_NAME', $module_name);
 $xtpl->assign('OP', $op);
 $xtpl->assign('CONFIG', $array_config);
-
 $xtpl->assign('USE_ELASTIC_CHECKED', $array_config['use_elastic'] ? ' checked="checked"' : '');
 
 if ($message != '') {

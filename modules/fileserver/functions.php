@@ -6,6 +6,32 @@ if (!defined('NV_SYSTEM')) {
 
 define('NV_IS_MOD_FILESERVER', true);
 
+require 'vendor/autoload.php';
+use Elastic\Elasticsearch\ClientBuilder;
+
+$use_elastic = $module_config['fileserver']['use_elastic'];
+
+$client = null;
+if ($use_elastic == 1) {
+    try {
+        $query = $db->query("SELECT config_name, config_value FROM " . NV_CONFIG_GLOBALTABLE . " WHERE module = 'fileserver' AND lang = '" . NV_LANG_DATA . "'");
+        while ($row = $query->fetch()) {
+            $config_elastic[$row['config_name']] = $row['config_value'];
+        }
+        if (!isset($config_elastic) || !is_array($config_elastic)) {
+            die("Cấu hình Elasticsearch không hợp lệ");
+        }
+        $client = ClientBuilder::create()
+            ->setHosts([$config_elastic['elas_host'] . ':' . $config_elastic['elas_port']])
+            ->setBasicAuthentication($config_elastic['elas_user'], $config_elastic['elas_pass'])
+            ->setSSLVerification(false)
+            ->build();
+    } catch (Exception $e) {
+        error_log("Lỗi khởi tạo Elasticsearch client: " . $e->getMessage());
+        $use_elastic = 0;
+    }
+}
+
 if (!empty($array_op)) {
     preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m);
     $lev = $m[2];
@@ -21,6 +47,156 @@ if (defined('NV_IS_SPADMIN') || is_array($user_info['in_groups']) && array_inter
     $arr_per = array_column($db->query('SELECT p_group, file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_group > 1')->fetchAll(), 'p_group', 'file_id');
 } else {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
+}
+
+function syncElasticSearch($client) {
+    global $db, $module_data;
+    try {
+        $sql = 'SELECT file_id, file_name, is_folder, status, lev, created_at FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1';
+        $stmt = $db->query($sql);
+        $bulk_params = ['body' => []];
+        while ($row = $stmt->fetch()) {
+            $bulk_params['body'][] = [
+                'index' => [
+                    '_index' => 'fileserver',
+                    '_id' => $row['file_id']
+                ]
+            ];
+            $bulk_params['body'][] = [
+                'file_id' => $row['file_id'],
+                'file_name' => $row['file_name'],
+                'is_folder' => $row['is_folder'],
+                'status' => $row['status'],
+                'lev' => $row['lev'],
+                'created_at' => date('c', $row['created_at'])
+            ];
+        }
+        if (!empty($bulk_params['body'])) {
+            $client->bulk($bulk_params);
+        }
+    } catch (Exception $e) {
+        error_log("Lỗi đồng bộ Elasticsearch: " . $e->getMessage());
+    }
+}
+
+function updateElasticSearch($client, $action, $file_data)
+{
+    global $db, $module_data;
+
+    try {
+        switch ($action) {
+            case 'create':
+            case 'upload':
+                $params = [
+                    'index' => 'fileserver',
+                    'id' => $file_data['file_id'],
+                    'body' => [
+                        'file_id' => $file_data['file_id'],
+                        'file_name' => $file_data['file_name'],
+                        'is_folder' => $file_data['is_folder'],
+                        'status' => 1,
+                        'lev' => $file_data['lev'],
+                        'created_at' => date('c', $file_data['created_at'])
+                    ]
+                ];
+                $client->index($params);
+                break;
+
+            case 'delete':
+                $params = [
+                    'index' => 'fileserver',
+                    'id' => $file_data['file_id']
+                ];
+                $client->delete($params);
+                break;
+
+            case 'deleteAll':
+                $bulk_params = ['body' => []];
+                foreach ($file_data['file_ids'] as $file_id) {
+                    $bulk_params['body'][] = [
+                        'delete' => [
+                            '_index' => 'fileserver',
+                            '_id' => $file_id
+                        ]
+                    ];
+                }
+                if (!empty($bulk_params['body'])) {
+                    $client->bulk($bulk_params);
+                }
+                break;
+
+            case 'rename':
+                $params = [
+                    'index' => 'fileserver',
+                    'id' => $file_data['file_id'],
+                    'body' => [
+                        'doc' => [
+                            'file_name' => $file_data['file_name'],
+                            'updated_at' => date('c', $file_data['updated_at'])
+                        ]
+                    ]
+                ];
+                $client->update($params);
+
+                if ($file_data['is_folder']) {
+                    $bulk_params = ['body' => []];
+                    $sql = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_path LIKE :old_path';
+                    $stmt = $db->prepare($sql);
+                    $stmt->bindValue(':old_path', $file_data['old_file_path'] . '/%', PDO::PARAM_STR);
+                    $stmt->execute();
+                    $children = $stmt->fetchAll();
+
+                    foreach ($children as $child) {
+                        $bulk_params['body'][] = [
+                            'update' => [
+                                '_index' => 'fileserver',
+                                '_id' => $child['file_id']
+                            ]
+                        ];
+                        $bulk_params['body'][] = [
+                            'doc' => [
+                                'updated_at' => date('c', NV_CURRENTTIME)
+                            ]
+                        ];
+                    }
+                    if (!empty($bulk_params['body'])) {
+                        $client->bulk($bulk_params);
+                    }
+                }
+                break;
+
+            case 'compress':
+                $params = [
+                    'index' => 'fileserver',
+                    'id' => $file_data['file_id'],
+                    'body' => [
+                        'file_id' => $file_data['file_id'],
+                        'file_name' => $file_data['file_name'],
+                        'is_folder' => 0,
+                        'status' => 1,
+                        'lev' => $file_data['lev'],
+                        'created_at' => date('c', $file_data['created_at'])
+                    ]
+                ];
+                $client->index($params);
+                break;
+
+            case 'edit':
+                $params = [
+                    'index' => 'fileserver',
+                    'id' => $file_data['file_id'],
+                    'body' => [
+                        'doc' => [
+                            'updated_at' => date('c', $file_data['updated_at'])
+                        ]
+                    ]
+                ];
+                $client->update($params);
+                break;
+        }
+    } catch (Exception $e) {
+        error_log("Error updating Elasticsearch for action $action: " . $e->getMessage());
+    }
 }
 function updateAlias($file_id, $file_name)
 {
@@ -481,144 +657,6 @@ function getFileIconClass($file)
             $extension = pathinfo($file['file_name'], PATHINFO_EXTENSION);
             return isset($file_icons[$extension]) ? $file_icons[$extension] : 'fa-file-o';
         }
-    }
-}
-
-function updateElasticSearch($client, $action, $file_data)
-{
-    global $db, $module_data;
-
-    try {
-        switch ($action) {
-            case 'create':
-            case 'upload':
-                $params = [
-                    'index' => 'fileserver',
-                    'id' => $file_data['file_id'],
-                    'body' => [
-                        'file_id' => $file_data['file_id'],
-                        'file_name' => $file_data['file_name'],
-                        'alias' => $file_data['alias'],
-                        'file_path' => $file_data['file_path'],
-                        'file_size' => $file_data['file_size'] ?? 0,
-                        'uploaded_by' => $file_data['uploaded_by'],
-                        'created_at' => date('c', $file_data['created_at']),
-                        'updated_at' => date('c', $file_data['updated_at'] ?? $file_data['created_at']),
-                        'is_folder' => $file_data['is_folder'],
-                        'status' => 1,
-                        'lev' => $file_data['lev'],
-                        'view' => 0,
-                        'share' => 0,
-                        'compressed' => $file_data['compressed']
-                    ]
-                ];
-                $client->index($params);
-                break;
-
-            case 'delete':
-                $params = [
-                    'index' => 'fileserver',
-                    'id' => $file_data['file_id']
-                ];
-                $client->delete($params);
-                break;
-
-            case 'deleteAll':
-                foreach ($file_data['file_ids'] as $file_id) {
-                    $params = [
-                        'index' => 'fileserver',
-                        'id' => $file_id
-                    ];
-                    $client->delete($params);
-                }
-                break;
-
-            case 'rename':
-                $params = [
-                    'index' => 'fileserver',
-                    'id' => $file_data['file_id'],
-                    'body' => [
-                        'doc' => [
-                            'file_name' => $file_data['file_name'],
-                            'alias' => $file_data['alias'],
-                            'file_path' => $file_data['file_path'],
-                            'updated_at' => date('c', $file_data['updated_at'])
-                        ]
-                    ]
-                ];
-                $client->update($params);
-
-                if ($file_data['is_folder']) {
-                    $bulk_params = [
-                        'body' => []
-                    ];
-                    $sql = 'SELECT file_id, file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_path LIKE :old_path';
-                    $stmt = $db->prepare($sql);
-                    $stmt->bindValue(':old_path', $file_data['old_file_path'] . '/%', PDO::PARAM_STR);
-                    $stmt->execute();
-                    $children = $stmt->fetchAll();
-
-                    foreach ($children as $child) {
-                        $new_child_path = str_replace($file_data['old_file_path'], $file_data['file_path'], $child['file_path']);
-                        $bulk_params['body'][] = [
-                            'update' => [
-                                '_index' => 'fileserver',
-                                '_id' => $child['file_id']
-                            ]
-                        ];
-                        $bulk_params['body'][] = [
-                            'doc' => [
-                                'file_path' => $new_child_path,
-                                'updated_at' => date('c', NV_CURRENTTIME)
-                            ]
-                        ];
-                    }
-                    if (!empty($bulk_params['body'])) {
-                        $client->bulk($bulk_params);
-                    }
-                }
-                break;
-
-            case 'compress':
-                $params = [
-                    'index' => 'fileserver',
-                    'id' => $file_data['file_id'],
-                    'body' => [
-                        'file_id' => $file_data['file_id'],
-                        'file_name' => $file_data['file_name'],
-                        'alias' => $file_data['alias'],
-                        'file_path' => $file_data['file_path'],
-                        'file_size' => $file_data['file_size'],
-                        'uploaded_by' => $file_data['uploaded_by'],
-                        'created_at' => date('c', $file_data['created_at']),
-                        'updated_at' => date('c', $file_data['updated_at'] ?? $file_data['created_at']),
-                        'is_folder' => 0,
-                        'status' => 1,
-                        'lev' => $file_data['lev'],
-                        'view' => 0,
-                        'share' => 0,
-                        'compressed' => $file_data['compressed']
-                    ]
-                ];
-                $client->index($params);
-                break;
-
-            case 'edit':
-                $params = [
-                    'index' => 'fileserver',
-                    'id' => $file_data['file_id'],
-                    'body' => [
-                        'doc' => [
-                            'file_size' => $file_data['file_size'],
-                            'updated_at' => date('c', $file_data['updated_at'])
-                        ]
-                    ]
-                ];
-                $client->update($params);
-                break;
-        }
-    } catch (Exception $e) {
-        error_log("Error updating Elasticsearch for action $action: " . $e->getMessage());
     }
 }
 

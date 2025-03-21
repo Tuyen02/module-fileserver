@@ -6,13 +6,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 $page_title = $lang_module['edit'];
 
-try {
-    $query = $db->query("SELECT config_value FROM " . NV_CONFIG_GLOBALTABLE . " WHERE module = 'fileserver' AND config_name = 'use_elastic' AND lang = '" . NV_LANG_DATA . "'");
-    $use_elastic = $query->fetchColumn() == 1;
-} catch (Exception $e) {
-    trigger_error("Lỗi khi lấy cấu hình use_elastic: " . $e->getMessage());
-    $use_elastic = false;
-}
+$use_elastic = $module_config['fileserver']['use_elastic'];
 
 $page = $nv_Request->get_int('page', 'get', 1);
 
@@ -116,7 +110,7 @@ if (defined('NV_IS_SPADMIN')) {
                 'file_size' => $file_size,
                 'updated_at' => NV_CURRENTTIME
             ];
-            if ($use_elastic) {
+            if ($use_elastic == 1) {
                 updateElasticSearch($client, 'edit', $file_data);
             }
         }
