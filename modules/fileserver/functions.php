@@ -14,10 +14,8 @@ $use_elastic = $module_config['fileserver']['use_elastic'];
 $client = null;
 if ($use_elastic == 1) {
     try {
-        $query = $db->query("SELECT config_name, config_value FROM " . NV_CONFIG_GLOBALTABLE . " WHERE module = 'fileserver' AND lang = '" . NV_LANG_DATA . "'");
-        while ($row = $query->fetch()) {
-            $config_elastic[$row['config_name']] = $row['config_value'];
-        }
+        $query = $db->query('SELECT config_name, config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE module = ' . $module_name . ' AND lang = ' . $db->quote(NV_LANG_DATA));
+        $config_elastic = $query->fetchAll(PDO::FETCH_KEY_PAIR);
         if (!isset($config_elastic) || !is_array($config_elastic)) {
             die("Cấu hình Elasticsearch không hợp lệ");
         }
@@ -53,22 +51,22 @@ function syncElasticSearch($client) {
     global $db, $module_data;
     try {
         $sql = 'SELECT file_id, file_name, is_folder, status, lev, created_at FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1';
-        $stmt = $db->query($sql);
+        $rows = $db->query($sql)->fetchAll();
         $bulk_params = ['body' => []];
-        while ($row = $stmt->fetch()) {
+        foreach ($rows as $row) {
             $bulk_params['body'][] = [
-                'index' => [
-                    '_index' => 'fileserver',
-                    '_id' => $row['file_id']
-                ]
+            'index' => [
+                '_index' => 'fileserver',
+                '_id' => $row['file_id']
+            ]
             ];
             $bulk_params['body'][] = [
-                'file_id' => $row['file_id'],
-                'file_name' => $row['file_name'],
-                'is_folder' => $row['is_folder'],
-                'status' => $row['status'],
-                'lev' => $row['lev'],
-                'created_at' => date('c', $row['created_at'])
+            'file_id' => $row['file_id'],
+            'file_name' => $row['file_name'],
+            'is_folder' => $row['is_folder'],
+            'status' => $row['status'],
+            'lev' => $row['lev'],
+            'created_at' => date('c', $row['created_at'])
             ];
         }
         if (!empty($bulk_params['body'])) {
@@ -204,7 +202,7 @@ function updateAlias($file_id, $file_name)
     $alias = change_alias($file_name . '_' . $file_id);
     $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET alias=:alias WHERE file_id = :file_id';
     $stmtUpdate = $db->prepare($sqlUpdate);
-    $stmtUpdate->bindValue(':alias', $alias, PDO::PARAM_INT);
+    $stmtUpdate->bindValue(':alias', $alias, PDO::PARAM_STR);
     $stmtUpdate->bindValue(':file_id', $file_id, PDO::PARAM_INT);
     $stmtUpdate->execute();
     return true;
@@ -214,11 +212,8 @@ function deleteFileOrFolder($fileId)
 {
     global $db, $module_data;
 
-    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = :file_id';
-    $stmt = $db->prepare($sql);
-    $stmt->bindParam(':file_id', $fileId, PDO::PARAM_INT);
-    $stmt->execute();
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
+    $row = $db->query($sql)->fetch();
 
     if (!is_array($row) || empty($row)) {
         return false;
@@ -229,7 +224,8 @@ function deleteFileOrFolder($fileId)
     $fullPath = NV_ROOTDIR . $filePath;
     $lev = $row['lev'];
 
-    $parts = explode('/uploads/fileserver/', $filePath);
+    $path = '/uploads/fileserver/';
+    $parts = explode($path, $filePath);
     $relativePath = end($parts);
     $relativePath = ltrim($relativePath, '/');
 
@@ -252,16 +248,17 @@ function deleteFileOrFolder($fileId)
 
     $fileSize = $isFolder ? calculateFolderSize($fileId) : filesize($backupPath);
 
+
     $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_trash 
         (file_id, file_name, alias, file_path, file_size, uploaded_by, deleted_at, updated_at, is_folder, status, lev, view, share, compressed) 
         VALUES (:file_id, :file_name, :alias, :file_path, :file_size, :uploaded_by, :deleted_at, :updated_at, :is_folder, :status, :lev, :view, :share, :compressed)';
-
+    $trash_path = '/data/tmp/trash/' . $newRelativePath;
     $stmtInsert = $db->prepare($sqlInsert);
     $stmtInsert->execute([
         ':file_id' => $row['file_id'],
         ':file_name' => $isFolder ? $newFolderName : $row['file_name'],
         ':alias' => $row['alias'],
-        ':file_path' => '/data/tmp/trash/' . $newRelativePath,
+        ':file_path' => $trash_path,
         ':file_size' => $fileSize,
         ':uploaded_by' => $row['uploaded_by'],
         ':deleted_at' => NV_CURRENTTIME,
@@ -278,10 +275,8 @@ function deleteFileOrFolder($fileId)
         updateDirectoryStatus($fileId, $newFolderName);
     }
 
-    $sqlDelete = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = :file_id';
-    $stmtDelete = $db->prepare($sqlDelete);
-    $stmtDelete->bindValue(':file_id', $fileId, PDO::PARAM_INT);
-    $stmtDelete->execute();
+    $sqlDelete = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
+    $db->query($sqlDelete);
 
     return true;
 }
@@ -290,21 +285,15 @@ function updateDirectoryStatus($parentId, $parentNewName = null)
 {
     global $db, $module_data;
 
-    $sqlParent = 'SELECT file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = :file_id';
-    $stmtParent = $db->prepare($sqlParent);
-    $stmtParent->bindParam(':file_id', $parentId, PDO::PARAM_INT);
-    $stmtParent->execute();
-    $parent = $stmtParent->fetch(PDO::FETCH_ASSOC);
+    $sqlParent = 'SELECT file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $parentId;
+    $parent = $db->query($sqlParent)->fetch(PDO::FETCH_ASSOC);
 
     if (!is_array($parent) || empty($parent)) {
         return false;
     }
 
-    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = :lev AND status = 1';
-    $stmt = $db->prepare($sql);
-    $stmt->bindParam(':lev', $parentId, PDO::PARAM_INT);
-    $stmt->execute();
-    $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . $parentId . ' AND status = 1';
+    $files = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($files as $file) {
         $fileId = $file['file_id'];
@@ -353,10 +342,8 @@ function updateDirectoryStatus($parentId, $parentNewName = null)
             updateDirectoryStatus($fileId, $newName);
         }
 
-        $sqlDelete = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = :file_id';
-        $stmtDelete = $db->prepare($sqlDelete);
-        $stmtDelete->bindValue(':file_id', $fileId, PDO::PARAM_INT);
-        $stmtDelete->execute();
+        $sqlDelete = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
+        $db->query($sqlDelete);
     }
 
     return true;
@@ -417,14 +404,14 @@ function compressFiles($fileIds, $zipFilePath)
     $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
     $sql = "SELECT file_path, file_name FROM " . NV_PREFIXLANG . '_' . $module_data . "_files 
             WHERE file_id IN ($placeholders) AND status = 1";
-    $stmt = $db->prepare($sql);
-    $stmt->execute($fileIds);
+    $stmt = $db->query($sql);
+    $rows = $stmt->fetchAll();
 
-    if ($stmt->rowCount() == 0) {
+    if (empty($rows)) {
         return ['status' => $lang_module['error'], 'message' => $lang_module['cannot_find_file']];
     }
 
-    while ($row = $stmt->fetch()) {
+    foreach ($rows as $row) {
         $realPath = NV_ROOTDIR . $row['file_path'];
         if (file_exists($realPath)) {
             $filePaths[] = $realPath;
@@ -487,11 +474,8 @@ function calculateFolderSize($folderId)
     global $db, $module_data;
     $totalSize = 0;
 
-    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = :lev';
-    $stmt = $db->prepare($sql);
-    $stmt->bindParam(':lev', $folderId, PDO::PARAM_INT);
-    $stmt->execute();
-    $files = $stmt->fetchAll();
+    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . $folderId;
+    $files = $db->query($sql)->fetchAll();
 
     foreach ($files as $file) {
         if ($file['is_folder'] == 1) {
@@ -511,11 +495,8 @@ function calculateFileFolderStats($lev)
     $total_folders = 0;
     $total_size = 0;
 
-    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = :lev AND status = 1 ';
-    $stmt = $db->prepare($sql);
-    $stmt->bindParam(':lev', $lev, PDO::PARAM_INT);
-    $stmt->execute();
-    $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status =  1 AND lev = ' . $lev;
+    $files = $db->query($sql)->fetchAll();
 
     foreach ($files as $file) {
         if ($file['is_folder'] == 1) {
@@ -565,11 +546,8 @@ function getAllChildFileIds($fileId)
 {
     global $module_data, $db;
     $childFileIds = [];
-    $sql = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = :file_id and status = 1';
-    $stmt = $db->prepare($sql);
-    $stmt->bindParam(':file_id', $fileId, PDO::PARAM_INT);
-    $stmt->execute();
-    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $sql = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev =' . $fileId;
+    $result =  $db->query($sql)->fetchAll();
     foreach ($result as $row) {
         $childFileIds[] = $row['file_id'];
         $childFileIds = array_merge($childFileIds, getAllChildFileIds($row['file_id']));
