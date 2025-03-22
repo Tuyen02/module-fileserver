@@ -50,7 +50,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
 }
 
 $array_config = [];
-$query = $db->query('SELECT config_name, config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE module = 'fileserver' AND lang = ' . $db->quote(NV_LANG_DATA));
+$query = $db->query('SELECT config_name, config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE module = ' . $db->quote($module_name) . ' AND lang = ' . $db->quote(NV_LANG_DATA));
 $result = $query->fetchAll();
 foreach ($result as $row) {
     $array_config[$row['config_name']] = $row['config_value'];
