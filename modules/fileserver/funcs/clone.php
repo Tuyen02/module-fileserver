@@ -93,7 +93,7 @@ if (defined('NV_IS_SPADMIN')) {
                         $new_file_id = $db->lastInsertId();
                         updateAlias($new_file_id, $new_file_name);
 
-                        if ($elasticClient) {
+                        if ($use_elastic == 1 && !is_null($client)) {
                             $params = [
                                 'index' => 'fileserver',
                                 'id'    => $new_file_id,
@@ -108,7 +108,9 @@ if (defined('NV_IS_SPADMIN')) {
                                 ]
                             ];
                             try {
-                                $elasticClient->index($params);
+                                $response = $client->index($params);
+                                error_log("Elasticsearch index response: " . json_encode($response));
+                                $client->indices()->refresh(['index' => 'fileserver']);
                             } catch (Exception $e) {
                                 error_log("Elasticsearch indexing failed: " . $e->getMessage());
                             }
@@ -166,7 +168,7 @@ if (defined('NV_IS_SPADMIN')) {
                     $stmt->bindParam(':file_id', $file_id);
 
                     if ($stmt->execute()) {
-                        if ($elasticClient) {
+                        if ($use_elastic == 1 && !is_null($client)) {
                             $params = [
                                 'index' => 'fileserver',
                                 'id'    => $file_id,
@@ -179,7 +181,9 @@ if (defined('NV_IS_SPADMIN')) {
                                 ]
                             ];
                             try {
-                                $elasticClient->update($params);
+                                $response = $client->update($params);
+                                error_log("Elasticsearch update response: " . json_encode($response));
+                                $client->indices()->refresh(['index' => 'fileserver']);
                             } catch (Exception $e) {
                                 error_log("Elasticsearch update failed: " . $e->getMessage());
                             }

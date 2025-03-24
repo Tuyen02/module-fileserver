@@ -14,7 +14,7 @@ $use_elastic = $module_config['fileserver']['use_elastic'];
 $client = null;
 if ($use_elastic == 1) {
     try {
-        $query = $db->query('SELECT config_name, config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE module = ' . $module_name . ' AND lang = ' . $db->quote(NV_LANG_DATA));
+        $query = $db->query('SELECT config_name, config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE module = ' . $db->quote($module_name) . ' AND lang = ' . $db->quote(NV_LANG_DATA));
         $config_elastic = $query->fetchAll(PDO::FETCH_KEY_PAIR);
         if (!isset($config_elastic) || !is_array($config_elastic)) {
             die("Cấu hình Elasticsearch không hợp lệ");
@@ -24,6 +24,33 @@ if ($use_elastic == 1) {
             ->setBasicAuthentication($config_elastic['elas_user'], $config_elastic['elas_pass'])
             ->setSSLVerification(false)
             ->build();
+
+        if (!$client->indices()->exists(['index' => 'fileserver'])) {
+            $client->indices()->create([
+                'index' => 'fileserver',
+                'body' => [
+                    'settings' => [
+                        'number_of_shards' => 1,
+                        'number_of_replicas' => 0
+                    ],
+                    'mappings' => [
+                        'properties' => [
+                            'file_id' => ['type' => 'keyword'],
+                            'file_name' => ['type' => 'text'],
+                            'file_path' => ['type' => 'text'],
+                            'file_size' => ['type' => 'long'],
+                            'uploaded_by' => ['type' => 'keyword'],
+                            'is_folder' => ['type' => 'boolean'],
+                            'status' => ['type' => 'integer'],
+                            'lev' => ['type' => 'integer'],
+                            'created_at' => ['type' => 'date'],
+                            'updated_at' => ['type' => 'date'],
+                            'compressed' => ['type' => 'keyword']
+                        ]
+                    ]
+                ]
+            ]);
+        }
     } catch (Exception $e) {
         error_log("Lỗi khởi tạo Elasticsearch client: " . $e->getMessage());
         $use_elastic = 0;
@@ -47,7 +74,8 @@ if (defined('NV_IS_SPADMIN') || is_array($user_info['in_groups']) && array_inter
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
 }
 
-function syncElasticSearch($client) {
+function syncElasticSearch($client)
+{
     global $db, $module_data;
     try {
         $sql = 'SELECT file_id, file_name, is_folder, status, lev, created_at FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1';
@@ -55,18 +83,18 @@ function syncElasticSearch($client) {
         $bulk_params = ['body' => []];
         foreach ($rows as $row) {
             $bulk_params['body'][] = [
-            'index' => [
-                '_index' => 'fileserver',
-                '_id' => $row['file_id']
-            ]
+                'index' => [
+                    '_index' => 'fileserver',
+                    '_id' => $row['file_id']
+                ]
             ];
             $bulk_params['body'][] = [
-            'file_id' => $row['file_id'],
-            'file_name' => $row['file_name'],
-            'is_folder' => $row['is_folder'],
-            'status' => $row['status'],
-            'lev' => $row['lev'],
-            'created_at' => date('c', $row['created_at'])
+                'file_id' => $row['file_id'],
+                'file_name' => $row['file_name'],
+                'is_folder' => $row['is_folder'],
+                'status' => $row['status'],
+                'lev' => $row['lev'],
+                'created_at' => date('c', $row['created_at'])
             ];
         }
         if (!empty($bulk_params['body'])) {
@@ -170,10 +198,14 @@ function updateElasticSearch($client, $action, $file_data)
                     'body' => [
                         'file_id' => $file_data['file_id'],
                         'file_name' => $file_data['file_name'],
+                        'file_path' => $file_data['file_path'],
+                        'file_size' => $file_data['file_size'],
+                        'uploaded_by' => $file_data['uploaded_by'],
                         'is_folder' => 0,
                         'status' => 1,
                         'lev' => $file_data['lev'],
-                        'created_at' => date('c', $file_data['created_at'])
+                        'created_at' => date('c', $file_data['created_at']),
+                        'compressed' => $file_data['compressed']
                     ]
                 ];
                 $client->index($params);
@@ -547,7 +579,7 @@ function getAllChildFileIds($fileId)
     global $module_data, $db;
     $childFileIds = [];
     $sql = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev =' . $fileId;
-    $result =  $db->query($sql)->fetchAll();
+    $result = $db->query($sql)->fetchAll();
     foreach ($result as $row) {
         $childFileIds[] = $row['file_id'];
         $childFileIds = array_merge($childFileIds, getAllChildFileIds($row['file_id']));

@@ -300,6 +300,7 @@ if (!empty($action)) {
                 'lev' => $lev,
                 'created_at' => NV_CURRENTTIME
             ];
+
             if ($use_elastic == 1) {
                 updateElasticSearch($client, 'create', $file_data);
             }
@@ -526,15 +527,24 @@ if (!empty($action)) {
                 $file_id = $db->lastInsertId();
                 updateAlias($file_id, $zipFileName);
 
-                $file_data = [
-                    'file_id' => $file_id,
-                    'file_name' => $zipFileName,
-                    'lev' => $lev,
-                    'created_at' => NV_CURRENTTIME
-                ];
-
-                if ($use_elastic == 1) {
-                    updateElasticSearch($client, 'compress', $file_data);
+                if ($use_elastic == 1 && !is_null($client)) {
+                    $file_data = [
+                        'file_id' => $file_id,
+                        'file_name' => $zipFileName,
+                        'file_path' => $zipFilePath,
+                        'file_size' => $file_size,
+                        'uploaded_by' => $user_info['userid'],
+                        'lev' => $lev,
+                        'created_at' => NV_CURRENTTIME,
+                        'compressed' => $compressed
+                    ];
+    
+                    try {
+                        updateElasticSearch($client, 'compress', $file_data);
+                        $client->indices()->refresh(['index' => 'fileserver']);
+                    } catch (Exception $e) {
+                        error_log("Failed to update Elasticsearch for compress action: " . $e->getMessage());
+                    }
                 }
 
                 $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
