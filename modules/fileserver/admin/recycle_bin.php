@@ -25,7 +25,7 @@ $breadcrumbs = [];
 $current_lev = $lev;
 
 while ($current_lev > 0) {
-    $sql1 = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = ' . $current_lev;
+    $sql1 = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE status = 1 and file_id = ' . $current_lev;
     $result1 = $db->query($sql1);
     $row1 = $result1->fetch();
     if ($row1) {
@@ -45,8 +45,8 @@ foreach ($breadcrumbs as $breadcrumb) {
     $array_mod_title[] = $breadcrumb;
 }
 
-$sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE status = 0 AND lev = :lev';
-$total_sql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE status = 0 AND lev = :lev';
+$sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE status = 1 AND lev = :lev';
+$total_sql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE status = 1 AND lev = :lev';
 
 if (!empty($search_term)) {
     $sql .= ' AND file_name LIKE :search_term';
@@ -85,7 +85,7 @@ $stmt->execute();
 $result = $stmt->fetchAll();
 
 if ($lev > 0) {
-    $base_dir = $db->query('SELECT file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = ' . $lev)->fetchColumn();
+    $base_dir = $db->query('SELECT file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE status = 1 and file_id = ' . $lev)->fetchColumn();
     $full_dir = NV_ROOTDIR . $base_dir;
     $page_url .= '&lev=' . $lev;
 }

@@ -8,11 +8,10 @@ $action = $nv_Request->get_title('action', 'post', '');
 $page = $nv_Request->get_int('page', 'get', 1);
 
 $sql = "SELECT file_id, file_name, file_size, file_path, compressed, alias FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $lev;
-$stmt = $db->prepare($sql);
-$stmt->execute();
-$row = $stmt->fetch();
+$result = $db->query($sql);
+$row = $result->fetch();
 
-$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=compress/' . $row['alias'] . '&page=' . $page;
+$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
 
 $array_mod_title[] = [
     'catid' => 0,
@@ -30,7 +29,7 @@ if (!$row) {
     $message = $lang_module['f_has_exit'];
 } else {
     $zipFilePath = NV_ROOTDIR . $row['file_path'];
-    $extractTo = NV_ROOTDIR . '/uploads/fileserver/' . pathinfo($row['file_name'], PATHINFO_FILENAME);
+    $extractTo = NV_ROOTDIR . $base_url . '/' . pathinfo($row['file_name'], PATHINFO_FILENAME);
 
     if ($action === 'unzip' && $row['compressed'] != 0) {
         if (!is_dir($extractTo)) {
@@ -64,7 +63,7 @@ if (!$row) {
             updateAlias($new_id, $new_name);
             addToDatabase($extractTo, $new_id);
 
-            $redirect_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=main&page=' . $page;
+            $redirect_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '&page=' . $page;
             nv_redirect_location($redirect_url);
         } else {
             $status = $lang_module['error'];

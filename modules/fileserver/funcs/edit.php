@@ -21,10 +21,10 @@ if (empty($row)) {
 $array_mod_title[] = [
     'catid' => 0,
     'title' => $row['file_name'],
-    'link' => nv_url_rewrite(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=edit/' . $row['alias'] . '&page=' . $page)
+    'link' => nv_url_rewrite(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'])
 ];
 
-$view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=main&lev=' . $row['lev'];
+$view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '&lev=' . $row['lev'];
 
 $file_name = $row['file_name'];
 $file_path = $row['file_path'];
@@ -35,13 +35,6 @@ $file_content = '';
 if (file_exists($full_path)) {
     if ($file_extension == 'pdf') {
         $file_content = $file_path;
-    } elseif (in_array($file_extension, ['xlsx', 'xls'])) {
-        $spreadsheet = IOFactory::load($full_path);
-        $sheet = $spreadsheet->getActiveSheet();
-        $file_content_array = $sheet->toArray();
-        foreach ($file_content_array as $row) {
-            $file_content .= implode('\t', $row) . '\n';
-        }
     } elseif (in_array($file_extension, ['doc', 'docx'])) {
         $zip = new ZipArchive;
         if ($zip->open($full_path) == true) {
@@ -63,18 +56,6 @@ if (defined('NV_IS_SPADMIN')) {
     if ($nv_Request->get_int('file_id', 'post') > 0) {
         if ($file_extension == 'pdf') {
             $file_path = $row['file_path'];
-        } elseif (in_array($file_extension, ['xlsx', 'xls'])) {
-            $file_content = $nv_Request->get_array('file_content', 'post', []);
-            $spreadsheet = IOFactory::load($full_path);
-            $sheet = $spreadsheet->getActiveSheet();
-            foreach ($file_content as $rowIndex => $rowData) {
-                foreach ($rowData as $colIndex => $cellValue) {
-                    $cellCoordinate = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1) . ($rowIndex + 1);
-                    $sheet->setCellValue($cellCoordinate, $cellValue);
-                }
-            }
-            $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
-            $writer->save($full_path);
         } elseif (in_array($file_extension, ['doc', 'docx'])) {
             $file_content = $nv_Request->get_string('file_content', 'post');
             $zip = new ZipArchive;
@@ -99,7 +80,7 @@ if (defined('NV_IS_SPADMIN')) {
         $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
         $stmt->bindValue(':file_size', $file_size, PDO::PARAM_INT);
         $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-        
+
         if ($stmt->execute()) {
             updateLog($row['lev'], 'edit', $file_id);
             $status = $lang_module['success'];

@@ -17,7 +17,7 @@ if ($use_elastic == 1) {
         $query = $db->query('SELECT config_name, config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE module = ' . $db->quote($module_name) . ' AND lang = ' . $db->quote(NV_LANG_DATA));
         $config_elastic = $query->fetchAll(PDO::FETCH_KEY_PAIR);
         if (!isset($config_elastic) || !is_array($config_elastic)) {
-            die("Cấu hình Elasticsearch không hợp lệ");
+            error_log("Cấu hình Elasticsearch không hợp lệ");
         }
         $client = ClientBuilder::create()
             ->setHosts([$config_elastic['elas_host'] . ':' . $config_elastic['elas_port']])
@@ -56,6 +56,11 @@ if ($use_elastic == 1) {
         $use_elastic = 0;
     }
 }
+
+$allowed_extensions = [
+    'doc', 'txt', 'docx', 'pdf', 'xlsx', 'xls', 'jpg', 'png', 'gif', 'jpeg',
+    'zip', 'rar', 'html', 'css', 'js', 'php', 'sql', 'mp3', 'mp4', 'ppt', 'pptx'
+];
 
 if (!empty($array_op)) {
     preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m);
@@ -243,6 +248,7 @@ function updateAlias($file_id, $file_name)
 function deleteFileOrFolder($fileId)
 {
     global $db, $module_data;
+    $base_dir = '/uploads/fileserver';
 
     $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
     $row = $db->query($sql)->fetch();
@@ -256,7 +262,7 @@ function deleteFileOrFolder($fileId)
     $fullPath = NV_ROOTDIR . $filePath;
     $lev = $row['lev'];
 
-    $path = '/uploads/fileserver/';
+    $path = $base_dir . '/';
     $parts = explode($path, $filePath);
     $relativePath = end($parts);
     $relativePath = ltrim($relativePath, '/');
@@ -296,7 +302,7 @@ function deleteFileOrFolder($fileId)
         ':deleted_at' => NV_CURRENTTIME,
         ':updated_at' => $row['updated_at'],
         ':is_folder' => $row['is_folder'],
-        ':status' => 0,
+        ':status' => 1,
         ':lev' => $row['lev'],
         ':view' => $row['view'],
         ':share' => $row['share'],
@@ -307,8 +313,8 @@ function deleteFileOrFolder($fileId)
         updateDirectoryStatus($fileId, $newFolderName);
     }
 
-    $sqlDelete = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
-    $db->query($sqlDelete);
+    $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET status = 0 WHERE file_id = ' . $fileId;
+    $db->query($sqlUpdate);
 
     return true;
 }
@@ -363,7 +369,7 @@ function updateDirectoryStatus($parentId, $parentNewName = null)
             ':deleted_at' => NV_CURRENTTIME,
             ':updated_at' => $file['updated_at'],
             ':is_folder' => $file['is_folder'],
-            ':status' => 0,
+            ':status' => 1,
             ':lev' => $file['lev'],
             ':view' => $file['view'],
             ':share' => $file['share'],
@@ -374,8 +380,8 @@ function updateDirectoryStatus($parentId, $parentNewName = null)
             updateDirectoryStatus($fileId, $newName);
         }
 
-        $sqlDelete = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
-        $db->query($sqlDelete);
+        $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET status = 0 WHERE file_id = ' . $fileId;
+        $db->query($sqlUpdate);
     }
 
     return true;
@@ -390,7 +396,7 @@ function getUniqueFolderName($baseName, $lev)
 
     do {
         $sql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash 
-                WHERE lev = :lev AND file_name LIKE :file_name';
+                WHERE lev = :lev AND file_name LIKE :file_name AND status = 1';
         $stmt = $db->prepare($sql);
         $stmt->bindParam(':lev', $lev, PDO::PARAM_INT);
         $stmt->bindValue(':file_name', $newName, PDO::PARAM_STR);

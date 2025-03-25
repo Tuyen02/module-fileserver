@@ -461,13 +461,15 @@ function displayTree($tree)
     return $output;
 }
 
-
 function restoreChildItems($parentId, $parentNewPath)
 {
     global $db, $module_data;
 
-    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE lev = ' . intval($parentId);
-    $children = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE lev = :parent_id AND status = 1';
+    $stmt = $db->prepare($sql);
+    $stmt->bindValue(':parent_id', $parentId, PDO::PARAM_INT);
+    $stmt->execute();
+    $children = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($children as $child) {
         $oldChildPath = NV_ROOTDIR . $child['file_path'];
@@ -475,47 +477,150 @@ function restoreChildItems($parentId, $parentNewPath)
         $newChildPathBase = $parentNewPath . '/' . basename($relativePath);
         $newChildPath = NV_ROOTDIR . $newChildPathBase;
 
-        if (file_exists($newChildPath)) {
-            $newChildPathBase = str_replace(NV_ROOTDIR, '', $newChildPath);
-        }
-
         $childParentDir = dirname($newChildPath);
         if (!file_exists($childParentDir)) {
-            mkdir($childParentDir, 0777, true);
-        }
-
-        if (file_exists($oldChildPath)) {
-            if (!rename($oldChildPath, $newChildPath)) {
+            if (!mkdir($childParentDir, 0777, true)) {
+                error_log("Không thể tạo thư mục con: $childParentDir");
                 continue;
             }
         }
 
-        $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                      (file_id, file_name, alias, file_path, file_size, uploaded_by, created_at, updated_at, is_folder, status, lev, view, share, compressed) 
-                      VALUES (:file_id, :file_name, :alias, :file_path, :file_size, :uploaded_by, :created_at, :updated_at, :is_folder, 1, :lev, :view, :share, :compressed)';
-        $stmtInsert = $db->prepare($sqlInsert);
-        $stmtInsert->execute([
-            ':file_id' => $child['file_id'],
-            ':file_name' => $child['file_name'],
-            ':alias' => $child['alias'],
-            ':file_path' => $newChildPathBase,
-            ':file_size' => $child['file_size'],
-            ':uploaded_by' => $child['uploaded_by'],
-            ':created_at' => NV_CURRENTTIME,
-            ':updated_at' => 0,
-            ':is_folder' => $child['is_folder'],
-            ':lev' => $child['lev'],
-            ':view' => $child['view'],
-            ':share' => $child['share'],
-            ':compressed' => $child['compressed']
-        ]);
-
-        $sqlDelete = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = ' . intval($child['file_id']);
-        $db->query($sqlDelete);
-
-        if ($child['is_folder'] == 1) {
-            restoreChildItems($child['file_id'], $newChildPathBase);
+        if (file_exists($oldChildPath) && !rename($oldChildPath, $newChildPath)) {
+            error_log("Không thể di chuyển từ $oldChildPath đến $newChildPath");
+            continue;
         }
+
+        try {
+            $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = :file_id';
+            $stmtCheck = $db->prepare($sqlCheck);
+            $stmtCheck->bindValue(':file_id', $child['file_id'], PDO::PARAM_INT);
+            $stmtCheck->execute();
+
+            if ($stmtCheck->fetchColumn() > 0) {
+                $sqlUpdateFiles = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                                   SET file_path = :file_path, status = 1, updated_at = :updated_at 
+                                   WHERE file_id = :file_id';
+                $stmtUpdateFiles = $db->prepare($sqlUpdateFiles);
+                $stmtUpdateFiles->execute([
+                    ':file_path' => $newChildPathBase,
+                    ':updated_at' => NV_CURRENTTIME,
+                    ':file_id' => $child['file_id']
+                ]);
+            } else {
+                $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                              (file_id, file_name, alias, file_path, file_size, uploaded_by, created_at, updated_at, is_folder, status, lev, view, share, compressed) 
+                              VALUES (:file_id, :file_name, :alias, :file_path, :file_size, :uploaded_by, :created_at, :updated_at, :is_folder, 1, :lev, :view, :share, :compressed)';
+                $stmtInsert = $db->prepare($sqlInsert);
+                $stmtInsert->execute([
+                    ':file_id' => $child['file_id'],
+                    ':file_name' => $child['file_name'],
+                    ':alias' => $child['alias'],
+                    ':file_path' => $newChildPathBase,
+                    ':file_size' => $child['file_size'],
+                    ':uploaded_by' => $child['uploaded_by'],
+                    ':created_at' => NV_CURRENTTIME,
+                    ':updated_at' => 0,
+                    ':is_folder' => $child['is_folder'],
+                    ':lev' => $child['lev'],
+                    ':view' => $child['view'],
+                    ':share' => $child['share'],
+                    ':compressed' => $child['compressed']
+                ]);
+            }
+
+            $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_trash SET status = 0 WHERE file_id = :file_id';
+            $stmtUpdate = $db->prepare($sqlUpdate);
+            $stmtUpdate->bindValue(':file_id', $child['file_id'], PDO::PARAM_INT);
+            $stmtUpdate->execute();
+
+            if ($child['is_folder'] == 1) {
+                restoreChildItems($child['file_id'], $newChildPathBase);
+            }
+        } catch (PDOException $e) {
+            error_log("Lỗi database khi khôi phục file_id " . $child['file_id'] . ": " . $e->getMessage());
+            continue;
+        }
+    }
+}
+
+function restoreFileOrFolder($fileId)
+{
+    global $db, $module_data;
+
+    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = ' . intval($fileId) . ' AND status = 1';
+    $row = $db->query($sql)->fetch();
+
+    if (empty($row)) {
+        error_log("Không tìm thấy bản ghi trong thùng rác cho file_id: $fileId với status = 1");
+        return false;
+    }
+
+    $oldPath = NV_ROOTDIR . $row['file_path'];
+    $newPathBase = str_replace('/data/tmp/trash/', '/uploads/fileserver/', $row['file_path']);
+    $newPath = NV_ROOTDIR . $newPathBase;
+
+    $parentDir = dirname($newPath);
+    if (!file_exists($parentDir) && !mkdir($parentDir, 0777, true)) {
+        error_log("Không thể tạo thư mục: $parentDir");
+        return false;
+    }
+
+    if (file_exists($oldPath) && !rename($oldPath, $newPath)) {
+        error_log("Không thể di chuyển từ $oldPath đến $newPath");
+        return false;
+    }
+
+    try {
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = :file_id';
+        $stmtCheck = $db->prepare($sqlCheck);
+        $stmtCheck->bindValue(':file_id', $row['file_id'], PDO::PARAM_INT);
+        $stmtCheck->execute();
+
+        if ($stmtCheck->fetchColumn() > 0) {
+            $sqlUpdateFiles = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                               SET file_path = :file_path, status = 1, updated_at = :updated_at 
+                               WHERE file_id = :file_id';
+            $stmtUpdateFiles = $db->prepare($sqlUpdateFiles);
+            $stmtUpdateFiles->execute([
+                ':file_path' => $newPathBase,
+                ':updated_at' => NV_CURRENTTIME,
+                ':file_id' => $row['file_id']
+            ]);
+        } else {
+            $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                          (file_id, file_name, alias, file_path, file_size, uploaded_by, created_at, updated_at, is_folder, status, lev, view, share, compressed) 
+                          VALUES (:file_id, :file_name, :alias, :file_path, :file_size, :uploaded_by, :created_at, :updated_at, :is_folder, 1, :lev, :view, :share, :compressed)';
+            $stmtInsert = $db->prepare($sqlInsert);
+            $stmtInsert->execute([
+                ':file_id' => $row['file_id'],
+                ':file_name' => $row['file_name'],
+                ':alias' => $row['alias'],
+                ':file_path' => $newPathBase,
+                ':file_size' => $row['file_size'],
+                ':uploaded_by' => $row['uploaded_by'],
+                ':created_at' => NV_CURRENTTIME,
+                ':updated_at' => 0,
+                ':is_folder' => $row['is_folder'],
+                ':lev' => $row['lev'],
+                ':view' => $row['view'],
+                ':share' => $row['share'],
+                ':compressed' => $row['compressed']
+            ]);
+        }
+
+        $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_trash SET status = 0 WHERE file_id = :file_id';
+        $stmtUpdate = $db->prepare($sqlUpdate);
+        $stmtUpdate->bindValue(':file_id', $fileId, PDO::PARAM_INT);
+        $stmtUpdate->execute();
+
+        if ($row['is_folder'] == 1) {
+            restoreChildItems($fileId, $newPathBase);
+        }
+
+        return true;
+    } catch (PDOException $e) {
+        error_log("Lỗi database khi khôi phục file_id $fileId: " . $e->getMessage());
+        return false;
     }
 }
 
@@ -537,68 +642,8 @@ function deletePermanently($fileId)
         unlink($fullPath);
     }
 
-    $sqlDelete = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = ' . intval($fileId);
-    $db->query($sqlDelete);
-
-    return true;
-}
-
-function restoreFileOrFolder($fileId)
-{
-    global $db, $module_data;
-
-    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = ' . intval($fileId);
-    $row = $db->query($sql)->fetch();
-
-    if (empty($row)) {
-        return false;
-    }
-
-    $oldPath = NV_ROOTDIR . $row['file_path'];
-    $newPathBase = str_replace('/data/tmp/trash/', '/uploads/fileserver/', $row['file_path']);
-    $newPath = NV_ROOTDIR . $newPathBase;
-
-    if (file_exists($newPath)) {
-        $newPathBase = str_replace(NV_ROOTDIR, '', $newPath);
-    }
-
-    $parentDir = dirname($newPath);
-    if (!file_exists($parentDir)) {
-        mkdir($parentDir, 0777, true);
-    }
-
-    if (file_exists($oldPath)) {
-        if (!rename($oldPath, $newPath)) {
-            return false;
-        }
-    }
-
-    $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                  (file_id, file_name, alias, file_path, file_size, uploaded_by, created_at, updated_at, is_folder, status, lev, view, share, compressed) 
-                  VALUES (:file_id, :file_name, :alias, :file_path, :file_size, :uploaded_by, :created_at, :updated_at, :is_folder, 1, :lev, :view, :share, :compressed)';
-    $stmtInsert = $db->prepare($sqlInsert);
-    $stmtInsert->execute([
-        ':file_id' => $row['file_id'],
-        ':file_name' => $row['file_name'],
-        ':alias' => $row['alias'],
-        ':file_path' => $newPathBase,
-        ':file_size' => $row['file_size'],
-        ':uploaded_by' => $row['uploaded_by'],
-        ':created_at' => NV_CURRENTTIME,
-        ':updated_at' => 0,
-        ':is_folder' => $row['is_folder'],
-        ':lev' => $row['lev'],
-        ':view' => $row['view'],
-        ':share' => $row['share'],
-        ':compressed' => $row['compressed']
-    ]);
-
-    $sqlDelete = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = ' . intval($fileId);
-    $db->query($sqlDelete);
-
-    if ($row['is_folder'] == 1) {
-        restoreChildItems($fileId, $newPathBase);
-    }
+    $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_trash SET status = 0 WHERE file_id = ' . intval($fileId);
+    $db->query($sqlUpdate);
 
     return true;
 }
