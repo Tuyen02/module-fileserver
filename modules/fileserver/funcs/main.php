@@ -369,34 +369,53 @@ if (!empty($action)) {
     if ($action == 'rename') {
         $fileId = intval($nv_Request->get_int('file_id', 'post', 0));
         $newName = trim($nv_Request->get_title('new_name', 'post', ''));
-
+    
         $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id =' . $fileId;
         $stmt = $db->prepare($sql);
         $stmt->execute();
         $file = $stmt->fetch();
-
+    
         $status = 'error';
         $mess = $lang_module['f_has_exit'];
         if ($file) {
             $oldFilePath = $file['file_path'];
             $oldFullPath = NV_ROOTDIR . '/' . $oldFilePath;
-
-            $newFilePath = dirname($oldFilePath) . '/' . $newName;
+    
+            $fileInfo = pathinfo($newName);
+            $baseName = $fileInfo['filename'];
+            $extension = isset($fileInfo['extension']) ? '.' . $fileInfo['extension'] : '';
+            
+            $directory = dirname($oldFilePath);
+            $newFilePath = $directory . '/' . $newName;
             $newFullPath = NV_ROOTDIR . '/' . $newFilePath;
-
+    
+            if (file_exists($newFullPath)) {
+                $counter = 1;
+                $suggestedName = $baseName . '_' . $counter . $extension;
+                $suggestedFullPath = NV_ROOTDIR . '/' . $directory . '/' . $suggestedName;
+                
+                while (file_exists($suggestedFullPath)) {
+                    $counter++;
+                    $suggestedName = $baseName . '_' . $counter . $extension;
+                    $suggestedFullPath = NV_ROOTDIR . '/' . $directory . '/' . $suggestedName;
+                }
+                
+                $mess = $lang_module['name_exists_suggest'] . $suggestedName;
+            }
+            
             if (rename($oldFullPath, $newFullPath)) {
                 $mess = $lang_module['cannot_update_db'];
                 $alias = change_alias($newName . '_' . $fileId);
                 $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET file_name = :file_name, alias = :alias, file_path = :new_path, updated_at = :updated_at WHERE file_id = ' . $fileId;
                 $stmtUpdate = $db->prepare($sqlUpdate);
                 $stmtUpdate->bindParam(':file_name', $newName);
-                $stmtUpdate->bindParam(':alias',$alias);
+                $stmtUpdate->bindParam(':alias', $alias);
                 $stmtUpdate->bindParam(':new_path', $newFilePath);
                 $stmtUpdate->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 if ($stmtUpdate->execute()) {
                     $status = 'success';
                     $mess = $lang_module['rename_ok'];
-
+    
                     if ($use_elastic == 1) {
                         $file_data = [
                             'file_id' => $fileId,
@@ -407,7 +426,7 @@ if (!empty($action)) {
                         ];
                         updateElasticSearch($client, 'rename', $file_data);
                     }
-
+    
                     if ($file['is_folder'] == 1) {
                         $sqlUpdateChildren = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET file_path = REPLACE(file_path, :old_path, :new_path) WHERE file_path LIKE :like_old_path';
                         $stmtUpdateChildren = $db->prepare($sqlUpdateChildren);

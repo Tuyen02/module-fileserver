@@ -109,3 +109,5 @@ $lang_module['total_file'] = 'Số file:';
 $lang_module['total_folder'] = 'Số thư mục:';
 $lang_module['compress_modal'] = 'Nén file';
 $lang_module['zip_file_name'] = 'Tên file nén';
+$lang_module['name_exists_suggest'] = 'Tên đã tồn tại bạn có muốn tiếp tục ? ';
+$lang_module['cancel_btn'] = 'Hủy';

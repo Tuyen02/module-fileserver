@@ -220,7 +220,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">{LANG.close_btn}</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">{LANG.cancel_btn}</button>
                 <button type="button" class="btn btn-primary" onclick="submitRenameForm();">{LANG.submit_btn}</button>
             </div>
         </div>
