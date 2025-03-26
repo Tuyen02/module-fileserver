@@ -36,7 +36,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
             }
         } catch (PDOException $e) {
             $status = false;
-            trigger_error("Error updating config: " . $e->getMessage());
+            error_log("Error updating config: " . $e->getMessage());
         }
     }
 
