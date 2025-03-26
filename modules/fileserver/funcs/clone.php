@@ -106,7 +106,7 @@ if ($copy == 1) {
                                 'file_path' => $new_file_path,
                                 'file_size' => $row['file_size'],
                                 'uploaded_by' => $user_info['userid'],
-                                'created_at' => date('c', NV_CURRENTTIME),
+                                'created_at' =>  NV_CURRENTTIME,
                                 'lev' => $target_lev,
                                 'is_folder' => 0
                             ]
@@ -180,7 +180,7 @@ if ($move == 1) {
                                 'doc' => [
                                     'file_path' => $new_file_path,
                                     'lev' => $target_lev,
-                                    'updated_at' => date('c', NV_CURRENTTIME)
+                                    'updated_at' =>  NV_CURRENTTIME
                                 ]
                             ]
                         ];

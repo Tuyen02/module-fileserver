@@ -192,8 +192,11 @@ function calculateFileFolderStats($lev)
     $total_files = 0;
     $total_folders = 0;
     $total_size = 0;
+    $total_files_del = 0;
+    $total_folders_del = 0;
+    $total_size_del = 0;
 
-    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . intval($lev) . ' AND status = 0';
+    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . intval($lev) . ' AND status = 1';
     $files = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($files as $file) {
@@ -203,15 +206,38 @@ function calculateFileFolderStats($lev)
             $total_files += $folder_stats['files'];
             $total_folders += $folder_stats['folders'];
             $total_size += $folder_stats['size'];
+            $total_files_del += $folder_stats['files_del'];
+            $total_folders_del += $folder_stats['folders_del'];
+            $total_size_del += $folder_stats['size_del'];
         } else {
             $total_files++;
             $total_size += $file['file_size'];
         }
     }
+
+    $sql_del = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . intval($lev) . ' AND status = 0';
+    $files_del = $db->query($sql_del)->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($files_del as $file) {
+        if ($file['is_folder'] == 1) {
+            $total_folders_del++;
+            $folder_stats = calculateFileFolderStats($file['file_id']);
+            $total_files_del += $folder_stats['files_del'];
+            $total_folders_del += $folder_stats['folders_del'];
+            $total_size_del += $folder_stats['size_del'];
+        } else {
+            $total_files_del++;
+            $total_size_del += $file['file_size'];
+        }
+    }
+
     return [
         'files' => $total_files,
         'folders' => $total_folders,
-        'size' => $total_size
+        'size' => $total_size,
+        'files_del' => $total_files_del,
+        'folders_del' => $total_folders_del,
+        'size_del' => $total_size_del
     ];
 }
 
@@ -232,9 +258,9 @@ function updateLog($lev, $action = '', $value = '')
     $stmtInsert->bindValue(':total_files', $stats['files'], PDO::PARAM_INT);
     $stmtInsert->bindValue(':total_folders', $stats['folders'], PDO::PARAM_INT);
     $stmtInsert->bindValue(':total_size', $stats['size'], PDO::PARAM_INT);
-    $stmtInsert->bindValue(':total_files_del', $stats['files_del'] ?? 0, PDO::PARAM_INT);
-    $stmtInsert->bindValue(':total_folders_del', $stats['folders_del'] ?? 0, PDO::PARAM_INT);
-    $stmtInsert->bindValue(':total_size_del', $stats['size_del'] ?? 0, PDO::PARAM_INT);
+    $stmtInsert->bindValue(':total_files_del', $stats['files_del'], PDO::PARAM_INT);
+    $stmtInsert->bindValue(':total_folders_del', $stats['folders_del'], PDO::PARAM_INT);
+    $stmtInsert->bindValue(':total_size_del', $stats['size_del'], PDO::PARAM_INT);
     $stmtInsert->bindValue(':log_time', NV_CURRENTTIME, PDO::PARAM_INT);
 
     $stmtInsert->execute();

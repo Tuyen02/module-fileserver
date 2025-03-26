@@ -462,10 +462,6 @@ if (!empty($action)) {
     }
 
     if ($action == 'compress') {
-        if (!defined('NV_IS_SPADMIN')) {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_thing_to_do']]);
-        }
-
         if (empty($fileIds)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
         }
@@ -481,6 +477,7 @@ if (!empty($action)) {
 
         $zipFilePath = $base_dir . '/' . $zipFileName;
         $zipFullPath = NV_ROOTDIR . $zipFilePath;
+        $mess = $zipFilePath;
 
         $compressResult = compressFiles($fileIds, $zipFullPath);
 
@@ -517,7 +514,6 @@ if (!empty($action)) {
                         'created_at' => NV_CURRENTTIME,
                         'compressed' => $compressed
                     ];
-    
                     try {
                         updateElasticSearch($client, 'compress', $file_data);
                         $client->indices()->refresh(['index' => 'fileserver']);

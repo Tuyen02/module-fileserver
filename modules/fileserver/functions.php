@@ -99,7 +99,7 @@ function syncElasticSearch($client)
                 'is_folder' => $row['is_folder'],
                 'status' => $row['status'],
                 'lev' => $row['lev'],
-                'created_at' => date('c', $row['created_at'])
+                'created_at' =>  $row['created_at']
             ];
         }
         if (!empty($bulk_params['body'])) {
@@ -127,7 +127,7 @@ function updateElasticSearch($client, $action, $file_data)
                         'is_folder' => $file_data['is_folder'],
                         'status' => 1,
                         'lev' => $file_data['lev'],
-                        'created_at' => date('c', $file_data['created_at'])
+                        'created_at' =>  $file_data['created_at']
                     ]
                 ];
                 $client->index($params);
@@ -163,7 +163,7 @@ function updateElasticSearch($client, $action, $file_data)
                     'body' => [
                         'doc' => [
                             'file_name' => $file_data['file_name'],
-                            'updated_at' => date('c', $file_data['updated_at'])
+                            'updated_at' =>  $file_data['updated_at']
                         ]
                     ]
                 ];
@@ -186,7 +186,7 @@ function updateElasticSearch($client, $action, $file_data)
                         ];
                         $bulk_params['body'][] = [
                             'doc' => [
-                                'updated_at' => date('c', NV_CURRENTTIME)
+                                'updated_at' =>  NV_CURRENTTIME
                             ]
                         ];
                     }
@@ -209,7 +209,7 @@ function updateElasticSearch($client, $action, $file_data)
                         'is_folder' => 0,
                         'status' => 1,
                         'lev' => $file_data['lev'],
-                        'created_at' => date('c', $file_data['created_at']),
+                        'created_at' =>  $file_data['created_at'],
                         'compressed' => $file_data['compressed']
                     ]
                 ];
@@ -222,7 +222,7 @@ function updateElasticSearch($client, $action, $file_data)
                     'id' => $file_data['file_id'],
                     'body' => [
                         'doc' => [
-                            'updated_at' => date('c', $file_data['updated_at'])
+                            'updated_at' =>  $file_data['updated_at']
                         ]
                     ]
                 ];
@@ -286,28 +286,49 @@ function deleteFileOrFolder($fileId)
 
     $fileSize = $isFolder ? calculateFolderSize($fileId) : filesize($backupPath);
 
+    $checkTrashSql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = ' . $fileId;
+    $existsInTrash = $db->query($checkTrashSql)->fetchColumn();
 
-    $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_trash 
-        (file_id, file_name, alias, file_path, file_size, uploaded_by, deleted_at, updated_at, is_folder, status, lev, view, share, compressed) 
-        VALUES (:file_id, :file_name, :alias, :file_path, :file_size, :uploaded_by, :deleted_at, :updated_at, :is_folder, :status, :lev, :view, :share, :compressed)';
     $trash_path = '/data/tmp/trash/' . $newRelativePath;
-    $stmtInsert = $db->prepare($sqlInsert);
-    $stmtInsert->execute([
-        ':file_id' => $row['file_id'],
-        ':file_name' => $isFolder ? $newFolderName : $row['file_name'],
-        ':alias' => $row['alias'],
-        ':file_path' => $trash_path,
-        ':file_size' => $fileSize,
-        ':uploaded_by' => $row['uploaded_by'],
-        ':deleted_at' => NV_CURRENTTIME,
-        ':updated_at' => $row['updated_at'],
-        ':is_folder' => $row['is_folder'],
-        ':status' => 1,
-        ':lev' => $row['lev'],
-        ':view' => $row['view'],
-        ':share' => $row['share'],
-        ':compressed' => $row['compressed']
-    ]);
+
+    if ($existsInTrash) {
+        $sqlUpdateTrash = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_trash 
+            SET status = 1,
+                file_path = :file_path,
+                file_size = :file_size,
+                deleted_at = :deleted_at
+            WHERE file_id = :file_id';
+        
+        $stmtUpdate = $db->prepare($sqlUpdateTrash);
+        $stmtUpdate->execute([
+            ':file_path' => $trash_path,
+            ':file_size' => $fileSize,
+            ':deleted_at' => NV_CURRENTTIME,
+            ':file_id' => $row['file_id']
+        ]);
+    } else {
+        $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_trash 
+            (file_id, file_name, alias, file_path, file_size, uploaded_by, deleted_at, updated_at, is_folder, status, lev, view, share, compressed) 
+            VALUES (:file_id, :file_name, :alias, :file_path, :file_size, :uploaded_by, :deleted_at, :updated_at, :is_folder, :status, :lev, :view, :share, :compressed)';
+        
+        $stmtInsert = $db->prepare($sqlInsert);
+        $stmtInsert->execute([
+            ':file_id' => $row['file_id'],
+            ':file_name' => $isFolder ? $newFolderName : $row['file_name'],
+            ':alias' => $row['alias'],
+            ':file_path' => $trash_path,
+            ':file_size' => $fileSize,
+            ':uploaded_by' => $row['uploaded_by'],
+            ':deleted_at' => NV_CURRENTTIME,
+            ':updated_at' => $row['updated_at'],
+            ':is_folder' => $row['is_folder'],
+            ':status' => 1,
+            ':lev' => $row['lev'],
+            ':view' => $row['view'],
+            ':share' => $row['share'],
+            ':compressed' => $row['compressed']
+        ]);
+    }
 
     if ($isFolder) {
         updateDirectoryStatus($fileId, $newFolderName);
@@ -440,9 +461,10 @@ function compressFiles($fileIds, $zipFilePath)
     $filePaths = [];
 
     $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
-    $sql = "SELECT file_path, file_name FROM " . NV_PREFIXLANG . '_' . $module_data . "_files 
-            WHERE file_id IN ($placeholders) AND status = 1";
-    $stmt = $db->query($sql);
+    $sql = 'SELECT file_path, file_name FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+            WHERE file_id IN (' . $placeholders . ') AND status = 1';
+    $stmt = $db->prepare($sql); 
+    $stmt->execute($fileIds); 
     $rows = $stmt->fetchAll();
 
     if (empty($rows)) {

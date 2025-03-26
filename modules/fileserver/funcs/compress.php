@@ -6,13 +6,13 @@ $page_title = $lang_module['compress'];
 
 $action = $nv_Request->get_title('action', 'post', '');
 $page = $nv_Request->get_int('page', 'get', 1);
+$base_dir = '/uploads/fileserver';
 
-$sql = "SELECT file_id, file_name, file_size, file_path, compressed, alias FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id = " . $lev;
+$sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $lev;
 $result = $db->query($sql);
 $row = $result->fetch();
 
-$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
-
+$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
 $array_mod_title[] = [
     'catid' => 0,
     'title' => $row['file_name'],
@@ -29,7 +29,7 @@ if (!$row) {
     $message = $lang_module['f_has_exit'];
 } else {
     $zipFilePath = NV_ROOTDIR . $row['file_path'];
-    $extractTo = NV_ROOTDIR . $base_url . '/' . pathinfo($row['file_name'], PATHINFO_FILENAME);
+    $extractTo = NV_ROOTDIR . $base_dir . '/' . pathinfo($row['file_name'], PATHINFO_FILENAME);
 
     if ($action === 'unzip' && $row['compressed'] != 0) {
         if (!is_dir($extractTo)) {
@@ -63,7 +63,7 @@ if (!$row) {
             updateAlias($new_id, $new_name);
             addToDatabase($extractTo, $new_id);
 
-            $redirect_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '&page=' . $page;
+            $redirect_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '&page=' . $page;
             nv_redirect_location($redirect_url);
         } else {
             $status = $lang_module['error'];
@@ -73,7 +73,7 @@ if (!$row) {
 
             if (!empty($fileIds)) {
                 $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
-                $sql = "SELECT * FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id IN ($placeholders)";
+                $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id IN (' . $placeholders . ')';
                 $stmt = $db->prepare($sql);
                 $stmt->execute($fileIds);
                 $list = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -85,7 +85,7 @@ if (!$row) {
 
         if (!empty($fileIds)) {
             $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
-            $sql = "SELECT * FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_id IN ($placeholders)";
+            $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id IN (' . $placeholders . ')';
             $stmt = $db->prepare($sql);
             $stmt->execute($fileIds);
             $list = $stmt->fetchAll(PDO::FETCH_ASSOC);

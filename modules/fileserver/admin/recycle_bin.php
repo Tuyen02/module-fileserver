@@ -220,11 +220,11 @@ if ($success) {
 }
 
 foreach ($result as $row) {
-    $row['deleted_at'] = date('d/m/Y', $row['deleted_at']);
+    $row['deleted_at'] = NV_CURRENTTIME;
     $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
     $row['icon_class'] = getFileIconClass($row);
     $row['url_delete'] = $base_url . '&file_id=' . $row['file_id'] . '&action=delete&checksess=' . $row['checksess'];
-    $row['url_restore'] = $base_url . '&file_id=' . $row['file_id'] . '&action=restore'; // Không cần checksess cho restore
+    $row['url_restore'] = $base_url . '&file_id=' . $row['file_id'] . '&action=restore'; 
     $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');
