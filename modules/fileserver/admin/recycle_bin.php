@@ -7,7 +7,7 @@ if (!defined('NV_IS_FILE_ADMIN')) {
 $error = '';
 $success = '';
 
-purgeOldTrashItems();
+//purgeOldTrashItems();
 
 $perpage = 5;
 $page = $nv_Request->get_int('page', 'get', 1);
