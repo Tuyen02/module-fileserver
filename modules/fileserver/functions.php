@@ -273,7 +273,7 @@ function deleteFileOrFolder($fileId)
 
     $backupDir = dirname($backupPath);
     if (!file_exists($backupDir)) {
-        mkdir($backupDir, 0777, true);
+        mkdir($backupDir, 777, true);
     }
 
     if (file_exists($fullPath)) {
@@ -365,7 +365,7 @@ function updateDirectoryStatus($parentId, $parentNewName = null)
         $relativeFilePath = end($parts);
         $relativeFilePath = ltrim($relativeFilePath, '/');
 
-        if ($parentNewName !== null) {
+        if ($parentNewName != null) {
             $relativeFilePath = $parentNewName . '/' . basename($relativeFilePath);
         }
 

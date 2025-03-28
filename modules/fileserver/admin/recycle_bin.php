@@ -4,10 +4,12 @@ if (!defined('NV_IS_FILE_ADMIN')) {
     exit('Stop!!!');
 }
 
+$page_title = $lang_module['recycle_bin'];
+
 $error = '';
 $success = '';
 
-//purgeOldTrashItems();
+purgeOldTrashItems();
 
 $perpage = 5;
 $page = $nv_Request->get_int('page', 'get', 1);
@@ -54,7 +56,7 @@ if (!empty($search_term)) {
 }
 
 if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
-    $is_folder = ($search_type === 'file') ? 0 : 1;
+    $is_folder = ($search_type == 'file') ? 0 : 1;
     $sql .= ' AND is_folder = :is_folder';
     $total_sql .= ' AND is_folder = :is_folder';
 }

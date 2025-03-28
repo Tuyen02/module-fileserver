@@ -8,10 +8,11 @@ $error = '';
 $success = '';
 $admin_info['allow_files_type'] = ['xlsx', 'xls'];
 global $module_name;
+$page_title = $lang_module['import_file'];
 
 function downloadFromUrl($fileUrl, $dir = './data/tmp/import-file') {
     if (!file_exists($dir)) {
-        mkdir($dir, 0777, true);
+        mkdir($dir, 777, true);
     }
 
     if (preg_match('/\/file\/d\/(.+?)(\/|$)/', $fileUrl, $matches)) {
@@ -85,7 +86,7 @@ function importSheetData($sheet, $parent_id, &$importedSheets, $parent_path = '/
         }
 
         if ($is_folder && !file_exists($full_path)) {
-            mkdir($full_path, 0777, true);
+            mkdir($full_path, 777, true);
         }
 
         $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_fileserver_files (file_name, file_path, file_size, uploaded_by, created_at, is_folder, lev) 
@@ -124,7 +125,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['excel_
     } else {
         $upload_dir = NV_ROOTDIR . '/data/tmp/import-file';
         if (!file_exists($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
+            mkdir($upload_dir, 777, true);
         }
 
         $excel_path = $upload_dir . '/' . $_FILES['excel_file']['name'];
@@ -144,11 +145,8 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['excel_
                 if (!in_array($sheetName, $importedSheets)) {
                     $sheet = $objPHPExcel->getSheet($sheetIndex);
 
-                    $sql = 'SELECT file_id, file_path FROM ' . NV_PREFIXLANG . '_fileserver_files_files WHERE file_name = :file_name AND is_folder = 1 AND lev = 0';
-                    $stmt = $db->prepare($sql);
-                    $stmt->bindParam(':file_name', $sheetName, PDO::PARAM_STR);
-                    $stmt->execute();
-                    $parent = $stmt->fetch(PDO::FETCH_ASSOC);
+                    $sql = 'SELECT file_id, file_path FROM ' . NV_PREFIXLANG . '_fileserver_files_files WHERE file_name = ' . $db->quote($sheetName) . ' AND is_folder = 1 AND lev = 0';
+                    $parent = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
 
                     if ($parent) {
                         importSheetData($sheet, $parent['file_id'], $importedSheets, $parent['file_path']);

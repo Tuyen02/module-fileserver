@@ -3,6 +3,8 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
+$message = '';
+
 if (!defined('NV_IS_SPADMIN')) {
     $status = $lang_module['error'];
     $message = $lang_module['not_thing_to_do'];
@@ -42,21 +44,14 @@ if ($rank > 0) {
 }
 
 $sql = 'SELECT file_id, file_name, file_path, lev FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-        WHERE lev = :lev AND is_folder = 1 AND status = 1 ORDER BY file_id ASC';
-$stmt = $db->prepare($sql);
-$stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
-$stmt->execute();
-$directories = $stmt->fetchAll();
+    WHERE lev = ' . $lev . ' AND is_folder = 1 AND status = 1 ORDER BY file_id ASC';
+$directories = $db->query($sql)->fetchAll();
 
 if (empty($directories)) {
     $sql = 'SELECT file_id, alias, file_name, file_path, lev FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
             WHERE lev = 0 AND is_folder = 1 AND status = 1 ORDER BY file_id ASC';
-    $stmt = $db->prepare($sql);
-    $stmt->execute();
-    $directories = $stmt->fetchAll();
+    $directories = $db->query($sql)->fetchAll();
 }
-
-$message = '';
 
 if ($copy == 1) {
     $message = $lang_module['copy_false'];

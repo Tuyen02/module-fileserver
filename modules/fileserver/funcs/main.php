@@ -4,6 +4,8 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
+
+print_r(NV_ROOTDIR);
 $page_title = $module_info['site_title'];
 $key_words = $module_info['keywords'];
 $description = $module_info['description'];
@@ -77,7 +79,7 @@ if ($use_elastic == 1) {
         }
 
         if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
-            $is_folder = ($search_type === 'file') ? 0 : 1;
+            $is_folder = ($search_type == 'file') ? 0 : 1;
             $searchParams['body']['query']['bool']['filter'][] = [
                 'term' => ['is_folder' => $is_folder]
             ];
@@ -121,7 +123,7 @@ if ($use_elastic == 1) {
         }
 
         if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
-            $is_folder = ($search_type === 'file') ? 0 : 1;
+            $is_folder = ($search_type == 'file') ? 0 : 1;
             $sql .= ' AND is_folder = :is_folder';
             $params[':is_folder'] = $is_folder;
         }
@@ -275,7 +277,7 @@ if (!empty($action)) {
             $mess = $lang_module['create_ok'];
         } else {
             $status = file_put_contents($full_dir, '') !== false ? 'success' : 'error';
-            $mess = $status === 'success' ? $lang_module['create_ok'] : $lang_module['cannot_create_file'];
+            $mess = $status == 'success' ? $lang_module['create_ok'] : $lang_module['cannot_create_file'];
         }
 
         if ($status == 'success') {
@@ -449,7 +451,7 @@ if (!empty($action)) {
         }
 
         $name_with_zip = $name_f;
-        if (pathinfo($name_f, PATHINFO_EXTENSION) !== 'zip') {
+        if (pathinfo($name_f, PATHINFO_EXTENSION) != 'zip') {
             $name_with_zip = $name_f . '.zip';
         }
 
@@ -490,7 +492,7 @@ if (!empty($action)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['zip_file_name_empty']]);
         }
 
-        if (pathinfo($zipFileName, PATHINFO_EXTENSION) !== 'zip') {
+        if (pathinfo($zipFileName, PATHINFO_EXTENSION) != 'zip') {
             $zipFileName .= '.zip';
         }
 
@@ -582,7 +584,7 @@ if ($download == 1) {
             $zipFullPath = NV_ROOTDIR . $zipFilePath;
 
             $zipArchive = new ZipArchive();
-            if ($zipArchive->open($zipFullPath, ZipArchive::CREATE) === TRUE) {
+            if ($zipArchive->open($zipFullPath, ZipArchive::CREATE) == TRUE) {
                 $files = new RecursiveIteratorIterator(
                     new RecursiveDirectoryIterator($file_path),
                     RecursiveIteratorIterator::LEAVES_ONLY
@@ -605,7 +607,7 @@ if ($download == 1) {
                     $zip = $zipFullPath;
                 }
             }
-        } elseif (pathinfo($file_path, PATHINFO_EXTENSION) === 'zip') {
+        } elseif (pathinfo($file_path, PATHINFO_EXTENSION) == 'zip') {
             if (file_exists($file_path)) {
                 $zip = $file_path;
             }

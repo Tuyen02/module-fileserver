@@ -159,11 +159,8 @@ function updateAlias($file_id, $file_name)
 {
     global $db, $module_data;
     $alias = change_alias($file_name . '_' . $file_id);
-    $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET alias=:alias WHERE file_id = :file_id';
-    $stmtUpdate = $db->prepare($sqlUpdate);
-    $stmtUpdate->bindValue(':alias', $alias, PDO::PARAM_INT);
-    $stmtUpdate->bindValue(':file_id', $file_id, PDO::PARAM_INT);
-    $stmtUpdate->execute();
+    $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET alias=' . $db->quote($alias) . ' WHERE file_id = ' . $file_id;
+    $db->query($sqlUpdate);
     return true;
 }
 
@@ -505,7 +502,7 @@ function restoreChildItems($parentId, $parentNewPath)
 
         $childParentDir = dirname($newChildPath);
         if (!file_exists($childParentDir)) {
-            if (!mkdir($childParentDir, 0777, true)) {
+            if (!mkdir($childParentDir, 777, true)) {
                 error_log("Không thể tạo thư mục con: $childParentDir");
                 continue;
             }
@@ -586,7 +583,7 @@ function restoreFileOrFolder($fileId)
     $newPath = NV_ROOTDIR . $newPathBase;
 
     $parentDir = dirname($newPath);
-    if (!file_exists($parentDir) && !mkdir($parentDir, 0777, true)) {
+    if (!file_exists($parentDir) && !mkdir($parentDir, 777, true)) {
         error_log("Không thể tạo thư mục: $parentDir");
         return false;
     }

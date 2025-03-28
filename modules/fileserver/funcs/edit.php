@@ -38,7 +38,7 @@ if (file_exists($full_path)) {
     } elseif (in_array($file_extension, ['doc', 'docx'])) {
         $zip = new ZipArchive;
         if ($zip->open($full_path) == true) {
-            if (($index = $zip->locateName('word/document.xml')) !== false) {
+            if (($index = $zip->locateName('word/document.xml')) != false) {
                 $data = $zip->getFromIndex($index);
                 $xml = new SimpleXMLElement($data);
                 $file_content = strip_tags($xml->asXML());
@@ -60,7 +60,7 @@ if (defined('NV_IS_SPADMIN')) {
             $file_content = $nv_Request->get_string('file_content', 'post');
             $zip = new ZipArchive;
             if ($zip->open($full_path) == true) {
-                if (($index = $zip->locateName('word/document.xml')) !== false) {
+                if (($index = $zip->locateName('word/document.xml')) != false) {
                     $xml = new SimpleXMLElement('<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>');
                     $body = $xml->addChild('w:body');
                     $body->addChild('w:p', htmlspecialchars($file_content));

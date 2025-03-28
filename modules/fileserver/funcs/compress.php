@@ -31,13 +31,13 @@ if (!$row) {
     $zipFilePath = NV_ROOTDIR . $row['file_path'];
     $extractTo = NV_ROOTDIR . $base_dir . '/' . pathinfo($row['file_name'], PATHINFO_FILENAME);
 
-    if ($action === 'unzip' && $row['compressed'] != 0) {
+    if ($action == 'unzip' && $row['compressed'] != 0) {
         if (!is_dir($extractTo)) {
-            mkdir($extractTo, 0777, true);
+            mkdir($extractTo, 777, true);
         }
 
         $zipArchive = new ZipArchive();
-        if ($zipArchive->open($zipFilePath) === TRUE) {
+        if ($zipArchive->open($zipFilePath) == TRUE) {
             $zipArchive->extractTo($extractTo);
             $zipArchive->close();
 

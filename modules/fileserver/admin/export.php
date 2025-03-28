@@ -6,6 +6,8 @@ if (!defined('NV_IS_FILE_ADMIN')) {
     die('Stop!!!');
 }
 
+$page_title = $lang_module['export_title'];
+
 define('NV_CONSOLE_DIR', str_replace(DIRECTORY_SEPARATOR, '/', realpath(pathinfo(str_replace(DIRECTORY_SEPARATOR, '/', __FILE__), PATHINFO_DIRNAME))));
 
 function getUserCache() {
@@ -54,9 +56,14 @@ function exportExcel() {
             ini_set('memory_limit', '1024M');
         }
 
-        $page_title = 'Xuất excel';
         $module_name = 'fileserver';
         $user_cache = getUserCache();
+
+        $sql = 'SELECT COUNT(*) as total FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev = 0';
+        $result = $db->query($sql)->fetch();
+        if ($result['total'] == 0) {
+            return 'Danh sách file trống, không thể xuất Excel.';
+        }
 
         $arr_header_row = ['STT', 'Tên File', 'Đường dẫn', 'Kích thước', 'Người tải lên', 'Ngày tải lên', 'Là thư mục', 'Trạng thái'];
         $title_char_from = 'A';
@@ -217,7 +224,7 @@ if ($nv_Request->get_int('download', 'get', 0) == 1) {
             $zipFullPath = NV_ROOTDIR . '/data/tmp/' . $zipFileName;
             $zipArchive = new ZipArchive();
             
-            if ($zipArchive->open($zipFullPath, ZipArchive::CREATE) === TRUE) {
+            if ($zipArchive->open($zipFullPath, ZipArchive::CREATE) == TRUE) {
                 $files = new RecursiveIteratorIterator(
                     new RecursiveDirectoryIterator($file_path),
                     RecursiveIteratorIterator::LEAVES_ONLY
