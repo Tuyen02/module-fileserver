@@ -62,7 +62,7 @@ function exportExcel() {
         $sql = 'SELECT COUNT(*) as total FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev = 0';
         $result = $db->query($sql)->fetch();
         if ($result['total'] == 0) {
-            return 'Danh sách file trống, không thể xuất Excel.';
+            return $error = $lang_module['blank_list'];
         }
 
         $arr_header_row = ['STT', 'Tên File', 'Đường dẫn', 'Kích thước', 'Người tải lên', 'Ngày tải lên', 'Là thư mục', 'Trạng thái'];
@@ -85,7 +85,7 @@ function exportExcel() {
 
         $templatePath = NV_ROOTDIR . '/themes/default/images/fileserver/export_template.xlsx';
         if (!file_exists($templatePath)) {
-            die('Template file does not exist.');
+            error_log('Template file does not exist.');
         }
 
         $objPHPExcel = IOFactory::load($templatePath);
@@ -221,7 +221,8 @@ if ($nv_Request->get_int('download', 'get', 0) == 1) {
         
         if ($is_folder == 1) {
             $zipFileName = $file_name . '.zip';
-            $zipFullPath = NV_ROOTDIR . '/data/tmp/' . $zipFileName;
+            $tmp_dir = '/data/tmp/';
+            $zipFullPath = NV_ROOTDIR . $tmp_dir . $zipFileName;
             $zipArchive = new ZipArchive();
             
             if ($zipArchive->open($zipFullPath, ZipArchive::CREATE) == TRUE) {
@@ -244,14 +245,15 @@ if ($nv_Request->get_int('download', 'get', 0) == 1) {
                 
                 if (file_exists($zipFullPath)) {
                     updateLog($file_id, 'download_folder', $zipFileName);
-                    $download = new NukeViet\Files\Download($zipFullPath, NV_ROOTDIR . '/data/tmp/', $zipFileName);
+                    $download = new NukeViet\Files\Download($zipFullPath, NV_ROOTDIR . $tmp_dir, $zipFileName);
                     $download->download_file();
                     exit;
                 }
             }
         } elseif (file_exists($file_path)) {
             updateLog($file_id, 'download_file', $file_name);
-            $download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . '/uploads/fileserver/', $file_name);
+            $base_dir = '/uploads/fileserver/';
+            $download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . $base_dir, $file_name);
             $download->download_file();
             exit;
         }

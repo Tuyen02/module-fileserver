@@ -6,9 +6,9 @@ if (!defined('NV_IS_FILE_ADMIN')) {
 $page_title = 'FILE SERVER';
 
 $sql = 'SELECT d.group_id, title FROM ' . NV_GROUPS_GLOBALTABLE . ' AS g LEFT JOIN ' . NV_GROUPSDETAIL_GLOBALTABLE . ' d 
-        ON g.group_id = d.group_id AND d.lang = "' . NV_LANG_DATA . '"
-        WHERE g.idsite = ' . $global_config['idsite'] . ' OR (g.idsite = 0 AND g.group_id > 3 AND g.siteus = 1) 
-        ORDER BY g.idsite, g.weight ASC';
+    ON g.group_id = d.group_id AND d.lang = ' . $db->quote(NV_LANG_DATA) . '
+    WHERE g.idsite = ' . $global_config['idsite'] . ' OR (g.idsite = 0 AND g.group_id > 3 AND g.siteus = 1) 
+    ORDER BY g.idsite, g.weight ASC';
 $result = $db->query($sql);
 $post = [];
 $mess = '';
@@ -16,34 +16,30 @@ $err = '';
 $post['group_ids'] = $nv_Request->get_array('group_ids', 'post', []);
 $group_ids_str = implode(',', $post['group_ids']);
 
+$lang = 'vi';
+$config_name = 'group_admin_fileserver';
 if ($nv_Request->isset_request('submit', 'post')) {
     if (empty($post['group_ids'])) {
         $err = $lang_module['no_group'];
     } else {
         $group_ids_str = implode(',', $post['group_ids']);
-        $config_name = 'group_admin_fileserver';
 
-        $sql_check = ' SELECT COUNT(*) FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE config_name = :config_name';
-        $stmt_check = $db->prepare($sql_check);
-        $stmt_check->bindParam(':config_name', $config_name, PDO::PARAM_STR);
-        $stmt_check->execute();
-        $count = $stmt_check->fetchColumn();
+        $sql_check = 'SELECT COUNT(*) AS count FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE config_name = ' . $db->quote($config_name);
+        $count = $db->query($sql_check)->fetchColumn();
 
         if ($count > 0) {
-            $nv_Cache->delMod($module_name, $lang = 'vi');
+            $nv_Cache->delMod($module_name, $lang );
             $sql_update = ' UPDATE ' . NV_CONFIG_GLOBALTABLE . '
                            SET config_value = :config_value 
-                           WHERE config_name = :config_name';
+                           WHERE config_name = ' . $db->quote($config_name);
             $stmt_update = $db->prepare($sql_update);
             $stmt_update->bindParam(':config_value', $group_ids_str, PDO::PARAM_STR);
-            $stmt_update->bindParam(':config_name', $config_name, PDO::PARAM_STR);
             if ($stmt_update->execute()) {
                 $mess = $lang_module['update_success'];
             } else {
                 $err = $lang_module['update_error'];
             }
         } else {
-            $lang = 'vi';
             $sql_insert = ' INSERT INTO ' . NV_CONFIG_GLOBALTABLE . ' (lang, module, config_name, config_value) 
                            VALUES (:lang, :module, :config_name, :config_value)';
             $stmt_insert = $db->prepare($sql_insert);
@@ -59,22 +55,17 @@ if ($nv_Request->isset_request('submit', 'post')) {
         }
     }
 } else {
-    $config_name = 'group_admin_fileserver';
-    $sql_get = ' SELECT config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE config_name = :config_name';
-    $stmt_get = $db->prepare($sql_get);
-    $stmt_get->bindParam(':config_name', $config_name, PDO::PARAM_STR);
-    $stmt_get->execute();
-    $group_ids_str = $stmt_get->fetchColumn();
+    $sql_get = 'SELECT config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE config_name = ' . $db->quote($config_name);
+    $group_ids_str = $db->query($sql_get)->fetchColumn();
     $post['group_ids'] = !empty($group_ids_str) ? explode(',', $group_ids_str) : [];
 }
 
 $group_titles = [];
 if (!empty($post['group_ids'])) {
-    $placeholders = implode(',', array_fill(0, count($post['group_ids']), '?'));
-    $sql_titles = "SELECT group_id, title FROM ". NV_GROUPSDETAIL_GLOBALTABLE. " WHERE group_id IN ($placeholders) AND lang = '" . NV_LANG_DATA . "'";
-    $stmt_titles = $db->prepare($sql_titles);
-    $stmt_titles->execute($post['group_ids']);
-    while ($row = $stmt_titles->fetch(PDO::FETCH_ASSOC)) {
+    $group_ids_str = implode(',', $post['group_ids']);
+    $sql_titles = "SELECT group_id, title FROM " . NV_GROUPSDETAIL_GLOBALTABLE . " WHERE group_id IN ($group_ids_str) AND lang = " . $db->quote(NV_LANG_DATA);
+    $result_titles = $db->query($sql_titles);
+    while ($row = $result_titles->fetch(PDO::FETCH_ASSOC)) {
         $group_titles[$row['group_id']] = $row['title'];
     }
 }

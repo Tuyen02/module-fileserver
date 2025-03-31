@@ -17,7 +17,7 @@ if ($use_elastic == 1) {
         $query = $db->query('SELECT config_name, config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE module = ' . $db->quote($module_name) . ' AND lang = ' . $db->quote(NV_LANG_DATA));
         $config_elastic = $query->fetchAll(PDO::FETCH_KEY_PAIR);
         if (!isset($config_elastic) || !is_array($config_elastic)) {
-            error_log("Cấu hình Elasticsearch không hợp lệ");
+            error_log($lang_module['invalid_elastic_code']);
         }
         $client = ClientBuilder::create()
             ->setHosts([$config_elastic['elas_host'] . ':' . $config_elastic['elas_port']])
@@ -52,7 +52,7 @@ if ($use_elastic == 1) {
             ]);
         }
     } catch (Exception $e) {
-        error_log("Lỗi khởi tạo Elasticsearch client: " . $e->getMessage());
+        error_log($lang_module['error_start_elastic'] . $e->getMessage());
         $use_elastic = 0;
     }
 }
@@ -81,7 +81,7 @@ if (defined('NV_IS_SPADMIN') || is_array($user_info['in_groups']) && array_inter
 
 function syncElasticSearch($client)
 {
-    global $db, $module_data;
+    global $db, $module_data, $lang_module;
     try {
         $sql = 'SELECT file_id, file_name, is_folder, status, lev, created_at FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1';
         $rows = $db->query($sql)->fetchAll();
@@ -106,13 +106,13 @@ function syncElasticSearch($client)
             $client->bulk($bulk_params);
         }
     } catch (Exception $e) {
-        error_log("Lỗi đồng bộ Elasticsearch: " . $e->getMessage());
+        error_log($lang_module['error_sync_elastic'] . $e->getMessage());
     }
 }
 
 function updateElasticSearch($client, $action, $file_data)
 {
-    global $db, $module_data;
+    global $db, $module_data, $lang_module;
 
     try {
         switch ($action) {
@@ -230,17 +230,16 @@ function updateElasticSearch($client, $action, $file_data)
                 break;
         }
     } catch (Exception $e) {
-        error_log("Error updating Elasticsearch for action $action: " . $e->getMessage());
+        error_log($lang_module['error_update_elastic'] . $e->getMessage());
     }
 }
 function updateAlias($file_id, $file_name)
 {
     global $db, $module_data;
     $alias = change_alias($file_name . '_' . $file_id);
-    $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET alias=:alias WHERE file_id = :file_id';
+    $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET alias=:alias WHERE file_id = ' . $file_id;
     $stmtUpdate = $db->prepare($sqlUpdate);
     $stmtUpdate->bindValue(':alias', $alias, PDO::PARAM_STR);
-    $stmtUpdate->bindValue(':file_id', $file_id, PDO::PARAM_INT);
     $stmtUpdate->execute();
     return true;
 }
@@ -289,7 +288,7 @@ function deleteFileOrFolder($fileId)
     $checkTrashSql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = ' . $fileId;
     $existsInTrash = $db->query($checkTrashSql)->fetchColumn();
 
-    $trash_path = '/data/tmp/trash/' . $newRelativePath;
+    $trash_dir = '/data/tmp/trash/' . $newRelativePath;
 
     if ($existsInTrash) {
         $sqlUpdateTrash = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_trash 
@@ -301,7 +300,7 @@ function deleteFileOrFolder($fileId)
         
         $stmtUpdate = $db->prepare($sqlUpdateTrash);
         $stmtUpdate->execute([
-            ':file_path' => $trash_path,
+            ':file_path' => $trash_dir,
             ':file_size' => $fileSize,
             ':deleted_at' => NV_CURRENTTIME,
             ':file_id' => $row['file_id']
@@ -316,7 +315,7 @@ function deleteFileOrFolder($fileId)
             ':file_id' => $row['file_id'],
             ':file_name' => $isFolder ? $newFolderName : $row['file_name'],
             ':alias' => $row['alias'],
-            ':file_path' => $trash_path,
+            ':file_path' => $trash_dir,
             ':file_size' => $fileSize,
             ':uploaded_by' => $row['uploaded_by'],
             ':deleted_at' => NV_CURRENTTIME,

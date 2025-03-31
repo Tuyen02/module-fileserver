@@ -108,10 +108,10 @@ if ($copy == 1) {
                         ];
                         try {
                             $response = $client->index($params);
-                            error_log("Elasticsearch index response: " . json_encode($response));
+                            error_log($lang_module['elastic_index_response'] . json_encode($response));
                             $client->indices()->refresh(['index' => 'fileserver']);
                         } catch (Exception $e) {
-                            error_log("Elasticsearch indexing failed: " . $e->getMessage());
+                            error_log($lang_module['error_elastic_index'] . $e->getMessage());
                         }
                     }
 
@@ -184,7 +184,7 @@ if ($move == 1) {
                             error_log("Elasticsearch update response: " . json_encode($response));
                             $client->indices()->refresh(['index' => 'fileserver']);
                         } catch (Exception $e) {
-                            error_log("Elasticsearch update failed: " . $e->getMessage());
+                            error_log($lang_module['error_update_elastic']  . $e->getMessage());
                         }
                     }
 

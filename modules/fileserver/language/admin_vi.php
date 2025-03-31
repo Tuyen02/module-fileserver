@@ -79,3 +79,4 @@ $lang_module['config_updated'] = 'Cập nhật cấu hình thành công';
 $lang_module['config_failed'] = 'Cập nhật cấu hình thất bại';
 $lang_module['use_elastic'] = 'Sử dụng elastic';
 $lang_module['sys_err'] = 'Lỗi hệ thống';
+$lang_module['blank_list'] = 'Danh sách file trống, không thể xuất Excel.';

@@ -9,6 +9,9 @@ $success = '';
 $admin_info['allow_files_type'] = ['xlsx', 'xls'];
 global $module_name;
 $page_title = $lang_module['import_file'];
+$tmp_dir = '/data/tmp/';
+$import_folder = 'import-file';
+$import_dir = $tmp_dir . $import_folder;
 
 function downloadFromUrl($fileUrl, $dir = './data/tmp/import-file') {
     if (!file_exists($dir)) {
@@ -123,7 +126,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['excel_
     if (!in_array($file_extension, ['xlsx', 'xls'])) {
         $error = 'Chỉ hỗ trợ file Excel (.xlsx hoặc .xls).';
     } else {
-        $upload_dir = NV_ROOTDIR . '/data/tmp/import-file';
+        $upload_dir = NV_ROOTDIR . $import_dir;
         if (!file_exists($upload_dir)) {
             mkdir($upload_dir, 777, true);
         }
@@ -164,9 +167,11 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['excel_
 
 $download = $nv_Request->get_int('download', 'get', 0);
 if ($download == 1) {
-    $file_path = NV_ROOTDIR . '/themes/default/images/fileserver/import_file.xlsx';
+    $path = '/themes/default/images/fileserver/';
+    $sample_file = 'import_file.xlsx';
+    $file_path = NV_ROOTDIR . $path . $sample_file;
     if (file_exists($file_path)) {
-        $download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . '/themes/default/images/fileserver/', 'import_file.xlsx', true, 0);
+        $download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . $path, $sample_file, true, 0);
         $download->download_file();
     } else {
         $error = $lang_module['error_file_not_found'];
@@ -178,7 +183,7 @@ $xtpl->assign('LANG', $lang_module);
 $xtpl->assign('OP', $op);
 $xtpl->assign('MODULE_NAME', $module_name);
 $xtpl->assign('FORM_ACTION', NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op);
-$xtpl->assign('URL_DOWNLOAD', NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=import&download=1');
+$xtpl->assign('URL_DOWNLOAD', NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op . '&download=1');
 
 if (!empty($error)) {
     $xtpl->assign('ERROR', $error);

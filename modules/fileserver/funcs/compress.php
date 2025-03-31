@@ -47,7 +47,7 @@ if (!$row) {
             $message = $lang_module['unzip_ok'];
 
             $new_name = nv_unhtmlspecialchars(pathinfo($row['file_name'], PATHINFO_FILENAME));
-            $new_path = '/uploads/fileserver/' . $new_name;
+            $new_path = $base_dir . '/' . $new_name;
 
             $insert_sql = 'INSERT INTO ' . NV_PREFIXLANG . '_fileserver_files 
                            (file_name, file_path, file_size, is_folder, compressed, created_at) 
