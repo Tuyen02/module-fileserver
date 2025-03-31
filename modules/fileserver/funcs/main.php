@@ -104,6 +104,7 @@ if ($use_elastic == 1) {
         }
     } catch (Exception $e) {
         error_log("Lỗi tìm kiếm Elasticsearch: " . $e->getMessage());
+        $result = [];
     }
 } else {
     try {
@@ -255,8 +256,8 @@ if (!empty($action)) {
         }
         $file_path = $base_dir . '/' . $name_f;
 
-        $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, uploaded_by, is_folder, created_at, lev, compressed) 
-                VALUES (:file_name, :file_path, :uploaded_by, :is_folder, :created_at, :lev, :compressed)';
+        $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
+                VALUES (:file_name, :file_path, :uploaded_by, :is_folder, :created_at, :lev)';
         $stmt = $db->prepare($sql);
         $stmt->bindParam(':file_name', $name_f, PDO::PARAM_STR);
         $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
@@ -264,7 +265,6 @@ if (!empty($action)) {
         $stmt->bindParam(':is_folder', $type, PDO::PARAM_INT);
         $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
         $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
-        $stmt->bindValue(':compressed', 0, PDO::PARAM_INT);
 
         $full_dir = NV_ROOTDIR . $file_path;
         if ($type == 1) {
@@ -282,17 +282,6 @@ if (!empty($action)) {
             $exe = $stmt->execute();
             $file_id = $db->lastInsertId();
             updateAlias($file_id, $name_f);
-            $file_data = [
-                'file_id' => $file_id,
-                'file_name' => $name_f,
-                'is_folder' => $type,
-                'lev' => $lev,
-                'created_at' => NV_CURRENTTIME
-            ];
-
-            if ($use_elastic == 1) {
-                updateElasticSearch($client, 'create', $file_data);
-            }
             $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
                         VALUES (:file_id, :p_group, :p_other, :updated_at)';
             $stmta = $db->prepare($sql1);
@@ -316,10 +305,6 @@ if (!empty($action)) {
                 $status = 'success';
                 updateLog($lev, $action, $fileId);
                 $mess = $lang_module['delete_ok'];
-                $file_data = ['file_id' => $fileId];
-                if ($use_elastic == 1) {
-                    updateElasticSearch($client, 'delete', $file_data);
-                }
             } else {
                 $status = 'error';
                 $mess = $lang_module['delete_false'];
@@ -359,10 +344,6 @@ if (!empty($action)) {
 
         if ($status == 'success' && !empty($deletedFileIds)) {
             updateLog($lev, $action, implode(',', $deletedFileIds));
-            $file_data = ['file_ids' => $deletedFileIds];
-            if ($use_elastic == 1) {
-                updateElasticSearch($client, 'deleteAll', $file_data);
-            }
         }
     }
 
@@ -406,26 +387,16 @@ if (!empty($action)) {
             if (rename($oldFullPath, $newFullPath)) {
                 $mess = $lang_module['cannot_update_db'];
                 $alias = change_alias($newName . '_' . $fileId);
-                $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET file_name = :file_name, alias = :alias, file_path = :new_path, updated_at = :updated_at WHERE file_id = ' . $fileId;
+                $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET file_name = :file_name, alias = :alias, file_path = :new_path, updated_at = :updated_at, elastic = :elastic WHERE file_id = ' . $fileId;
                 $stmtUpdate = $db->prepare($sqlUpdate);
-                $stmtUpdate->bindParam(':file_name', $newName);
-                $stmtUpdate->bindParam(':alias', $alias);
-                $stmtUpdate->bindParam(':new_path', $newFilePath);
+                $stmtUpdate->bindParam(':file_name', $newName, PDO::PARAM_STR);
+                $stmtUpdate->bindParam(':alias', $alias, PDO::PARAM_STR);
+                $stmtUpdate->bindParam(':new_path', $newFilePath, PDO::PARAM_STR);
                 $stmtUpdate->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+                $stmtUpdate->bindValue(':elastic', 0, PDO::PARAM_INT);
                 if ($stmtUpdate->execute()) {
                     $status = 'success';
                     $mess = $lang_module['rename_ok'];
-    
-                    if ($use_elastic == 1) {
-                        $file_data = [
-                            'file_id' => $fileId,
-                            'file_name' => $newName,
-                            'updated_at' => NV_CURRENTTIME,
-                            'is_folder' => $file['is_folder'],
-                            'old_file_path' => $oldFilePath
-                        ];
-                        updateElasticSearch($client, 'rename', $file_data);
-                    }
     
                     if ($file['is_folder'] == 1) {
                         $sqlUpdateChildren = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET file_path = REPLACE(file_path, :old_path, :new_path) WHERE file_path LIKE :like_old_path';
@@ -484,32 +455,31 @@ if (!empty($action)) {
         if (empty($fileIds)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
         }
-
+    
         $zipFileName = $nv_Request->get_title('zipFileName', 'post', '');
         if ($zipFileName == '') {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['zip_file_name_empty']]);
         }
-
+    
         if (pathinfo($zipFileName, PATHINFO_EXTENSION) != 'zip') {
             $zipFileName .= '.zip';
         }
-
+    
         $zipFilePath = $base_dir . '/' . $zipFileName;
         $zipFullPath = NV_ROOTDIR . $zipFilePath;
-        $mess = $zipFilePath;
-
+    
         $compressResult = compressFiles($fileIds, $zipFullPath);
-
-        $file_size = filesize($zipFullPath);
-
+    
         if ($compressResult['status'] == 'success') {
+            $file_size = filesize($zipFullPath);
             $allFileIds = $fileIds;
             foreach ($fileIds as $fileId) {
                 $allFileIds = array_merge($allFileIds, getAllChildFileIds($fileId));
             }
             $compressed = implode(',', $allFileIds);
-            $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev, compressed) 
-                              VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, :compressed)';
+    
+            $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev, compressed, elastic) 
+                          VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, :compressed, 0)';
             $stmtInsert = $db->prepare($sqlInsert);
             $stmtInsert->bindParam(':file_name', $zipFileName, PDO::PARAM_STR);
             $stmtInsert->bindParam(':file_path', $zipFilePath, PDO::PARAM_STR);
@@ -518,46 +488,33 @@ if (!empty($action)) {
             $stmtInsert->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmtInsert->bindValue(':lev', $lev, PDO::PARAM_INT);
             $stmtInsert->bindValue(':compressed', $compressed, PDO::PARAM_STR);
+    
             if ($stmtInsert->execute()) {
                 $file_id = $db->lastInsertId();
                 updateAlias($file_id, $zipFileName);
-
-                if ($use_elastic == 1 && !is_null($client)) {
-                    $file_data = [
-                        'file_id' => $file_id,
-                        'file_name' => $zipFileName,
-                        'file_path' => $zipFilePath,
-                        'file_size' => $file_size,
-                        'uploaded_by' => $user_info['userid'],
-                        'lev' => $lev,
-                        'created_at' => NV_CURRENTTIME,
-                        'compressed' => $compressed
-                    ];
-                    try {
-                        updateElasticSearch($client, 'compress', $file_data);
-                        $client->indices()->refresh(['index' => 'fileserver']);
-                    } catch (Exception $e) {
-                        error_log("Failed to update Elasticsearch for compress action: " . $e->getMessage());
-                    }
-                }
-
+    
                 $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
-                             VALUES (:file_id, :p_group, :p_other, :updated_at)';
+                         VALUES (:file_id, :p_group, :p_other, :updated_at)';
                 $stmta = $db->prepare($sql1);
                 $stmta->bindParam(':file_id', $file_id, PDO::PARAM_STR);
                 $stmta->bindValue(':p_group', '1', PDO::PARAM_INT);
                 $stmta->bindValue(':p_other', '1', PDO::PARAM_INT);
                 $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 $stmta->execute();
+    
                 updateLog($lev, $action, $compressed);
+                $status = 'success';
+                $mess = $compressResult['message'];
+                nv_redirect_location($page_url);
+            }else {
+                $status = 'error';
+                $mess = $lang_module['cannot_update_db'];
             }
-            $mess = $compressResult['message'];
-        } else {
-            $mess = $compressResult['message'];
         }
+        nv_jsonOutput(['status' => $status, 'message' => $mess]);
     }
-
     nv_jsonOutput(['status' => $status, 'message' => $mess]);
+    nv_redirect_location($page_url);
 }
 
 $download = $nv_Request->get_int('download', 'get', 0);
@@ -649,8 +606,8 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
         $file_name = $upload_info['basename'];
         $file_size = $upload_info['size'];
 
-        $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev, compressed) 
-            VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, :compressed)';
+        $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev) 
+            VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)';
         $stmt = $db->prepare($sql);
         $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
         $stmt->bindParam(':file_path', $relative_path, PDO::PARAM_STR);
@@ -658,21 +615,10 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
         $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_STR);
         $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
         $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
-        $stmt->bindValue(':compressed', 0, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
             $file_id = $db->lastInsertId();
             updateAlias($file_id, $file_name);
-            $file_data = [
-                'file_id' => $file_id,
-                'file_name' => $file_name,
-                'is_folder' => 0,
-                'lev' => $lev,
-                'created_at' => NV_CURRENTTIME
-            ];
-            if ($use_elastic == 1) {
-                updateElasticSearch($client, 'upload', $file_data);
-            }
             $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
                 VALUES (:file_id, :p_group, :p_other, :updated_at)';
             $stmta = $db->prepare($sql1);

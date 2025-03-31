@@ -507,6 +507,7 @@
                     },
                     error: function () {
                         alert(res.message);
+                        location.reload();
                     }
                 });
             } else {

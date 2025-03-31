@@ -20,6 +20,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
     $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
     $xtpl->assign('FORM_ACTION', $base_url);
+    $xtpl->assign('PAGE_URL', $page_url);
     $xtpl->assign('SEARCH_TERM', $search_term);
 
     $xtpl->assign('SELECTED_ALL', $selected_all);

@@ -12,6 +12,7 @@ use Elastic\Elasticsearch\ClientBuilder;
 $use_elastic = $module_config['fileserver']['use_elastic'];
 
 $client = null;
+
 if ($use_elastic == 1) {
     try {
         $query = $db->query('SELECT config_name, config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE module = ' . $db->quote($module_name) . ' AND lang = ' . $db->quote(NV_LANG_DATA));
@@ -51,6 +52,41 @@ if ($use_elastic == 1) {
                 ]
             ]);
         }
+
+        $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE elastic = 0';
+        $result = $db->query($sql);
+        while ($row = $result->fetch()) {
+            try {
+                $params = [
+                    'index' => 'fileserver',
+                    'id' => $row['file_id'],
+                    'body' => [
+                        'file_id' => $row['file_id'],
+                        'file_name' => $row['file_name'],
+                        'file_path' => $row['file_path'] ?? '',
+                        'file_size' => $row['file_size'] ?? 0,
+                        'uploaded_by' => $row['uploaded_by'] ?? '',
+                        'is_folder' => $row['is_folder'],
+                        'status' => $row['status'],
+                        'lev' => $row['lev'],
+                        'created_at' => $row['created_at'],
+                        'updated_at' => $row['updated_at'] ?? NV_CURRENTTIME,
+                        'compressed' => $row['compressed'] ?? ''
+                    ]
+                ];
+                $client->index($params);
+
+                $update_sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                               SET elastic = :elastic 
+                               WHERE file_id = :file_id';
+                $stmt = $db->prepare($update_sql);
+                $stmt->bindValue(':elastic', NV_CURRENTTIME, PDO::PARAM_INT);
+                $stmt->bindValue(':file_id', $row['file_id'], PDO::PARAM_INT);
+                $stmt->execute();
+            } catch (Exception $e) {
+                error_log($lang_module['error_update_elastic'] . $e->getMessage());
+            }
+        }
     } catch (Exception $e) {
         error_log($lang_module['error_start_elastic'] . $e->getMessage());
         $use_elastic = 0;
@@ -77,161 +113,6 @@ if (defined('NV_IS_SPADMIN') || is_array($user_info['in_groups']) && array_inter
     $arr_per = array_column($db->query('SELECT p_group, file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_group > 1')->fetchAll(), 'p_group', 'file_id');
 } else {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
-}
-
-function syncElasticSearch($client)
-{
-    global $db, $module_data, $lang_module;
-    try {
-        $sql = 'SELECT file_id, file_name, is_folder, status, lev, created_at FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1';
-        $rows = $db->query($sql)->fetchAll();
-        $bulk_params = ['body' => []];
-        foreach ($rows as $row) {
-            $bulk_params['body'][] = [
-                'index' => [
-                    '_index' => 'fileserver',
-                    '_id' => $row['file_id']
-                ]
-            ];
-            $bulk_params['body'][] = [
-                'file_id' => $row['file_id'],
-                'file_name' => $row['file_name'],
-                'is_folder' => $row['is_folder'],
-                'status' => $row['status'],
-                'lev' => $row['lev'],
-                'created_at' =>  $row['created_at']
-            ];
-        }
-        if (!empty($bulk_params['body'])) {
-            $client->bulk($bulk_params);
-        }
-    } catch (Exception $e) {
-        error_log($lang_module['error_sync_elastic'] . $e->getMessage());
-    }
-}
-
-function updateElasticSearch($client, $action, $file_data)
-{
-    global $db, $module_data, $lang_module;
-
-    try {
-        switch ($action) {
-            case 'create':
-            case 'upload':
-                $params = [
-                    'index' => 'fileserver',
-                    'id' => $file_data['file_id'],
-                    'body' => [
-                        'file_id' => $file_data['file_id'],
-                        'file_name' => $file_data['file_name'],
-                        'is_folder' => $file_data['is_folder'],
-                        'status' => 1,
-                        'lev' => $file_data['lev'],
-                        'created_at' =>  $file_data['created_at']
-                    ]
-                ];
-                $client->index($params);
-                break;
-
-            case 'delete':
-                $params = [
-                    'index' => 'fileserver',
-                    'id' => $file_data['file_id']
-                ];
-                $client->delete($params);
-                break;
-
-            case 'deleteAll':
-                $bulk_params = ['body' => []];
-                foreach ($file_data['file_ids'] as $file_id) {
-                    $bulk_params['body'][] = [
-                        'delete' => [
-                            '_index' => 'fileserver',
-                            '_id' => $file_id
-                        ]
-                    ];
-                }
-                if (!empty($bulk_params['body'])) {
-                    $client->bulk($bulk_params);
-                }
-                break;
-
-            case 'rename':
-                $params = [
-                    'index' => 'fileserver',
-                    'id' => $file_data['file_id'],
-                    'body' => [
-                        'doc' => [
-                            'file_name' => $file_data['file_name'],
-                            'updated_at' =>  $file_data['updated_at']
-                        ]
-                    ]
-                ];
-                $client->update($params);
-
-                if ($file_data['is_folder']) {
-                    $bulk_params = ['body' => []];
-                    $sql = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_path LIKE :old_path';
-                    $stmt = $db->prepare($sql);
-                    $stmt->bindValue(':old_path', $file_data['old_file_path'] . '/%', PDO::PARAM_STR);
-                    $stmt->execute();
-                    $children = $stmt->fetchAll();
-
-                    foreach ($children as $child) {
-                        $bulk_params['body'][] = [
-                            'update' => [
-                                '_index' => 'fileserver',
-                                '_id' => $child['file_id']
-                            ]
-                        ];
-                        $bulk_params['body'][] = [
-                            'doc' => [
-                                'updated_at' =>  NV_CURRENTTIME
-                            ]
-                        ];
-                    }
-                    if (!empty($bulk_params['body'])) {
-                        $client->bulk($bulk_params);
-                    }
-                }
-                break;
-
-            case 'compress':
-                $params = [
-                    'index' => 'fileserver',
-                    'id' => $file_data['file_id'],
-                    'body' => [
-                        'file_id' => $file_data['file_id'],
-                        'file_name' => $file_data['file_name'],
-                        'file_path' => $file_data['file_path'],
-                        'file_size' => $file_data['file_size'],
-                        'uploaded_by' => $file_data['uploaded_by'],
-                        'is_folder' => 0,
-                        'status' => 1,
-                        'lev' => $file_data['lev'],
-                        'created_at' =>  $file_data['created_at'],
-                        'compressed' => $file_data['compressed']
-                    ]
-                ];
-                $client->index($params);
-                break;
-
-            case 'edit':
-                $params = [
-                    'index' => 'fileserver',
-                    'id' => $file_data['file_id'],
-                    'body' => [
-                        'doc' => [
-                            'updated_at' =>  $file_data['updated_at']
-                        ]
-                    ]
-                ];
-                $client->update($params);
-                break;
-        }
-    } catch (Exception $e) {
-        error_log($lang_module['error_update_elastic'] . $e->getMessage());
-    }
 }
 function updateAlias($file_id, $file_name)
 {
@@ -333,7 +214,7 @@ function deleteFileOrFolder($fileId)
         updateDirectoryStatus($fileId, $newFolderName);
     }
 
-    $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET status = 0 WHERE file_id = ' . $fileId;
+    $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET status = 0, elastic = 0 WHERE file_id = ' . $fileId;
     $db->query($sqlUpdate);
 
     return true;
@@ -400,7 +281,7 @@ function updateDirectoryStatus($parentId, $parentNewName = null)
             updateDirectoryStatus($fileId, $newName);
         }
 
-        $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET status = 0 WHERE file_id = ' . $fileId;
+        $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET status = 0, elastic = 0 WHERE file_id = ' . $fileId;
         $db->query($sqlUpdate);
     }
 
@@ -506,8 +387,8 @@ function addToDatabase($dir, $parent_id = 0)
         $created_at = NV_CURRENTTIME;
 
         $insert_sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                       (file_name, file_path, file_size, is_folder, created_at, lev, compressed) 
-                       VALUES (:file_name, :file_path, :file_size, :is_folder, :created_at, :lev, 0)';
+                       (file_name, file_path, file_size, is_folder, created_at, lev, compressed, elastic) 
+                       VALUES (:file_name, :file_path, :file_size, :is_folder, :created_at, :lev, 0, 0)';
         $insert_stmt = $db->prepare($insert_sql);
         $file_name = basename($filePath);
         $relativePath = str_replace(NV_ROOTDIR, '', $filePath);

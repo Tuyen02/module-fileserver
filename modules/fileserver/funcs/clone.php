@@ -78,15 +78,16 @@ if ($copy == 1) {
                 $new_file_name = $row['file_name'];
                 $new_file_path = $target_url . '/' . $new_file_name;
 
-                $sql_insert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev) 
-                                   VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)';
+                $sql_insert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev, elastic) 
+                                   VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, :elastic)';
                 $stmt = $db->prepare($sql_insert);
-                $stmt->bindParam(':file_name', $new_file_name);
-                $stmt->bindParam(':file_path', $new_file_path);
-                $stmt->bindParam(':file_size', $row['file_size']);
-                $stmt->bindParam(':uploaded_by', $user_info['userid']);
+                $stmt->bindParam(':file_name', $new_file_name, PDO::PARAM_STR);
+                $stmt->bindParam(':file_path', $new_file_path, PDO::PARAM_STR);
+                $stmt->bindParam(':file_size', $row['file_size'], PDO::PARAM_INT);
+                $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_INT);
                 $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
-                $stmt->bindParam(':lev', $target_lev);
+                $stmt->bindParam(':lev', $target_lev, PDO::PARAM_INT);
+                $stmt->bindValue(':elastic', 0, PDO::PARAM_INT);
 
                 if ($stmt->execute()) {
                     $new_file_id = $db->lastInsertId();
@@ -160,11 +161,12 @@ if ($move == 1) {
                 $message = $lang_module['move_ok'];
                 $new_file_path = $target_url . '/' . $row['file_name'];
 
-                $sql_update = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET file_path = :file_path, lev = :lev WHERE file_id = :file_id';
+                $sql_update = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET file_path = :file_path, lev = :lev, elastic =:elastic WHERE file_id = :file_id';
                 $stmt = $db->prepare($sql_update);
-                $stmt->bindParam(':file_path', $new_file_path);
-                $stmt->bindParam(':lev', $target_lev);
-                $stmt->bindParam(':file_id', $file_id);
+                $stmt->bindParam(':file_path', $new_file_path, PDO::PARAM_STR);
+                $stmt->bindParam(':lev', $target_lev, PDO::PARAM_INT);
+                $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+                $stmt->bindValue(':elastic', 0, PDO::PARAM_INT);
 
                 if ($stmt->execute()) {
                     if ($use_elastic == 1 && !is_null($client)) {

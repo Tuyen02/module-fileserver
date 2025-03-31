@@ -4,6 +4,9 @@ if (!defined('NV_IS_FILE_ADMIN')) {
     die('Stop!!!');
 }
 
+require_once NV_ROOTDIR . '/vendor/autoload.php';
+use Elastic\Elasticsearch\ClientBuilder;
+
 $page_title = $lang_module['config'];
 $message = '';
 $message_type = '';
@@ -46,6 +49,65 @@ if ($nv_Request->isset_request('submit', 'post')) {
     } else {
         $message = $lang_module['config_failed'];
         $message_type = 'danger';
+    }
+}
+
+if ($nv_Request->isset_request('sync_elastic', 'post')) {
+    try {
+        $config_query = $db->query('SELECT config_name, config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' 
+            WHERE module = ' . $db->quote($module_name) . ' AND lang = ' . $db->quote(NV_LANG_DATA));
+        $elastic_config = [];
+        while ($row = $config_query->fetch()) {
+            $elastic_config[$row['config_name']] = $row['config_value'];
+        }
+
+        if ($elastic_config['use_elastic']) {
+            $client = ClientBuilder::create()
+                ->setHosts([$elastic_config['elas_host'] . ':' . $elastic_config['elas_port']])
+                ->setBasicAuthentication($elastic_config['elas_user'], $elastic_config['elas_pass'])
+                ->setSSLVerification(false)
+                ->build();
+
+            $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE elastic = 0';
+            $result = $db->query($sql);
+            
+            $updated_count = 0;
+            while ($row = $result->fetch()) {
+                $params = [
+                    'index' => $module_data,
+                    'id'    => $row['file_id'],
+                    'body'  => [
+                        'file_id' => $row['file_id'],
+                        'file_name' => $row['file_name'],
+                        'file_path' => $row['file_path'],
+                        'file_size' => $row['file_size'],
+                        'uploaded_by' => $row['uploaded_by'],
+                        'is_folder' => $row['is_folder'],
+                        'status' => $row['status'],
+                        'lev' => $row['lev'],
+                        'created_at' => $row['created_at'],
+                        'updated_at' => $row['updated_at'],
+                        'compressed' => $row['compressed'],
+                    ]
+                ];
+                
+                $client->index($params);
+                
+                $update_sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                    SET elastic = ' . NV_CURRENTTIME . ' 
+                    WHERE file_id = ' . $row['file_id'];
+                $db->exec($update_sql);
+                
+                $updated_count++;
+            }
+            
+            $message = sprintf($lang_module['sync_elastic_success'], $updated_count);
+            $message_type = 'success';
+        }
+    } catch (Exception $e) {
+        $message = $lang_module['sync_elastic_failed'] . ': ' . $e->getMessage();
+        $message_type = 'danger';
+        error_log($lang_module['error_sync_elastic'] . $e->getMessage());
     }
 }
 

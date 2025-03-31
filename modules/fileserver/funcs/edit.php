@@ -74,25 +74,18 @@ if (defined('NV_IS_SPADMIN')) {
 
         $file_size = filesize($full_path);
 
-        $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET updated_at = :updated_at, file_size = :file_size WHERE file_id = :file_id';
+        $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET updated_at = :updated_at, file_size = :file_size, elastic = :elastic WHERE file_id = :file_id';
         $stmt = $db->prepare($sql);
         $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
         $stmt->bindValue(':file_size', $file_size, PDO::PARAM_INT);
         $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+        $stmt->bindValue(':elastic', 0, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
             updateLog($row['lev'], 'edit', $file_id);
             $status = $lang_module['success'];
             $message = $lang_module['update_ok'];
 
-            $file_data = [
-                'file_id' => $file_id,
-                'file_size' => $file_size,
-                'updated_at' => NV_CURRENTTIME
-            ];
-            if ($use_elastic == 1) {
-                updateElasticSearch($client, 'edit', $file_data);
-            }
         }
     }
 } else {

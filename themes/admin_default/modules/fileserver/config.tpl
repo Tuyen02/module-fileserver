@@ -39,7 +39,7 @@
     <div class="text-center">
         <input type="hidden" name="submit" value="1" />
         <input type="submit" value="{LANG.save}" class="btn btn-primary" />
-    </div>
+        <input type="button" value="{LANG.sync_elastic}" id="sync_elastic_btn" class="btn btn-info" onclick="syncElastic()" disabled />    </div>
 </form>
 
 <script>
@@ -49,6 +49,24 @@ function toggleElasticFields() {
     document.getElementById('elas_port').disabled = !useElastic;
     document.getElementById('elas_user').disabled = !useElastic;
     document.getElementById('elas_pass').disabled = !useElastic;
+    document.getElementById('sync_elastic_btn').disabled = !useElastic;
+}
+
+function syncElastic() {
+    if (confirm('{LANG.confirm_sync_elastic}')) {
+        var form = document.createElement('form');
+        form.method = 'post';
+        form.action = '{NV_BASE_ADMINURL}index.php?{NV_NAME_VARIABLE}={MODULE_NAME}&{NV_OP_VARIABLE}={OP}';
+        
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'sync_elastic';
+        input.value = '1';
+        form.appendChild(input);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {

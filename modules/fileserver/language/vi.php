@@ -117,3 +117,4 @@ $lang_module['error_sync_elastic'] = 'Lỗi đồng bộ Elasticsearch: ';
 $lang_module['error_update_elastic'] = 'Lỗi cập nhật Elasticsearch';
 $lang_module['elastic_index_response'] = 'Lỗi phản hồi Elasticsearch: ';
 $lang_module['error_elastic_index'] = 'Lỗi chỉ mục Elasticsearch: ';
+$lang_module['cannot_update_db'] = 'Không thể cập nhật cơ sở dữ liệu: ';
