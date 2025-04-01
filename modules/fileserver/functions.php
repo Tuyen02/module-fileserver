@@ -55,6 +55,8 @@ if ($use_elastic == 1) {
 
         $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE elastic = 0';
         $result = $db->query($sql);
+        $hasSynced = false;
+
         while ($row = $result->fetch()) {
             try {
                 $params = [
@@ -86,6 +88,10 @@ if ($use_elastic == 1) {
             } catch (Exception $e) {
                 error_log($lang_module['error_update_elastic'] . $e->getMessage());
             }
+        }
+
+        if ($hasSynced) {
+            nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=main');
         }
     } catch (Exception $e) {
         error_log($lang_module['error_start_elastic'] . $e->getMessage());

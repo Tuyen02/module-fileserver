@@ -291,7 +291,7 @@ if (!empty($action)) {
             $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmta->execute();
             updateLog($lev, $action, $file_id);
-            $mess = $lang_module['create_ok'];
+            nv_jsonOutput(['status' => 'success', 'message' => $lang_module['create_ok'], 'redirect' => $page_url]);
         }
         nv_jsonOutput(['status' => $status, 'message' => $mess]);
     }
@@ -302,12 +302,10 @@ if (!empty($action)) {
         if ($fileId > 0 && $checksess == md5($fileId . NV_CHECK_SESSION)) {
             $deleted = deleteFileOrFolder($fileId);
             if ($deleted) {
-                $status = 'success';
                 updateLog($lev, $action, $fileId);
-                $mess = $lang_module['delete_ok'];
+                nv_jsonOutput(['status' => 'success', 'message' => $lang_module['delete_ok'], 'redirect' => $page_url]);
             } else {
-                $status = 'error';
-                $mess = $lang_module['delete_false'];
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['delete_false']]);
             }
         }
     }
@@ -344,6 +342,9 @@ if (!empty($action)) {
 
         if ($status == 'success' && !empty($deletedFileIds)) {
             updateLog($lev, $action, implode(',', $deletedFileIds));
+            nv_jsonOutput(['status' => 'success', 'message' => $mess, 'redirect' => $page_url]);
+        } else {
+            nv_jsonOutput(['status' => $status, 'message' => $mess]);
         }
     }
 
@@ -381,7 +382,7 @@ if (!empty($action)) {
                     $suggestedFullPath = NV_ROOTDIR . '/' . $directory . '/' . $suggestedName;
                 }
                 
-                $mess = $lang_module['name_exists_suggest'] . $suggestedName;
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['name_exists_suggest'] . $suggestedName]);
             }
             
             if (rename($oldFullPath, $newFullPath)) {
@@ -407,6 +408,7 @@ if (!empty($action)) {
                         $stmtUpdateChildren->execute();
                     }
                     updateLog($lev, $action, $fileId);
+                    nv_jsonOutput(['status' => 'success', 'message' => $lang_module['rename_ok'], 'redirect' => $page_url]);
                 }
             }
         }
@@ -503,18 +505,26 @@ if (!empty($action)) {
                 $stmta->execute();
     
                 updateLog($lev, $action, $compressed);
-                $status = 'success';
-                $mess = $compressResult['message'];
-                nv_redirect_location($page_url);
-            }else {
-                $status = 'error';
-                $mess = $lang_module['cannot_update_db'];
+                nv_jsonOutput([
+                    'status' => 'success',
+                    'message' => $compressResult['message'],
+                    'redirect' => $page_url
+                ]);
+            } else {
+                nv_jsonOutput([
+                    'status' => 'error',
+                    'message' => $lang_module['cannot_update_db']
+                ]);
             }
+        } else {
+            nv_jsonOutput([
+                'status' => 'error',
+                'message' => $compressResult['message']
+            ]);
         }
-        nv_jsonOutput(['status' => $status, 'message' => $mess]);
     }
+
     nv_jsonOutput(['status' => $status, 'message' => $mess]);
-    nv_redirect_location($page_url);
 }
 
 $download = $nv_Request->get_int('download', 'get', 0);

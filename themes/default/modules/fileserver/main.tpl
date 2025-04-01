@@ -126,7 +126,7 @@
                     <h3 class="modal-title" id="compressModalLabel">{LANG.compress_modal}</h3>
                 </div>
                 <div class="modal-body">
-                    <form id="compressForm" onsubmit="submitCompressForm(event);">
+                    <form action="" id="compressForm" onsubmit="submitCompressForm(event);">
                         <div class="form-group">
                             <label for="zipFileName">{LANG.zip_file_name}</label>
                             <input type="text" class="form-control" id="zipFileName" name="zipFileName" required>
@@ -257,18 +257,19 @@
 
             $.ajax({
                 type: 'POST',
-                url: "",
+                url: window.location.href,
                 data: data,
+                dataType: 'json',
                 success: function (res) {
-                    if (res.status == 'error') {
-                        alert(res.message);
-                    } else {
-                        alert(res.message);
-                        location.reload();
+                    console.log('Create response:', res);
+                    alert(res.message);
+                    if (res.status == 'success' && res.redirect) {
+                        window.location.href = res.redirect;
                     }
                 },
-                error: function () {
-                    alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+                error: function (xhr) {
+                    console.log('Create error:', xhr.responseText);
+                    alert(xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Đã có lỗi xảy ra.');
                 }
             });
         }
@@ -315,13 +316,17 @@
             type: 'POST',
             url: deleteUrl,
             data: data,
+            dataType: 'json',
             success: function (res) {
-                console.log(res);
+                console.log('Delete response:', res);
                 alert(res.message);
-                location.reload();
+                if (res.status == 'success' && res.redirect) {
+                    window.location.href = res.redirect;
+                }
             },
-            error: function () {
-                alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+            error: function (xhr) {
+                console.log('Delete error:', xhr.responseText);
+                alert(xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Đã có lỗi xảy ra.');
             }
         });
     }
@@ -334,15 +339,19 @@
         };
         $.ajax({
             type: 'POST',
-            url: "",
+            url: window.location.href,
             data: data,
+            dataType: 'json',
             success: function (res) {
-                console.log(res);
+                console.log('Rename response:', res);
                 alert(res.message);
-                location.reload();
+                if (res.status == 'success' && res.redirect) {
+                    window.location.href = res.redirect;
+                }
             },
-            error: function () {
-                alert(res.message);
+            error: function (xhr) {
+                console.log('Rename error:', xhr.responseText);
+                alert(xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Đã có lỗi xảy ra.');
             }
         });
     }
@@ -363,17 +372,21 @@
         const formData = new FormData(this);
         $.ajax({
             type: 'POST',
-            url: "",
+            url: window.location.href,
             data: formData,
             processData: false,
             contentType: false,
+            dataType: 'json', 
             success: function (res) {
-                console.log(res);
-                alert(res.message);
-                location.reload();
+                console.log('Upload response:', res);
+                alert(res.message || 'Tải lên thành công.');
+                if (res.status == 'success' && res.redirect) {
+                    window.location.href = res.redirect;
+                }
             },
-            error: function () {
-                alert(res.message);
+            error: function (xhr) {
+                console.log('Upload error:', xhr.responseText);
+                alert(xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Đã có lỗi xảy ra.');
             }
         });
     });
@@ -448,13 +461,14 @@
             if (zipFileName) {
                 $.ajax({
                     type: 'POST',
-                    url: '',
+                    url: window.location.href,
                     data: {
                         action: 'check_filename',
                         zipFileName: zipFileName,
                         files: selectedFiles,
-                        lev: 0
+                        lev: $('#lev').val() 
                     },
+                    dataType: 'json',
                     success: function (res) {
                         if (res.status == 'error') {
                             $('#fileNameWarning').text(res.message).show();
@@ -466,8 +480,9 @@
                             isFileNameValid = true;
                         }
                     },
-                    error: function () {
-                        alert(res.message);
+                    error: function (xhr) {
+                        console.log('Error checking filename:', xhr.responseText);
+                        $('#fileNameWarning').text('Lỗi khi kiểm tra tên file.').show();
                         isFileNameValid = false;
                     }
                 });
@@ -494,24 +509,31 @@
             if (zipFileName && selectedFiles.length > 0) {
                 $.ajax({
                     type: 'POST',
-                    url: '',
+                    url: window.location.href,
                     data: {
                         action: 'compress',
                         zipFileName: zipFileName,
                         files: selectedFiles
                     },
+                    dataType: 'json', 
                     success: function (res) {
-                        console.log(res);
-                        alert(res.message);
-                        location.reload();
+                        console.log('Compress response:', res); 
+                        alert(res.message); 
+                        if (res.status === 'success' && res.redirect) {
+                            window.location.href = res.redirect;
+                        }
                     },
-                    error: function () {
-                        alert(res.message);
-                        location.reload();
+                    error: function (xhr) {
+                        console.log('Compress error:', xhr.responseText); 
+                        let errorMessage = 'Đã xảy ra lỗi khi nén file.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        alert(errorMessage);
                     }
                 });
             } else {
-                alert('Vui lòng nhập tên file zip!');
+                alert('Vui lòng nhập tên file zip và chọn ít nhất một file!');
             }
         });
     });
