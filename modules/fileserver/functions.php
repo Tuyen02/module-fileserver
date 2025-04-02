@@ -15,14 +15,20 @@ $client = null;
 
 if ($use_elastic == 1) {
     try {
-        $query = $db->query('SELECT config_name, config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE module = ' . $db->quote($module_name) . ' AND lang = ' . $db->quote(NV_LANG_DATA));
-        $config_elastic = $query->fetchAll(PDO::FETCH_KEY_PAIR);
-        if (!isset($config_elastic) || !is_array($config_elastic)) {
+        $elastic_config = [
+            'use_elastic' => $module_config['fileserver']['use_elastic'],
+            'elas_host' => $module_config['fileserver']['elas_host'] ,
+            'elas_port' => $module_config['fileserver']['elas_port'] ,
+            'elas_user' => $module_config['fileserver']['elas_user'] ,
+            'elas_pass' => $module_config['fileserver']['elas_pass']
+        ];
+
+        if (!isset($elastic_config) || !is_array($elastic_config)) {
             error_log($lang_module['invalid_elastic_code']);
         }
         $client = ClientBuilder::create()
-            ->setHosts([$config_elastic['elas_host'] . ':' . $config_elastic['elas_port']])
-            ->setBasicAuthentication($config_elastic['elas_user'], $config_elastic['elas_pass'])
+            ->setHosts([$elastic_config['elas_host'] . ':' . $elastic_config['elas_port']])
+            ->setBasicAuthentication($elastic_config['elas_user'], $elastic_config['elas_pass'])
             ->setSSLVerification(false)
             ->build();
 

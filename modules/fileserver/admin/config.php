@@ -54,51 +54,79 @@ if ($nv_Request->isset_request('submit', 'post')) {
 
 if ($nv_Request->isset_request('sync_elastic', 'post')) {
     try {
-        $config_query = $db->query('SELECT config_name, config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' 
-            WHERE module = ' . $db->quote($module_name) . ' AND lang = ' . $db->quote(NV_LANG_DATA));
-        $elastic_config = [];
-        while ($row = $config_query->fetch()) {
-            $elastic_config[$row['config_name']] = $row['config_value'];
-        }
-
+        $elastic_config = [
+            'use_elastic' => $module_config['fileserver']['use_elastic'],
+            'elas_host' => $module_config['fileserver']['elas_host'],
+            'elas_port' => $module_config['fileserver']['elas_port'],
+            'elas_user' => $module_config['fileserver']['elas_user'],
+            'elas_pass' => $module_config['fileserver']['elas_pass']
+        ];
+        
         if ($elastic_config['use_elastic']) {
             $client = ClientBuilder::create()
                 ->setHosts([$elastic_config['elas_host'] . ':' . $elastic_config['elas_port']])
                 ->setBasicAuthentication($elastic_config['elas_user'], $elastic_config['elas_pass'])
                 ->setSSLVerification(false)
                 ->build();
-
+            
             $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE elastic = 0';
             $result = $db->query($sql);
             
             $updated_count = 0;
+            $file_ids = []; 
+            
+            $bulk_params = ['body' => []];
+            
             while ($row = $result->fetch()) {
-                $params = [
-                    'index' => $module_data,
-                    'id'    => $row['file_id'],
-                    'body'  => [
-                        'file_id' => $row['file_id'],
-                        'file_name' => $row['file_name'],
-                        'file_path' => $row['file_path'],
-                        'file_size' => $row['file_size'],
-                        'uploaded_by' => $row['uploaded_by'],
-                        'is_folder' => $row['is_folder'],
-                        'status' => $row['status'],
-                        'lev' => $row['lev'],
-                        'created_at' => $row['created_at'],
-                        'updated_at' => $row['updated_at'],
-                        'compressed' => $row['compressed'],
+                $bulk_params['body'][] = [
+                    'index' => [
+                        '_index' => $module_data,
+                        '_id' => $row['file_id']
                     ]
                 ];
                 
-                $client->index($params);
+                $bulk_params['body'][] = [
+                    'file_id' => $row['file_id'],
+                    'file_name' => $row['file_name'],
+                    'file_path' => $row['file_path'],
+                    'file_size' => $row['file_size'],
+                    'uploaded_by' => $row['uploaded_by'],
+                    'is_folder' => $row['is_folder'],
+                    'status' => $row['status'],
+                    'lev' => $row['lev'],
+                    'created_at' => $row['created_at'],
+                    'updated_at' => $row['updated_at'],
+                    'compressed' => $row['compressed'],
+                ];
                 
-                $update_sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                    SET elastic = ' . NV_CURRENTTIME . ' 
-                    WHERE file_id = ' . $row['file_id'];
-                $db->exec($update_sql);
-                
+                $file_ids[] = $row['file_id'];
                 $updated_count++;
+                
+                if (count($bulk_params['body']) >= 2000) { 
+                    if (!empty($bulk_params['body'])) {
+                        $client->bulk($bulk_params);
+                        $bulk_params = ['body' => []]; 
+                    }
+                    
+                    if (!empty($file_ids)) {
+                        $update_sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                                      SET elastic = ' . NV_CURRENTTIME . ' 
+                                      WHERE file_id IN (' . implode(',', $file_ids) . ')';
+                        $db->exec($update_sql);
+                        $file_ids = []; 
+                    }
+                }
+            }
+            
+            if (!empty($bulk_params['body'])) {
+                $client->bulk($bulk_params);
+            }
+            
+            if (!empty($file_ids)) {
+                $update_sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                              SET elastic = ' . NV_CURRENTTIME . ' 
+                              WHERE file_id IN (' . implode(',', $file_ids) . ')';
+                $db->exec($update_sql);
             }
             
             $message = sprintf($lang_module['sync_elastic_success'], $updated_count);

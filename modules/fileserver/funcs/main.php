@@ -104,7 +104,6 @@ if ($use_elastic == 1) {
         }
     } catch (Exception $e) {
         error_log("Lỗi tìm kiếm Elasticsearch: " . $e->getMessage());
-        $result = [];
     }
 } else {
     try {

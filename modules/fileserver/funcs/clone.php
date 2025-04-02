@@ -78,8 +78,8 @@ if ($copy == 1) {
                 $new_file_name = $row['file_name'];
                 $new_file_path = $target_url . '/' . $new_file_name;
 
-                $sql_insert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev, elastic) 
-                                   VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev, :elastic)';
+                $sql_insert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev) 
+                                   VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)';
                 $stmt = $db->prepare($sql_insert);
                 $stmt->bindParam(':file_name', $new_file_name, PDO::PARAM_STR);
                 $stmt->bindParam(':file_path', $new_file_path, PDO::PARAM_STR);
@@ -87,7 +87,6 @@ if ($copy == 1) {
                 $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_INT);
                 $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 $stmt->bindParam(':lev', $target_lev, PDO::PARAM_INT);
-                $stmt->bindValue(':elastic', 0, PDO::PARAM_INT);
 
                 if ($stmt->execute()) {
                     $new_file_id = $db->lastInsertId();
