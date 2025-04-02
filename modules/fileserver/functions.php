@@ -84,6 +84,8 @@ if ($use_elastic == 1) {
                 ];
                 $client->index($params);
 
+                $client->indices()->refresh(['index' => 'fileserver']);
+
                 $update_sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
                                SET elastic = :elastic 
                                WHERE file_id = :file_id';
