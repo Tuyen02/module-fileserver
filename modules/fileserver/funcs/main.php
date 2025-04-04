@@ -290,6 +290,11 @@ if (!empty($action)) {
             $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmta->execute();
             updateLog($lev, $action, $file_id);
+
+            if ($use_elastic == 1) {
+                $client->indices()->refresh(['index' => 'fileserver']);
+            }
+            
             nv_jsonOutput(['status' => 'success', 'message' => $lang_module['create_ok'], 'redirect' => $page_url]);
         }
         nv_jsonOutput(['status' => $status, 'message' => $mess]);
