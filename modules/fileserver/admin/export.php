@@ -92,10 +92,10 @@ function exportExcel() {
         $objPHPExcel->getProperties()
             ->setCreator('NukeViet CMS')
             ->setLastModifiedBy('NukeViet CMS')
-            ->setTitle($page_title . time())
-            ->setSubject($page_title . time())
-            ->setDescription($page_title)
-            ->setKeywords($page_title)
+            ->setTitle($lang_module['export_title'] . time())
+            ->setSubject($lang_module['export_title'] . time())
+            ->setDescription($lang_module['export_title'])
+            ->setKeywords($lang_module['export_title'])
             ->setCategory($module_name);
 
         $objWorksheet = $objPHPExcel->getActiveSheet();

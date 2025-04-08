@@ -83,6 +83,11 @@ if (defined('NV_IS_SPADMIN')) {
 
         if ($stmt->execute()) {
             updateLog($row['lev'], 'edit', $file_id);
+
+            if ($row['lev'] > 0) {
+                updateParentFolderSize($row['lev']);
+            }
+
             $status = $lang_module['success'];
             $message = $lang_module['update_ok'];
 
@@ -93,7 +98,7 @@ if (defined('NV_IS_SPADMIN')) {
     $message = $lang_module['not_thing_to_do'];
 }
 
-$contents = nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $message);
+$contents = nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $status, $message);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

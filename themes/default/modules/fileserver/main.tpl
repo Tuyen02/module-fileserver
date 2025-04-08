@@ -264,7 +264,7 @@
                     console.log('Create response:', res);
                     alert(res.message);
                     if (res.status == 'success' && res.redirect) {
-                        window.location.href = res.redirect;
+                        window.location.reload();
                     }
                 },
                 error: function (xhr) {
@@ -321,7 +321,7 @@
                 console.log('Delete response:', res);
                 alert(res.message);
                 if (res.status == 'success' && res.redirect) {
-                    window.location.href = res.redirect;
+                    window.location.reload();
                 }
             },
             error: function (xhr) {
@@ -346,7 +346,7 @@
                 console.log('Rename response:', res);
                 alert(res.message);
                 if (res.status == 'success' && res.redirect) {
-                    window.location.href = res.redirect;
+                    window.location.reload();
                 }
             },
             error: function (xhr) {
@@ -381,7 +381,7 @@
                 console.log('Upload response:', res);
                 alert(res.message || 'Tải lên thành công.');
                 if (res.status == 'success' && res.redirect) {
-                    window.location.href = res.redirect;
+                    window.location.reload();
                 }
             },
             error: function (xhr) {
@@ -520,7 +520,7 @@
                         console.log('Compress response:', res); 
                         alert(res.message); 
                         if (res.status === 'success' && res.redirect) {
-                            window.location.href = res.redirect;
+                            window.location.reload();
                         }
                     },
                     error: function (xhr) {

@@ -42,6 +42,12 @@ foreach ($breadcrumbs as $breadcrumb) {
 }
 
 $file_ids = array_keys($arr_per);
+$result = [];
+$total = 0;
+
+
+$result = [];
+$total = 0;
 
 if ($use_elastic == 1) {
     try {
@@ -64,10 +70,13 @@ if ($use_elastic == 1) {
             ]
         ];
 
-        if (!defined('NV_IS_SPADMIN') && !empty($arr_per)) {
-            $searchParams['body']['query']['bool']['filter'][] = [
-                'terms' => ['file_id' => $file_ids]
-            ];
+        if (defined('NV_IS_SPADMIN')) {
+        } else {
+            if (!empty($file_ids)) {
+                $searchParams['body']['query']['bool']['filter'][] = [
+                    'terms' => ['file_id' => $file_ids]
+                ];
+            }
         }
 
         if (!empty($search_term)) {
@@ -105,73 +114,34 @@ if ($use_elastic == 1) {
     } catch (Exception $e) {
         error_log("Lỗi tìm kiếm Elasticsearch: " . $e->getMessage());
     }
-} else {
+}
+else {
     try {
         $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev = ' . $lev;
-        $params = [];
+        $count_sql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev = ' . $lev;
 
-        if (!defined('NV_IS_SPADMIN') && !empty($arr_per)) {
-            $sql .= ' AND file_id IN (' . implode(',', array_fill(0, count($file_ids), '?')) . ')';
-            $params = array_merge($params, $file_ids);
+        if (defined('NV_IS_SPADMIN')) {
+        } elseif (!empty($arr_per)) {
+            $placeholders = implode(',', $arr_per);
+            $sql .= ' AND file_id IN (' . $placeholders . ')';
+            $count_sql .= ' AND file_id IN (' . $placeholders . ')';
         }
 
         if (!empty($search_term)) {
-            $sql .= ' AND file_name LIKE :search_term';
-            $params[':search_term'] = '%' . $search_term . '%';
+            $sql .= ' AND file_name LIKE ' . $db->quote('%' . $search_term . '%');
+            $count_sql .= ' AND file_name LIKE ' . $db->quote('%' . $search_term . '%');
         }
 
         if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
             $is_folder = ($search_type == 'file') ? 0 : 1;
-            $sql .= ' AND is_folder = :is_folder';
-            $params[':is_folder'] = $is_folder;
+            $sql .= ' AND is_folder = ' . $is_folder;
+            $count_sql .= ' AND is_folder = ' . $is_folder;
         }
 
-        $sql .= ' ORDER BY file_id ASC LIMIT :offset, :perpage';
+        $sql .= ' ORDER BY file_id ASC LIMIT ' . (($page - 1) * $perpage) . ', ' . $perpage;
+        $result = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        $total = $db->query($count_sql)->fetchColumn();
 
-        $stmt = $db->prepare($sql);
-
-        foreach ($params as $key => $value) {
-            if (is_int($key)) {
-                $stmt->bindValue($key + 1, $value, PDO::PARAM_INT);
-            } else {
-                $stmt->bindValue($key, $value);
-            }
-        }
-
-        $stmt->bindValue(':offset', ($page - 1) * $perpage, PDO::PARAM_INT);
-        $stmt->bindValue(':perpage', $perpage, PDO::PARAM_INT);
-
-        $stmt->execute();
-        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $count_sql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev = '. $lev;
-        $count_params = [];
-
-        if (!defined('NV_IS_SPADMIN') && !empty($arr_per)) {
-            $count_sql .= ' AND file_id IN (' . implode(',', array_fill(0, count($file_ids), '?')) . ')';
-            $count_params = array_merge($count_params, $file_ids);
-        }
-
-        if (!empty($search_term)) {
-            $count_sql .= ' AND file_name LIKE :search_term';
-            $count_params[':search_term'] = '%' . $search_term . '%';
-        }
-
-        if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
-            $count_sql .= ' AND is_folder = :is_folder';
-            $count_params[':is_folder'] = $is_folder;
-        }
-
-        $count_stmt = $db->prepare($count_sql);
-        foreach ($count_params as $key => $value) {
-            if (is_int($key)) {
-                $count_stmt->bindValue($key + 1, $value, PDO::PARAM_INT);
-            } else {
-                $count_stmt->bindValue($key, $value);
-            }
-        }
-        $count_stmt->execute();
-        $total = $count_stmt->fetchColumn();
     } catch (PDOException $e) {
         error_log("Lỗi truy vấn Database: " . $e->getMessage());
     }
@@ -290,11 +260,8 @@ if (!empty($action)) {
             $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmta->execute();
             updateLog($lev, $action, $file_id);
+            updateParentFolderSize($lev);
 
-            if ($use_elastic == 1) {
-                $client->indices()->refresh(['index' => 'fileserver']);
-            }
-            
             nv_jsonOutput(['status' => 'success', 'message' => $lang_module['create_ok'], 'redirect' => $page_url]);
         }
         nv_jsonOutput(['status' => $status, 'message' => $mess]);
@@ -346,6 +313,7 @@ if (!empty($action)) {
 
         if ($status == 'success' && !empty($deletedFileIds)) {
             updateLog($lev, $action, implode(',', $deletedFileIds));
+
             nv_jsonOutput(['status' => 'success', 'message' => $mess, 'redirect' => $page_url]);
         } else {
             nv_jsonOutput(['status' => $status, 'message' => $mess]);
@@ -509,22 +477,14 @@ if (!empty($action)) {
                 $stmta->execute();
     
                 updateLog($lev, $action, $compressed);
-                nv_jsonOutput([
-                    'status' => 'success',
-                    'message' => $compressResult['message'],
-                    'redirect' => $page_url
-                ]);
+                updateParentFolderSize($lev);
+
+                nv_jsonOutput(['status' => 'success', 'message' => $compressResult['message'], 'redirect' => $page_url]);
             } else {
-                nv_jsonOutput([
-                    'status' => 'error',
-                    'message' => $lang_module['cannot_update_db']
-                ]);
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_update_db']]);
             }
         } else {
-            nv_jsonOutput([
-                'status' => 'error',
-                'message' => $compressResult['message']
-            ]);
+            nv_jsonOutput(['status' => 'error','message' => $compressResult['message']]);
         }
     }
 
@@ -642,6 +602,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
             $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmta->execute();
             updateLog($lev, 'upload', $file_id);
+            updateParentFolderSize($lev);
         }
         nv_redirect_location($page_url);
         $success = $lang_module['upload_ok'];
@@ -657,20 +618,14 @@ $selected_folder = ($search_type == 'folder') ? ' selected' : '';
 if (!empty($result)) {
     foreach ($result as $row) {
         $sql_logs = 'SELECT log_id, action, value, lev, total_files, total_folders, total_size, total_files_del, total_folders_del, total_size_del, log_time 
-                    FROM ' . NV_PREFIXLANG . '_' . $module_data . '_logs 
-                    WHERE lev = :lev 
-                    ORDER BY log_time DESC 
-                    LIMIT 1';
-        $stmt_logs = $db->prepare($sql_logs);
-        $stmt_logs->bindParam(':lev', $row['lev'], PDO::PARAM_INT);
-        $stmt_logs->execute();
-        $logs = $stmt_logs->fetch(PDO::FETCH_ASSOC);
+                FROM ' . NV_PREFIXLANG . '_' . $module_data . '_logs 
+                WHERE lev = ' . $row['lev'] . ' 
+                ORDER BY log_time DESC 
+                LIMIT 1';
+        $logs = $db->query($sql_logs)->fetch(PDO::FETCH_ASSOC);
 
-        $sql_permissions = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = :file_id';
-        $stmt_permissions = $db->prepare($sql_permissions);
-        $stmt_permissions->bindParam(':file_id', $row['file_id'], PDO::PARAM_INT);
-        $stmt_permissions->execute();
-        $permissions = $stmt_permissions->fetch(PDO::FETCH_ASSOC);
+        $sql_permissions = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $row['file_id'];
+        $permissions = $db->query($sql_permissions)->fetch(PDO::FETCH_ASSOC);
     }
 } else {
     $logs = [];

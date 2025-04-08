@@ -47,7 +47,7 @@
 </style>
 
 <!-- BEGIN: message -->
-<div class="alert alert-warning">{MESSAGE}</div>
+<div class="alert {MESSAGE_CLASS}">{MESSAGE}</div>
 <!-- END: message -->
 
 <div class="editor-container">

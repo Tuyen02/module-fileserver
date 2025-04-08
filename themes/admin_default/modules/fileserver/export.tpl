@@ -9,7 +9,7 @@
 <table class="table table-bordered">
     <thead class="thead-dark">
         <tr>
-            <th scope="col">{LANG.#}</th>
+            <th scope="col">{LANG.stt}</th>
             <th scope="col">{LANG.file_name}</th>
             <th scope="col">{LANG.file_size}</th>
             <th scope="col">{LANG.file_path}</th>

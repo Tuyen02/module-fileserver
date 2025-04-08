@@ -134,7 +134,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
     return $xtpl->text('main');
 }
 
-function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $message, $selected_folder_path, $view_url, $directories, $page_url, $base_url)
+function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $status, $message, $selected_folder_path, $view_url, $directories, $page_url, $base_url)
 {
     global $module_file, $global_config, $lang_module;
 
@@ -159,7 +159,9 @@ function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $message, $
         $xtpl->parse('main.directory_option');
     }
 
-    if ($message != '') {
+    if (!empty($message)) {
+        $message_class = ($status == 'success') ? 'alert-success' : 'alert-danger';
+        $xtpl->assign('MESSAGE_CLASS', $message_class);
         $xtpl->assign('MESSAGE', $message);
         $xtpl->parse('main.message');
     }
@@ -174,7 +176,7 @@ function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $message, $
     return $xtpl->text('main');
 }
 
-function nv_fileserver_compress($file_id, $list, $message, $tree_html)
+function nv_fileserver_compress($file_id, $list,$status, $message, $tree_html)
 {
     global $module_file, $global_config, $lang_module;
 
@@ -187,6 +189,8 @@ function nv_fileserver_compress($file_id, $list, $message, $tree_html)
     }
 
     if (!empty($message)) {
+        $message_class = ($status == 'success') ? 'alert-success' : 'alert-danger';
+        $xtpl->assign('MESSAGE_CLASS', $message_class);
         $xtpl->assign('MESSAGE', $message);
         $xtpl->parse('main.message');
     }
@@ -222,7 +226,7 @@ function nv_fileserver_edit_img($row, $file_id, $file_extension)
     return $xtpl->text('main');
 }
 
-function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $message)
+function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url,$status, $message)
 {
     global $module_file, $global_config, $lang_module, $module_name;
 
@@ -235,7 +239,9 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
 
     $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
 
-    if ($message != '') {
+    if (!empty($message)) {
+        $message_class = ($status == 'success') ? 'alert-success' : 'alert-danger';
+        $xtpl->assign('MESSAGE_CLASS', $message_class);
         $xtpl->assign('MESSAGE', $message);
         $xtpl->parse('main.message');
     }
@@ -258,7 +264,7 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
     return $xtpl->text('main');
 }
 
-function nv_fileserver_perm($row, $file_id, $group_read_checked, $group_write_checked, $other_read_checked, $other_write_checked, $message)
+function nv_fileserver_perm($row, $file_id, $group_read_checked, $group_write_checked, $other_read_checked, $other_write_checked,$status, $message)
 {
     global $module_file, $global_config, $lang_module, $module_name;
 
@@ -272,7 +278,9 @@ function nv_fileserver_perm($row, $file_id, $group_read_checked, $group_write_ch
     $xtpl->assign('OTHER_READ_CHECKED', $other_read_checked);
     $xtpl->assign('OTHER_WRITE_CHECKED', $other_write_checked);
 
-    if ($message != '') {
+    if (!empty($message)) {
+        $message_class = ($status == 'success') ? 'alert-success' : 'alert-danger';
+        $xtpl->assign('MESSAGE_CLASS', $message_class);
         $xtpl->assign('MESSAGE', $message);
         $xtpl->parse('main.message');
     }

@@ -96,7 +96,7 @@ if (!$row) {
 $tree = buildTree($list);
 $tree_html = displayTree($tree);
 
-$contents = nv_fileserver_compress($list, $row['file_id'], $message, $tree_html);
+$contents = nv_fileserver_compress($list, $row['file_id'],$status ,$message, $tree_html);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

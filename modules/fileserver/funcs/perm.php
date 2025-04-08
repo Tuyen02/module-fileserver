@@ -4,6 +4,8 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 $page_title = $lang_module['perm'];
+
+$status = '';
 $message = '';
 
 $page = $nv_Request->get_int('page', 'get', 1);
@@ -93,6 +95,7 @@ if (defined('NV_IS_SPADMIN')) {
             $update_child_stmt->execute();
         }
 
+        $status = 'success';
         $message = $lang_module['update_ok'];
 
         $stmt->execute();
@@ -108,7 +111,7 @@ if (defined('NV_IS_SPADMIN')) {
     $message = $lang_module['not_thing_to_do'];
 }
 
-$contents = nv_fileserver_perm($row, $file_id, $group_read_checked, $group_write_checked, $other_read_checked, $other_write_checked, $message);
+$contents = nv_fileserver_perm($row, $file_id, $group_read_checked, $group_write_checked, $other_read_checked, $other_write_checked, $status, $message);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

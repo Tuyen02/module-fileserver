@@ -123,11 +123,22 @@ if (!empty($array_op)) {
 $config_value = $module_config[$module_name]['group_admin_fileserver'];
 $config_value_array = explode(',', $config_value);
 
-if (defined('NV_IS_SPADMIN') || is_array($user_info['in_groups']) && array_intersect($user_info['in_groups'], $config_value_array)) {
-    $arr_per = array_column($db->query('SELECT p_group, file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_group > 1')->fetchAll(), 'p_group', 'file_id');
+$arr_per = [];
+
+if (defined('NV_IS_SPADMIN')) {
+    $arr_per = [];
+} elseif (isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array))) {
+    $arr_per = array_column(
+        $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_group > 1 ')->fetchAll(),
+        'file_id'
+    );
 } else {
-    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
+    $arr_per = array_column(
+        $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_other > 1')->fetchAll(),
+        'file_id'
+    );
 }
+
 function updateAlias($file_id, $file_name)
 {
     global $db, $module_data;
@@ -167,7 +178,9 @@ function deleteFileOrFolder($fileId)
 
     $backupDir = dirname($backupPath);
     if (!file_exists($backupDir)) {
-        mkdir($backupDir, 777, true);
+        if (!mkdir($backupDir, 0777, true)) {
+            return false;
+        }
     }
 
     if (file_exists($fullPath)) {
@@ -187,12 +200,8 @@ function deleteFileOrFolder($fileId)
 
     if ($existsInTrash) {
         $sqlUpdateTrash = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_trash 
-            SET status = 1,
-                file_path = :file_path,
-                file_size = :file_size,
-                deleted_at = :deleted_at
+            SET status = 1, file_path = :file_path, file_size = :file_size, deleted_at = :deleted_at
             WHERE file_id = :file_id';
-        
         $stmtUpdate = $db->prepare($sqlUpdateTrash);
         $stmtUpdate->execute([
             ':file_path' => $trash_dir,
@@ -204,7 +213,6 @@ function deleteFileOrFolder($fileId)
         $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_trash 
             (file_id, file_name, alias, file_path, file_size, uploaded_by, deleted_at, updated_at, is_folder, status, lev, view, share, compressed) 
             VALUES (:file_id, :file_name, :alias, :file_path, :file_size, :uploaded_by, :deleted_at, :updated_at, :is_folder, :status, :lev, :view, :share, :compressed)';
-        
         $stmtInsert = $db->prepare($sqlInsert);
         $stmtInsert->execute([
             ':file_id' => $row['file_id'],
@@ -230,6 +238,8 @@ function deleteFileOrFolder($fileId)
 
     $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET status = 0, elastic = 0 WHERE file_id = ' . $fileId;
     $db->query($sqlUpdate);
+
+    updateParentFolderSize($lev);
 
     return true;
 }
@@ -428,7 +438,7 @@ function calculateFolderSize($folderId)
     global $db, $module_data;
     $totalSize = 0;
 
-    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . $folderId;
+    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 and lev = ' . $folderId;
     $files = $db->query($sql)->fetchAll();
 
     foreach ($files as $file) {
@@ -469,6 +479,29 @@ function calculateFileFolderStats($lev)
         'folders' => $total_folders,
         'size' => $total_size
     ];
+}
+
+function updateParentFolderSize($folderId)
+{
+    global $db, $module_data;
+
+    $newSize = calculateFolderSize($folderId);
+
+    $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+            SET file_size = :file_size, updated_at = :updated_at 
+            WHERE file_id = :file_id AND is_folder = 1';
+    $stmt = $db->prepare($sql);
+    $stmt->bindValue(':file_size', $newSize, PDO::PARAM_INT);
+    $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+    $stmt->bindValue(':file_id', $folderId, PDO::PARAM_INT);
+    $stmt->execute();
+
+    $sql = 'SELECT lev FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $folderId;
+    $parentId = $db->query($sql)->fetchColumn();
+
+    if ($parentId > 0) {
+        updateParentFolderSize($parentId);
+    }
 }
 
 function updateLog($lev, $action = '', $value = '')

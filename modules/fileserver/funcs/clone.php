@@ -3,6 +3,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
+$status = '';
 $message = '';
 
 if (!defined('NV_IS_SPADMIN')) {
@@ -54,9 +55,11 @@ if (empty($directories)) {
 }
 
 if ($copy == 1) {
+    $status = 'error';
     $message = $lang_module['copy_false'];
     $target_folder = $db->query('SELECT file_path, file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $rank)->fetch();
     if (!$target_folder) {
+        $status = 'error';
         $message = $lang_module['target_folder_not_found'];
     } else {
         $target_url = $target_folder['file_path'];
@@ -74,6 +77,7 @@ if ($copy == 1) {
             $message = $lang_module['f_has_exit'];
         } else {
             if (copy(NV_ROOTDIR . $row['file_path'], NV_ROOTDIR . $target_url . '/' . $row['file_name'])) {
+                $status = 'success';
                 $message = $lang_module['copy_ok'];
                 $new_file_name = $row['file_name'];
                 $new_file_path = $target_url . '/' . $new_file_name;
@@ -130,6 +134,10 @@ if ($copy == 1) {
                     $stmt_permissions_insert->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                     $stmt_permissions_insert->execute();
                     updateLog($target_lev, 'copy', $new_file_id);
+
+                    if ($target_lev > 0) {
+                        updateParentFolderSize($target_lev);
+                    }
                 }
             }
         }
@@ -137,9 +145,11 @@ if ($copy == 1) {
 }
 
 if ($move == 1) {
+    $status = 'error';
     $message = $lang_module['move_false'];
     $target_folder = $db->query('SELECT file_path, file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $rank)->fetch();
     if (!$target_folder) {
+        $status = 'error';
         $message = $lang_module['target_folder_not_found'];
     } else {
         $target_url = $target_folder['file_path'];
@@ -157,6 +167,7 @@ if ($move == 1) {
             $message = $lang_module['f_has_exit'];
         } else {
             if (rename(NV_ROOTDIR . $row['file_path'], NV_ROOTDIR . $target_url . '/' . $row['file_name'])) {
+                $status = 'success';
                 $message = $lang_module['move_ok'];
                 $new_file_path = $target_url . '/' . $row['file_name'];
 
@@ -204,6 +215,10 @@ if ($move == 1) {
                     $stmt_permissions_insert->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                     $stmt_permissions_insert->execute();
                     updateLog($target_lev, 'move', $file_id);
+
+                    if ($target_lev > 0) {
+                        updateParentFolderSize($target_lev);
+                    }
                 }
             }
         }
@@ -219,7 +234,7 @@ if ($rank > 0) {
     }
 }
 
-$contents = nv_fileserver_clone($row, $file_id, $file_name, $file_path, $message, $selected_folder_path, $view_url, $directories, $page_url, $base_url);
+$contents = nv_fileserver_clone($row, $file_id, $file_name, $file_path, $status, $message, $selected_folder_path, $view_url, $directories, $page_url, $base_url);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

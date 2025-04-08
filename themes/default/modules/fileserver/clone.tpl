@@ -1,7 +1,8 @@
 <!-- BEGIN: main -->
 <!-- BEGIN: message -->
-<div class="alert alert-warning">{MESSAGE}</div>
+<div class="alert {MESSAGE_CLASS}">{MESSAGE}</div>
 <!-- END: message -->
+
 <h3>{LANG.f_name}: {FILE_NAME}</h3>
 <p>{LANG.f_path}: {FILE_PATH}</p>
 

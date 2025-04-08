@@ -1,6 +1,6 @@
 <!-- BEGIN: main -->
 <!-- BEGIN: message -->
-<div class="alert alert-warning">{MESSAGE}</div>
+<div class="alert {MESSAGE_CLASS}">{MESSAGE}</div>
 <!-- END: message -->
 <h1>Nội dung file nén</h1>
 <div class="tree well">
