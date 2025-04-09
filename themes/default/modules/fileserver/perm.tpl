@@ -18,14 +18,20 @@
             </thead>
             <tbody>
                 <tr>
-                    <td>{LANG.read}</td>
-                    <td><input type="checkbox" name="group_read" value="1" {GROUP_READ_CHECKED}></td>
-                    <td><input type="checkbox" name="other_read" value="1" {OTHER_READ_CHECKED}></td>
-                </tr>
-                <tr>
-                    <td>{LANG.write}</td>
-                    <td><input type="checkbox" name="group_write" value="2" {GROUP_WRITE_CHECKED}></td>
-                    <td><input type="checkbox" name="other_write" value="2" {OTHER_WRITE_CHECKED}></td>
+                    <td>{LANG.permission_level}</td>
+                    <td>
+                        <select name="group_permission" class="form-control">
+                            <option value="1" {GROUP_LEVEL_1}>{LANG.level_1}</option>
+                            <option value="2" {GROUP_LEVEL_2}>{LANG.level_2}</option>
+                            <option value="3" {GROUP_LEVEL_3}>{LANG.level_3}</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select name="other_permission" class="form-control">
+                            <option value="1" {OTHER_LEVEL_1}>{LANG.level_1}</option>
+                            <option value="2" {OTHER_LEVEL_2}>{LANG.level_2}</option>
+                        </select>
+                    </td>
                 </tr>
             </tbody>
         </table>
@@ -37,7 +43,7 @@
 </div>
 <br>
 <script>
-        $(document).ready(function () {
+    $(document).ready(function () {
         $("#backButton").on("click", function (e) {
             e.preventDefault();
             window.history.back();

@@ -2,6 +2,7 @@
 if (!defined('NV_IS_FILE_ADMIN')) {
     die('Stop!!!');
 }
+
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 $error = '';
@@ -13,7 +14,8 @@ $tmp_dir = '/data/tmp/';
 $import_folder = 'import-file';
 $import_dir = $tmp_dir . $import_folder;
 
-function downloadFromUrl($fileUrl, $dir = './data/tmp/import-file') {
+function downloadFromUrl($fileUrl, $dir = './data/tmp/import-file')
+{
     if (!file_exists($dir)) {
         mkdir($dir, 777, true);
     }
@@ -63,8 +65,9 @@ function downloadFromUrl($fileUrl, $dir = './data/tmp/import-file') {
     return file_exists($filePath) ? $filePath : false;
 }
 
-function importSheetData($sheet, $parent_id, &$importedSheets, $parent_path = '/uploads/fileserver', $base_dir = '') {
-    global $db;
+function importSheetData($sheet, $parent_id, &$importedSheets, $parent_path = '/uploads/fileserver', $base_dir = '')
+{
+    global $db, $lang_module, $module_name, $admin_info;
     $Totalrow = $sheet->getHighestRow();
 
     for ($i = 5; $i <= $Totalrow; $i++) {
@@ -157,6 +160,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['excel_
                 }
             }
             $success = $lang_module['import_success'];
+            nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['import'], $lang_module['import_file'], (int)$admin_info['userid']);
         } catch (Exception $e) {
             $error = $lang_module['error'] . $e->getMessage();
         }

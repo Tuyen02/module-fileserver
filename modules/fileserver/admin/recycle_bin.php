@@ -9,8 +9,6 @@ $page_title = $lang_module['recycle_bin'];
 $error = '';
 $success = '';
 
-purgeOldTrashItems();
-
 $perpage = 5;
 $page = $nv_Request->get_int('page', 'get', 1);
 $lev = $nv_Request->get_int('lev', 'get', 0);
@@ -27,7 +25,7 @@ $breadcrumbs = [];
 $current_lev = $lev;
 
 while ($current_lev > 0) {
-    $sql1 = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE status = 1 and file_id = ' . $current_lev;
+    $sql1 = 'SELECT file_name, file_path, lev, alias, deleted_at FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 0 and file_id = ' . $current_lev;
     $result1 = $db->query($sql1);
     $row1 = $result1->fetch();
     if ($row1) {
@@ -47,8 +45,8 @@ foreach ($breadcrumbs as $breadcrumb) {
     $array_mod_title[] = $breadcrumb;
 }
 
-$sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE status = 1 AND lev = :lev';
-$total_sql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE status = 1 AND lev = :lev';
+$sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 0 AND lev = :lev';
+$total_sql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 0 AND lev = :lev';
 
 if (!empty($search_term)) {
     $sql .= ' AND file_name LIKE :search_term';
@@ -87,7 +85,7 @@ $stmt->execute();
 $result = $stmt->fetchAll();
 
 if ($lev > 0) {
-    $base_dir = $db->query('SELECT file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE status = 1 and file_id = ' . $lev)->fetchColumn();
+    $base_dir = $db->query('SELECT file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 0 and file_id = ' . $lev)->fetchColumn();
     $full_dir = NV_ROOTDIR . $base_dir;
     $page_url .= '&lev=' . $lev;
 }
@@ -110,6 +108,7 @@ if (!empty($action)) {
                 $status = 'success';
                 updateLog($lev, 'delete_permanent', $fileId);
                 $mess = $lang_module['delete_ok'];
+                nv_insert_logs(NV_LANG_DATA, $module_name, $action, $fileId, $admin_info['userid']);
             } else {
                 $mess = $lang_module['delete_false'];
             }
@@ -137,6 +136,7 @@ if (!empty($action)) {
         if (!empty($deletedFileIds)) {
             $status = 'success';
             updateLog($lev, 'delete_all_permanent', implode(',', $deletedFileIds));
+            nv_insert_logs(NV_LANG_DATA, $module_name, $action, implode(',', $deletedFileIds), $admin_info['userid']);
             $mess = $lang_module['delete_ok'];
         } else {
             $mess = $lang_module['delete_false'];
@@ -153,6 +153,7 @@ if (!empty($action)) {
             if ($restored) {
                 $status = 'success';
                 updateLog($lev, 'restore', $fileId);
+                nv_insert_logs(NV_LANG_DATA, $module_name, $action, $fileId, $admin_info['userid']);
                 $mess = $lang_module['restore_ok'];
             } else {
                 $mess = $lang_module['restore_false'];
@@ -180,6 +181,7 @@ if (!empty($action)) {
         if (!empty($restoredFileIds)) {
             $status = 'success';
             updateLog($lev, 'restore_all', implode(',', $restoredFileIds));
+            nv_insert_logs(NV_LANG_DATA, $module_name, $action, implode(',', $restoredFileIds), $admin_info['userid']);
             $mess = $lang_module['restore_ok'];
         } else {
             $mess = $lang_module['restore_false'];
@@ -226,7 +228,7 @@ foreach ($result as $row) {
     $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
     $row['icon_class'] = getFileIconClass($row);
     $row['url_delete'] = $base_url . '&file_id=' . $row['file_id'] . '&action=delete&checksess=' . $row['checksess'];
-    $row['url_restore'] = $base_url . '&file_id=' . $row['file_id'] . '&action=restore'; 
+    $row['url_restore'] = $base_url . '&file_id=' . $row['file_id'] . '&action=restore';
     $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');

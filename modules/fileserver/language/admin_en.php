@@ -10,7 +10,7 @@
  */
 
 if (!defined('NV_ADMIN') or !defined('NV_MAINFILE')) {
- exit('Stop!!!');
+    exit('Stop!!!');
 }
 
 $lang_translator['author'] = 'VINADES.,JSC <contact@vinades.vn>';

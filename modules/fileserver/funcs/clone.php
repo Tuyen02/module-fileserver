@@ -7,8 +7,14 @@ $status = '';
 $message = '';
 
 if (!defined('NV_IS_SPADMIN')) {
-    $status = $lang_module['error'];
-    $message = $lang_module['not_thing_to_do'];
+    $sql_per = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
+    $result_per = $db->query($sql_per);
+    $row_per = $result_per->fetch();
+
+    if (empty($row_per) || ($row_per['p_group'] < 3 && $row_per['p_other'] < 3)) {
+        $status = $lang_module['error'];
+        $message = $lang_module['not_thing_to_do'];
+    }
 }
 
 $rank = $nv_Request->get_int('rank', 'get', 0);
@@ -134,6 +140,7 @@ if ($copy == 1) {
                     $stmt_permissions_insert->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                     $stmt_permissions_insert->execute();
                     updateLog($target_lev, 'copy', $new_file_id);
+                    nv_insert_logs(NV_LANG_DATA, $module_name, 'copy', $new_file_id, $user_info['userid']);
 
                     if ($target_lev > 0) {
                         updateParentFolderSize($target_lev);
@@ -215,6 +222,8 @@ if ($move == 1) {
                     $stmt_permissions_insert->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                     $stmt_permissions_insert->execute();
                     updateLog($target_lev, 'move', $file_id);
+                    nv_insert_logs(NV_LANG_DATA, $module_name, 'move', $file_id, $user_info['userid']);
+
 
                     if ($target_lev > 0) {
                         updateParentFolderSize($target_lev);

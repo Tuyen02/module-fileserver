@@ -62,6 +62,7 @@ if (!$row) {
             $new_id = $db->lastInsertId();
             updateAlias($new_id, $new_name);
             addToDatabase($extractTo, $new_id);
+            nv_insert_logs(NV_LANG_DATA, $module_name, $action, $new_id, $user_info['userid']);
 
             $redirect_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '&page=' . $page;
             nv_redirect_location($redirect_url);
@@ -96,7 +97,7 @@ if (!$row) {
 $tree = buildTree($list);
 $tree_html = displayTree($tree);
 
-$contents = nv_fileserver_compress($list, $row['file_id'],$status ,$message, $tree_html);
+$contents = nv_fileserver_compress($list, $row['file_id'], $status, $message, $tree_html);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

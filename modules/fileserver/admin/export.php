@@ -10,7 +10,8 @@ $page_title = $lang_module['export_title'];
 
 define('NV_CONSOLE_DIR', str_replace(DIRECTORY_SEPARATOR, '/', realpath(pathinfo(str_replace(DIRECTORY_SEPARATOR, '/', __FILE__), PATHINFO_DIRNAME))));
 
-function getUserCache() {
+function getUserCache()
+{
     global $db, $module_data;
     $user_cache = [];
     $sql = 'SELECT DISTINCT u.userid, u.username, u.first_name, u.last_name 
@@ -29,10 +30,11 @@ function getUserCache() {
     return $user_cache;
 }
 
-function exportExcel() {
-    global $db, $module_data, $lang_module, $sys_info;
+function exportExcel()
+{
+    global $db, $module_data, $lang_module, $sys_info, $module_name, $admin_info;
     set_time_limit(0);
-    
+
     if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpspreadsheet')) {
         trigger_error('No phpspreadsheet lib. Run command "composer require phpoffice/phpspreadsheet" to install', 256);
     }
@@ -44,11 +46,13 @@ function exportExcel() {
 
     if (file_exists($file_folder_path)) {
         $check = nv_deletefile($file_folder_path, true);
-        if (!$check[0]) $error = $check[1];
+        if (!$check[0])
+            $error = $check[1];
     }
     if (empty($error)) {
         $check = nv_mkdir(NV_ROOTDIR . '/' . NV_TEMP_DIR, $file_folder);
-        if (!$check[0]) $error = $check[1];
+        if (!$check[0])
+            $error = $check[1];
     }
 
     if (empty($error)) {
@@ -74,7 +78,7 @@ function exportExcel() {
             'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'color' => ['rgb' => 'C6EFCE']]
         ];
-        
+
         $styleTableArray = [
             'borders' => [
                 'outline' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN, 'color' => ['rgb' => '000000']],
@@ -128,7 +132,7 @@ function exportExcel() {
             $objWorksheet->setCellValue($table_char_from++ . $i, $stt);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_name']);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_path']);
-            $size = ($_data2['is_folder'] == 1) 
+            $size = ($_data2['is_folder'] == 1)
                 ? number_format(calculateFolderSize($_data2['file_id']) / 1024, 2) . ' KB'
                 : ($_data2['file_size'] ? number_format($_data2['file_size'] / 1024, 2) . ' KB' : '--');
             $objWorksheet->setCellValue($table_char_from++ . $i, $size);
@@ -191,7 +195,9 @@ function exportExcel() {
         $zip->add($file_path, PCLZIP_OPT_REMOVE_PATH, $file_folder_path);
 
         updateLog(0, 'export_excel', basename($file_path));
-        
+        nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['export'], $lang_module['export_title'], $admin_info['userid']);
+
+
         $objPHPExcel->disconnectWorksheets();
         unset($objPHPExcel);
 
@@ -218,19 +224,19 @@ if ($nv_Request->get_int('download', 'get', 0) == 1) {
         $file_path = NV_ROOTDIR . $file['file_path'];
         $file_name = $file['file_name'];
         $is_folder = $file['is_folder'];
-        
+
         if ($is_folder == 1) {
             $zipFileName = $file_name . '.zip';
             $tmp_dir = '/data/tmp/';
             $zipFullPath = NV_ROOTDIR . $tmp_dir . $zipFileName;
             $zipArchive = new ZipArchive();
-            
+
             if ($zipArchive->open($zipFullPath, ZipArchive::CREATE) == TRUE) {
                 $files = new RecursiveIteratorIterator(
                     new RecursiveDirectoryIterator($file_path),
                     RecursiveIteratorIterator::LEAVES_ONLY
                 );
-                
+
                 foreach ($files as $file) {
                     if (!$file->isDir()) {
                         $filePath = $file->getRealPath();
@@ -242,7 +248,7 @@ if ($nv_Request->get_int('download', 'get', 0) == 1) {
                     }
                 }
                 $zipArchive->close();
-                
+
                 if (file_exists($zipFullPath)) {
                     updateLog($file_id, 'download_folder', $zipFileName);
                     $download = new NukeViet\Files\Download($zipFullPath, NV_ROOTDIR . $tmp_dir, $zipFileName);
@@ -275,7 +281,7 @@ while ($row = $result->fetch()) {
     $row['stt'] = $stt++;
     $row['url_download'] = NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=export&file_id=' . $row['file_id'] . '&download=1';
     $row['created_at'] = date('d/m/Y', $row['created_at']);
-    $row['file_size'] = ($row['is_folder'] == 1) 
+    $row['file_size'] = ($row['is_folder'] == 1)
         ? number_format(calculateFolderSize($row['file_id']) / 1024, 2) . ' KB'
         : ($row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--');
     $xtpl->assign('ROW', $row);

@@ -7,6 +7,7 @@ if (!defined('NV_SYSTEM')) {
 define('NV_IS_MOD_FILESERVER', true);
 
 require 'vendor/autoload.php';
+
 use Elastic\Elasticsearch\ClientBuilder;
 
 $use_elastic = $module_config['fileserver']['use_elastic'];
@@ -17,9 +18,9 @@ if ($use_elastic == 1) {
     try {
         $elastic_config = [
             'use_elastic' => $module_config['fileserver']['use_elastic'],
-            'elas_host' => $module_config['fileserver']['elas_host'] ,
-            'elas_port' => $module_config['fileserver']['elas_port'] ,
-            'elas_user' => $module_config['fileserver']['elas_user'] ,
+            'elas_host' => $module_config['fileserver']['elas_host'],
+            'elas_port' => $module_config['fileserver']['elas_port'],
+            'elas_user' => $module_config['fileserver']['elas_user'],
             'elas_pass' => $module_config['fileserver']['elas_pass']
         ];
 
@@ -108,8 +109,27 @@ if ($use_elastic == 1) {
 }
 
 $allowed_extensions = [
-    'doc', 'txt', 'docx', 'pdf', 'xlsx', 'xls', 'jpg', 'png', 'gif', 'jpeg',
-    'zip', 'rar', 'html', 'css', 'js', 'php', 'sql', 'mp3', 'mp4', 'ppt', 'pptx'
+    'doc',
+    'txt',
+    'docx',
+    'pdf',
+    'xlsx',
+    'xls',
+    'jpg',
+    'png',
+    'gif',
+    'jpeg',
+    'zip',
+    'rar',
+    'html',
+    'css',
+    'js',
+    'php',
+    'sql',
+    'mp3',
+    'mp4',
+    'ppt',
+    'pptx'
 ];
 
 if (!empty($array_op)) {
@@ -129,12 +149,22 @@ if (defined('NV_IS_SPADMIN')) {
     $arr_per = [];
 } elseif (isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array))) {
     $arr_per = array_column(
-        $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_group > 1 ')->fetchAll(),
+        $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_group > 1')->fetchAll(),
+        'file_id'
+    );
+
+    $arr_full_per = array_column(
+        $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_group = 3')->fetchAll(),
         'file_id'
     );
 } else {
     $arr_per = array_column(
         $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_other > 1')->fetchAll(),
+        'file_id'
+    );
+
+    $arr_full_per = array_column(
+        $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_other = 3')->fetchAll(),
         'file_id'
     );
 }
@@ -154,6 +184,7 @@ function deleteFileOrFolder($fileId)
 {
     global $db, $module_data;
     $base_dir = '/uploads/fileserver';
+    $trash_dir = '/data/tmp/fileserver_trash';
 
     $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
     $row = $db->query($sql)->fetch();
@@ -167,174 +198,53 @@ function deleteFileOrFolder($fileId)
     $fullPath = NV_ROOTDIR . $filePath;
     $lev = $row['lev'];
 
-    $path = $base_dir . '/';
-    $parts = explode($path, $filePath);
-    $relativePath = end($parts);
-    $relativePath = ltrim($relativePath, '/');
+    $relativePath = str_replace($base_dir, '', $filePath);
+    $newPath = $trash_dir . $relativePath;
+    $newFullPath = NV_ROOTDIR . $newPath;
 
-    $newFolderName = $isFolder ? getUniqueFolderName($relativePath, $lev) : basename($relativePath);
-    $newRelativePath = $isFolder ? $newFolderName : dirname($relativePath) . '/' . getUniqueFolderName($relativePath, $lev);
-    $backupPath = NV_ROOTDIR . '/data/tmp/trash/' . $newRelativePath;
-
-    $backupDir = dirname($backupPath);
-    if (!file_exists($backupDir)) {
-        if (!mkdir($backupDir, 0777, true)) {
-            return false;
-        }
+    $newDir = dirname($newFullPath);
+    if (!file_exists($newDir)) {
+        mkdir($newDir, 0777, true);
     }
 
     if (file_exists($fullPath)) {
-        if (!rename($fullPath, $backupPath)) {
+        if (!rename($fullPath, $newFullPath)) {
             return false;
         }
     } else {
         return false;
     }
 
-    $fileSize = $isFolder ? calculateFolderSize($fileId) : filesize($backupPath);
-
-    $checkTrashSql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash WHERE file_id = ' . $fileId;
-    $existsInTrash = $db->query($checkTrashSql)->fetchColumn();
-
-    $trash_dir = '/data/tmp/trash/' . $newRelativePath;
-
-    if ($existsInTrash) {
-        $sqlUpdateTrash = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_trash 
-            SET status = 1, file_path = :file_path, file_size = :file_size, deleted_at = :deleted_at
-            WHERE file_id = :file_id';
-        $stmtUpdate = $db->prepare($sqlUpdateTrash);
-        $stmtUpdate->execute([
-            ':file_path' => $trash_dir,
-            ':file_size' => $fileSize,
-            ':deleted_at' => NV_CURRENTTIME,
-            ':file_id' => $row['file_id']
-        ]);
-    } else {
-        $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_trash 
-            (file_id, file_name, alias, file_path, file_size, uploaded_by, deleted_at, updated_at, is_folder, status, lev, view, share, compressed) 
-            VALUES (:file_id, :file_name, :alias, :file_path, :file_size, :uploaded_by, :deleted_at, :updated_at, :is_folder, :status, :lev, :view, :share, :compressed)';
-        $stmtInsert = $db->prepare($sqlInsert);
-        $stmtInsert->execute([
-            ':file_id' => $row['file_id'],
-            ':file_name' => $isFolder ? $newFolderName : $row['file_name'],
-            ':alias' => $row['alias'],
-            ':file_path' => $trash_dir,
-            ':file_size' => $fileSize,
-            ':uploaded_by' => $row['uploaded_by'],
-            ':deleted_at' => NV_CURRENTTIME,
-            ':updated_at' => $row['updated_at'],
-            ':is_folder' => $row['is_folder'],
-            ':status' => 1,
-            ':lev' => $row['lev'],
-            ':view' => $row['view'],
-            ':share' => $row['share'],
-            ':compressed' => $row['compressed']
-        ]);
-    }
-
     if ($isFolder) {
-        updateDirectoryStatus($fileId, $newFolderName);
+        $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                SET status = 0, 
+                    file_path = REPLACE(file_path, :old_base, :new_base),
+                    elastic = 0,
+                    deleted_at = :deleted_at
+                WHERE file_path LIKE :file_path';
+        $stmt = $db->prepare($sql);
+        $stmt->bindValue(':old_base', $base_dir, PDO::PARAM_STR);
+        $stmt->bindValue(':new_base', $trash_dir, PDO::PARAM_STR);
+        $stmt->bindValue(':file_path', $filePath . '%', PDO::PARAM_STR);
+        $stmt->bindValue(':deleted_at', NV_CURRENTTIME, PDO::PARAM_INT);
+        $stmt->execute();
     }
 
-    $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET status = 0, elastic = 0 WHERE file_id = ' . $fileId;
-    $db->query($sqlUpdate);
+    $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                  SET status = 0, 
+                      file_path = :new_path,
+                      elastic = 0,
+                      deleted_at = :deleted_at
+                  WHERE file_id = :file_id';
+    $stmt = $db->prepare($sqlUpdate);
+    $stmt->bindValue(':new_path', $newPath, PDO::PARAM_STR);
+    $stmt->bindValue(':file_id', $fileId, PDO::PARAM_INT);
+    $stmt->bindValue(':deleted_at', NV_CURRENTTIME, PDO::PARAM_INT);
+    $stmt->execute();
 
     updateParentFolderSize($lev);
 
     return true;
-}
-
-function updateDirectoryStatus($parentId, $parentNewName = null)
-{
-    global $db, $module_data;
-
-    $sqlParent = 'SELECT file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $parentId;
-    $parent = $db->query($sqlParent)->fetch(PDO::FETCH_ASSOC);
-
-    if (!is_array($parent) || empty($parent)) {
-        return false;
-    }
-
-    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . $parentId . ' AND status = 1';
-    $files = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-
-    foreach ($files as $file) {
-        $fileId = $file['file_id'];
-        $filePath = $file['file_path'];
-        $isFolder = $file['is_folder'];
-        $fullFilePath = NV_ROOTDIR . $filePath;
-        $lev = $file['lev'];
-
-        $parts = explode('/uploads/fileserver/', $filePath);
-        $relativeFilePath = end($parts);
-        $relativeFilePath = ltrim($relativeFilePath, '/');
-
-        if ($parentNewName != null) {
-            $relativeFilePath = $parentNewName . '/' . basename($relativeFilePath);
-        }
-
-        $newName = $isFolder ? getUniqueFolderName($relativeFilePath, $lev) : basename($relativeFilePath);
-        $newRelativeFilePath = $isFolder ? $newName : $parentNewName . '/' . getUniqueFolderName($relativeFilePath, $lev);
-        $backupFilePath = NV_ROOTDIR . '/data/tmp/trash/' . $newRelativeFilePath;
-
-        $fileSize = $isFolder ? calculateFolderSize($fileId) : $file['file_size'];
-
-        $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_trash 
-            (file_id, file_name, alias, file_path, file_size, uploaded_by, deleted_at, updated_at, is_folder, status, lev, view, share, compressed) 
-            VALUES (:file_id, :file_name, :alias, :file_path, :file_size, :uploaded_by, :deleted_at, :updated_at, :is_folder, :status, :lev, :view, :share, :compressed)';
-
-        $stmtInsert = $db->prepare($sqlInsert);
-        $stmtInsert->execute([
-            ':file_id' => $file['file_id'],
-            ':file_name' => $isFolder ? $newName : $file['file_name'],
-            ':alias' => $file['alias'],
-            ':file_path' => '/data/tmp/trash/' . $newRelativeFilePath,
-            ':file_size' => $fileSize,
-            ':uploaded_by' => $file['uploaded_by'],
-            ':deleted_at' => NV_CURRENTTIME,
-            ':updated_at' => $file['updated_at'],
-            ':is_folder' => $file['is_folder'],
-            ':status' => 1,
-            ':lev' => $file['lev'],
-            ':view' => $file['view'],
-            ':share' => $file['share'],
-            ':compressed' => $file['compressed']
-        ]);
-
-        if ($isFolder) {
-            updateDirectoryStatus($fileId, $newName);
-        }
-
-        $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET status = 0, elastic = 0 WHERE file_id = ' . $fileId;
-        $db->query($sqlUpdate);
-    }
-
-    return true;
-}
-function getUniqueFolderName($baseName, $lev)
-{
-    global $db, $module_data;
-
-    $baseName = basename($baseName);
-    $counter = 0;
-    $newName = $baseName;
-
-    do {
-        $sql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_trash 
-                WHERE lev = :lev AND file_name LIKE :file_name AND status = 1';
-        $stmt = $db->prepare($sql);
-        $stmt->bindParam(':lev', $lev, PDO::PARAM_INT);
-        $stmt->bindValue(':file_name', $newName, PDO::PARAM_STR);
-        $stmt->execute();
-        $exists = $stmt->fetchColumn();
-
-        if ($exists) {
-            $counter++;
-            $newName = $baseName . '_' . $counter;
-        }
-    } while ($exists);
-
-    return $newName;
 }
 
 function checkIfParentIsFolder($db, $lev)
@@ -367,8 +277,8 @@ function compressFiles($fileIds, $zipFilePath)
     $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
     $sql = 'SELECT file_path, file_name FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
             WHERE file_id IN (' . $placeholders . ') AND status = 1';
-    $stmt = $db->prepare($sql); 
-    $stmt->execute($fileIds); 
+    $stmt = $db->prepare($sql);
+    $stmt->execute($fileIds);
     $rows = $stmt->fetchAll();
 
     if (empty($rows)) {
@@ -511,8 +421,8 @@ function updateLog($lev, $action = '', $value = '')
     $stats = calculateFileFolderStats($lev);
 
     $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_logs 
-                  (action, value, lev, total_files, total_folders, total_size, total_files_del, total_folders_del, total_size_del, log_time) 
-                  VALUES (:action, :value, :lev, :total_files, :total_folders, :total_size, :total_files_del, :total_folders_del, :total_size_del, :log_time)';
+                  (action, value, lev, total_files, total_folders, total_size, log_time) 
+                  VALUES (:action, :value, :lev, :total_files, :total_folders, :total_size, :log_time)';
 
     $stmtInsert = $db->prepare($sqlInsert);
     $stmtInsert->bindValue(':action', $action, PDO::PARAM_STR);
@@ -521,9 +431,6 @@ function updateLog($lev, $action = '', $value = '')
     $stmtInsert->bindValue(':total_files', $stats['files'], PDO::PARAM_INT);
     $stmtInsert->bindValue(':total_folders', $stats['folders'], PDO::PARAM_INT);
     $stmtInsert->bindValue(':total_size', $stats['size'], PDO::PARAM_INT);
-    $stmtInsert->bindValue(':total_files_del', $stats['files_del'] ?? 0, PDO::PARAM_INT);
-    $stmtInsert->bindValue(':total_folders_del', $stats['folders_del'] ?? 0, PDO::PARAM_INT);
-    $stmtInsert->bindValue(':total_size_del', $stats['size_del'] ?? 0, PDO::PARAM_INT);
     $stmtInsert->bindValue(':log_time', NV_CURRENTTIME, PDO::PARAM_INT);
 
     $stmtInsert->execute();
@@ -623,6 +530,29 @@ function getFileIconClass($file)
             return isset($file_icons[$extension]) ? $file_icons[$extension] : 'fa-file-o';
         }
     }
+}
+
+function normalizePath($path)
+{
+    $path = str_replace('\\', '/', $path);
+
+    $path = preg_replace('|/{2,}|', '/', $path);
+
+    $path = str_replace('./', '', $path);
+
+    $parts = array_filter(explode('/', $path), 'strlen');
+    $absolutes = array();
+    foreach ($parts as $part) {
+        if ('.' == $part)
+            continue;
+        if ('..' == $part) {
+            array_pop($absolutes);
+        } else {
+            $absolutes[] = $part;
+        }
+    }
+
+    return '/' . implode('/', $absolutes);
 }
 
 // function pr($a)

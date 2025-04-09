@@ -16,7 +16,7 @@ $sql = 'SELECT f.file_name, f.file_path, f.alias,
         FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
         WHERE f.file_id = :file_id';
 $stmt = $db->prepare($sql);
-$stmt->bindParam(':file_id',$file_id, PDO::PARAM_INT);
+$stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
 $stmt->execute();
 $row = $stmt->fetch();
 
@@ -28,27 +28,13 @@ $array_mod_title[] = [
     'link' => $base_url
 ];
 
-$group_read_checked = ($row['p_group'] >= 1) ? 'checked' : '';
-$group_write_checked = ($row['p_group'] >= 2) ? 'checked' : '';
-$other_read_checked = ($row['p_other'] >= 1) ? 'checked' : '';
-$other_write_checked = ($row['p_other'] >= 2) ? 'checked' : '';
+$group_level = $row['p_group'];
+$other_level = $row['p_other'];
 
 if (defined('NV_IS_SPADMIN')) {
     if ($nv_Request->isset_request('submit', 'post')) {
-
-        $group_read = $nv_Request->get_int('group_read', 'post', 0);
-        $group_write = $nv_Request->get_int('group_write', 'post', 0);
-
-        $other_read = $nv_Request->get_int('other_read', 'post', 0);
-        $other_write = $nv_Request->get_int('other_write', 'post', 0);
-
-        $group_permissions = ($group_read ? 1 : 0) + ($group_write ? 1 : 0);
-        $other_permissions = ($other_read ? 1 : 0) + ($other_write ? 1 : 0);
-
-        $permissions = [
-            'p_group' => $group_permissions,
-            'p_other' => $other_permissions,
-        ];
+        $group_permission = $nv_Request->get_int('group_permission', 'post', 0);
+        $other_permission = $nv_Request->get_int('other_permission', 'post', 0);
 
         $sql_check = 'SELECT permission_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
         $check_stmt = $db->query($sql_check);
@@ -58,8 +44,8 @@ if (defined('NV_IS_SPADMIN')) {
                            SET  p_group = :p_group, p_other = :p_other, updated_at = :updated_at 
                            WHERE file_id = :file_id';
             $update_stmt = $db->prepare($sql_update);
-            $update_stmt->bindParam(':p_group', $permissions['p_group']);
-            $update_stmt->bindParam(':p_other', $permissions['p_other']);
+            $update_stmt->bindParam(':p_group', $group_permission);
+            $update_stmt->bindParam(':p_other', $other_permission);
             $update_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
             $update_stmt->execute();
@@ -69,8 +55,8 @@ if (defined('NV_IS_SPADMIN')) {
                            VALUES (:file_id, :p_group, :p_other, :updated_at)';
             $insert_stmt = $db->prepare($sql_insert);
             $insert_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-            $insert_stmt->bindParam(':p_group', $permissions['p_group']);
-            $insert_stmt->bindParam(':p_other', $permissions['p_other']);
+            $insert_stmt->bindParam(':p_group', $group_permission);
+            $insert_stmt->bindParam(':p_other', $other_permission);
             $insert_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $insert_stmt->execute();
         }
@@ -79,17 +65,12 @@ if (defined('NV_IS_SPADMIN')) {
         $children_stmt = $db->query($sql_children);
 
         while ($child = $children_stmt->fetch()) {
-            $child_permissions = [
-                'p_group' => $permissions['p_group'],
-                'p_other' => $permissions['p_other'],
-            ];
-
             $sql_update_child = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
                                  SET p_group = :p_group, p_other = :p_other, updated_at = :updated_at 
                                  WHERE file_id = :file_id';
             $update_child_stmt = $db->prepare($sql_update_child);
-            $update_child_stmt->bindParam(':p_group', $child_permissions['p_group']);
-            $update_child_stmt->bindParam(':p_other', $child_permissions['p_other']);
+            $update_child_stmt->bindParam(':p_group', $group_permission);
+            $update_child_stmt->bindParam(':p_other', $other_permission);
             $update_child_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $update_child_stmt->bindParam(':file_id', $child['file_id'], PDO::PARAM_INT);
             $update_child_stmt->execute();
@@ -97,21 +78,40 @@ if (defined('NV_IS_SPADMIN')) {
 
         $status = 'success';
         $message = $lang_module['update_ok'];
+        nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['perm'], $file_id, $user_info['userid']);
 
         $stmt->execute();
         $row = $stmt->fetch();
 
-        $group_read_checked = ($row['p_group'] >= 1) ? 'checked' : '';
-        $group_write_checked = ($row['p_group'] >= 2) ? 'checked' : '';
-        $other_read_checked = ($row['p_other'] >= 1) ? 'checked' : '';
-        $other_write_checked = ($row['p_other'] >= 2) ? 'checked' : '';
+        $group_level = $row['p_group'];
+        $other_level = $row['p_other'];
     }
 } else {
     $status = $lang_module['error'];
     $message = $lang_module['not_thing_to_do'];
 }
 
-$contents = nv_fileserver_perm($row, $file_id, $group_read_checked, $group_write_checked, $other_read_checked, $other_write_checked, $status, $message);
+$xtpl = new XTemplate('perm.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
+$xtpl->assign('LANG', $lang_module);
+$xtpl->assign('FILE_NAME', $row['file_name']);
+$xtpl->assign('FILE_PATH', $row['file_path']);
+$xtpl->assign('FILE_ID', $file_id);
+
+$xtpl->assign('GROUP_LEVEL_1', $group_level == 1 ? 'selected' : '');
+$xtpl->assign('GROUP_LEVEL_2', $group_level == 2 ? 'selected' : '');
+$xtpl->assign('GROUP_LEVEL_3', $group_level == 3 ? 'selected' : '');
+
+$xtpl->assign('OTHER_LEVEL_1', $other_level == 1 ? 'selected' : '');
+$xtpl->assign('OTHER_LEVEL_2', $other_level == 2 ? 'selected' : '');
+
+if ($status) {
+    $xtpl->assign('MESSAGE_CLASS', $status == 'success' ? 'alert-success' : 'alert-danger');
+    $xtpl->assign('MESSAGE', $message);
+    $xtpl->parse('main.message');
+}
+
+$xtpl->parse('main');
+$contents = $xtpl->text('main');
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

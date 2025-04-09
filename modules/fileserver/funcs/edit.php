@@ -51,51 +51,58 @@ if (file_exists($full_path)) {
 
 $status = '';
 $message = '';
-if (defined('NV_IS_SPADMIN')) {
-    if ($nv_Request->get_int('file_id', 'post') > 0) {
-        if ($file_extension == 'pdf') {
-            $file_path = $row['file_path'];
-        } elseif (in_array($file_extension, ['doc', 'docx'])) {
-            $file_content = $nv_Request->get_string('file_content', 'post');
-            $zip = new ZipArchive;
-            if ($zip->open($full_path) == true) {
-                if (($index = $zip->locateName('word/document.xml')) != false) {
-                    $xml = new SimpleXMLElement('<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>');
-                    $body = $xml->addChild('w:body');
-                    $body->addChild('w:p', htmlspecialchars($file_content));
-                    $zip->addFromString('word/document.xml', $xml->asXML());
-                }
-                $zip->close();
-            }
-        } else {
-            $file_content = $nv_Request->get_string('file_content', 'post');
-            file_put_contents($full_path, $file_content);
-        }
 
-        $file_size = filesize($full_path);
+if (!defined('NV_IS_SPADMIN')) {
+    $sql_per = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
+    $result_per = $db->query($sql_per);
+    $row_per = $result_per->fetch();
 
-        $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET updated_at = :updated_at, file_size = :file_size, elastic = :elastic WHERE file_id = :file_id';
-        $stmt = $db->prepare($sql);
-        $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-        $stmt->bindValue(':file_size', $file_size, PDO::PARAM_INT);
-        $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-        $stmt->bindValue(':elastic', 0, PDO::PARAM_INT);
-
-        if ($stmt->execute()) {
-            updateLog($row['lev'], 'edit', $file_id);
-
-            if ($row['lev'] > 0) {
-                updateParentFolderSize($row['lev']);
-            }
-
-            $status = $lang_module['success'];
-            $message = $lang_module['update_ok'];
-
-        }
+    if (empty($row_per) || ($row_per['p_group'] < 3 && $row_per['p_other'] < 3)) {
+        $status = $lang_module['error'];
+        $message = $lang_module['not_thing_to_do'];
     }
-} else {
-    $status = $lang_module['error'];
-    $message = $lang_module['not_thing_to_do'];
+}
+
+if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
+    if ($file_extension == 'pdf') {
+        $file_path = $row['file_path'];
+    } elseif (in_array($file_extension, ['doc', 'docx'])) {
+        $file_content = $nv_Request->get_string('file_content', 'post');
+        $zip = new ZipArchive;
+        if ($zip->open($full_path) == true) {
+            if (($index = $zip->locateName('word/document.xml')) != false) {
+                $xml = new SimpleXMLElement('<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>');
+                $body = $xml->addChild('w:body');
+                $body->addChild('w:p', htmlspecialchars($file_content));
+                $zip->addFromString('word/document.xml', $xml->asXML());
+            }
+            $zip->close();
+        }
+    } else {
+        $file_content = $nv_Request->get_string('file_content', 'post');
+        file_put_contents($full_path, $file_content);
+    }
+
+    $file_size = filesize($full_path);
+
+    $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET updated_at = :updated_at, file_size = :file_size, elastic = :elastic WHERE file_id = :file_id';
+    $stmt = $db->prepare($sql);
+    $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+    $stmt->bindValue(':file_size', $file_size, PDO::PARAM_INT);
+    $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+    $stmt->bindValue(':elastic', 0, PDO::PARAM_INT);
+
+    if ($stmt->execute()) {
+        updateLog($row['lev'], 'edit', $file_id);
+        nv_insert_logs(NV_LANG_DATA, $module_name, 'edit', $file_id, $user_info['userid']);
+
+        if ($row['lev'] > 0) {
+            updateParentFolderSize($row['lev']);
+        }
+
+        $status = $lang_module['success'];
+        $message = $lang_module['update_ok'];
+    }
 }
 
 $contents = nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $status, $message);

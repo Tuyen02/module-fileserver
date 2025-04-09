@@ -28,7 +28,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $count = $db->query($sql_check)->fetchColumn();
 
         if ($count > 0) {
-            $nv_Cache->delMod($module_name, $lang );
+            $nv_Cache->delMod($module_name, $lang);
             $sql_update = ' UPDATE ' . NV_CONFIG_GLOBALTABLE . '
                            SET config_value = :config_value 
                            WHERE config_name = ' . $db->quote($config_name);
@@ -36,6 +36,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
             $stmt_update->bindParam(':config_value', $group_ids_str, PDO::PARAM_STR);
             if ($stmt_update->execute()) {
                 $mess = $lang_module['update_success'];
+                nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['choose_group'], $lang_module['main_title'], $admin_info['userid']);
             } else {
                 $err = $lang_module['update_error'];
             }
@@ -49,6 +50,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
             $stmt_insert->bindParam(':config_value', $group_ids_str, PDO::PARAM_STR);
             if ($stmt_insert->execute()) {
                 $mess = $lang_module['update_success'];
+                nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['choose_group'], $lang_module['main_title'], $admin_info['userid']);
             } else {
                 $err = $lang_module['update_error'];
             }

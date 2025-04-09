@@ -5,9 +5,10 @@ if (!defined('NV_IS_FILE_ADMIN')) {
 }
 
 require_once NV_ROOTDIR . '/vendor/autoload.php';
+
 use Elastic\Elasticsearch\ClientBuilder;
 
-$page_title = $lang_module['config'];
+$page_title = $lang_module['config_elastic'];
 $message = '';
 $message_type = '';
 
@@ -44,6 +45,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
     }
 
     if ($status) {
+        nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['config'], $lang_module['config_elastic'], $admin_info['userid']);
         $message = $lang_module['config_updated'];
         $message_type = 'success';
     } else {
@@ -61,22 +63,22 @@ if ($nv_Request->isset_request('sync_elastic', 'post')) {
             'elas_user' => $module_config['fileserver']['elas_user'],
             'elas_pass' => $module_config['fileserver']['elas_pass']
         ];
-        
+
         if ($elastic_config['use_elastic']) {
             $client = ClientBuilder::create()
                 ->setHosts([$elastic_config['elas_host'] . ':' . $elastic_config['elas_port']])
                 ->setBasicAuthentication($elastic_config['elas_user'], $elastic_config['elas_pass'])
                 ->setSSLVerification(false)
                 ->build();
-            
+
             $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE elastic = 0';
             $result = $db->query($sql);
-            
+
             $updated_count = 0;
-            $file_ids = []; 
-            
+            $file_ids = [];
+
             $bulk_params = ['body' => []];
-            
+
             while ($row = $result->fetch()) {
                 $bulk_params['body'][] = [
                     'index' => [
@@ -84,7 +86,7 @@ if ($nv_Request->isset_request('sync_elastic', 'post')) {
                         '_id' => $row['file_id']
                     ]
                 ];
-                
+
                 $bulk_params['body'][] = [
                     'file_id' => $row['file_id'],
                     'file_name' => $row['file_name'],
@@ -98,39 +100,40 @@ if ($nv_Request->isset_request('sync_elastic', 'post')) {
                     'updated_at' => $row['updated_at'],
                     'compressed' => $row['compressed'],
                 ];
-                
+
                 $file_ids[] = $row['file_id'];
                 $updated_count++;
-                
-                if (count($bulk_params['body']) >= 2000) { 
+
+                if (count($bulk_params['body']) >= 2000) {
                     if (!empty($bulk_params['body'])) {
                         $client->bulk($bulk_params);
-                        $bulk_params = ['body' => []]; 
+                        $bulk_params = ['body' => []];
                     }
-                    
+
                     if (!empty($file_ids)) {
                         $update_sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
                                       SET elastic = ' . NV_CURRENTTIME . ' 
                                       WHERE file_id IN (' . implode(',', $file_ids) . ')';
                         $db->exec($update_sql);
-                        $file_ids = []; 
+                        $file_ids = [];
                     }
                 }
             }
-            
+
             if (!empty($bulk_params['body'])) {
                 $client->bulk($bulk_params);
             }
-            
+
             if (!empty($file_ids)) {
                 $update_sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
                               SET elastic = ' . NV_CURRENTTIME . ' 
                               WHERE file_id IN (' . implode(',', $file_ids) . ')';
                 $db->exec($update_sql);
             }
-            
+
             $message = sprintf($lang_module['sync_elastic_success'], $updated_count);
             $message_type = 'success';
+            nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['config'], $lang_module['sync_elastic'], $admin_info['userid']);
         }
     } catch (Exception $e) {
         $message = $lang_module['sync_elastic_failed'] . ': ' . $e->getMessage();
