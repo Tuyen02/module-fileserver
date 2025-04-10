@@ -9,7 +9,7 @@ $page_title = $lang_module['recycle_bin'];
 $error = '';
 $success = '';
 
-$perpage = 5;
+$perpage = 20;
 $page = $nv_Request->get_int('page', 'get', 1);
 $lev = $nv_Request->get_int('lev', 'get', 0);
 
@@ -108,7 +108,7 @@ if (!empty($action)) {
                 $status = 'success';
                 updateLog($lev, 'delete_permanent', $fileId);
                 $mess = $lang_module['delete_ok'];
-                nv_insert_logs(NV_LANG_DATA, $module_name, $action, $fileId, $admin_info['userid']);
+                nv_insert_logs(NV_LANG_DATA, $module_name, $action,'File id: ' . $fileId, $admin_info['userid']);
             } else {
                 $mess = $lang_module['delete_false'];
             }
@@ -136,7 +136,7 @@ if (!empty($action)) {
         if (!empty($deletedFileIds)) {
             $status = 'success';
             updateLog($lev, 'delete_all_permanent', implode(',', $deletedFileIds));
-            nv_insert_logs(NV_LANG_DATA, $module_name, $action, implode(',', $deletedFileIds), $admin_info['userid']);
+            nv_insert_logs(NV_LANG_DATA, $module_name, $action,'File id: ' . implode(',', $deletedFileIds), $admin_info['userid']);
             $mess = $lang_module['delete_ok'];
         } else {
             $mess = $lang_module['delete_false'];
@@ -153,7 +153,7 @@ if (!empty($action)) {
             if ($restored) {
                 $status = 'success';
                 updateLog($lev, 'restore', $fileId);
-                nv_insert_logs(NV_LANG_DATA, $module_name, $action, $fileId, $admin_info['userid']);
+                nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . $fileId, $admin_info['userid']);
                 $mess = $lang_module['restore_ok'];
             } else {
                 $mess = $lang_module['restore_false'];
@@ -181,7 +181,7 @@ if (!empty($action)) {
         if (!empty($restoredFileIds)) {
             $status = 'success';
             updateLog($lev, 'restore_all', implode(',', $restoredFileIds));
-            nv_insert_logs(NV_LANG_DATA, $module_name, $action, implode(',', $restoredFileIds), $admin_info['userid']);
+            nv_insert_logs(NV_LANG_DATA, $module_name, $action,'File id: ' . implode(',', $restoredFileIds), $admin_info['userid']);
             $mess = $lang_module['restore_ok'];
         } else {
             $mess = $lang_module['restore_false'];

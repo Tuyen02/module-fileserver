@@ -275,8 +275,8 @@ function compressFiles($fileIds, $zipFilePath)
     $filePaths = [];
 
     $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
-    $sql = 'SELECT file_path, file_name FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-            WHERE file_id IN (' . $placeholders . ') AND status = 1';
+    $sql = "SELECT file_path, file_name FROM " . NV_PREFIXLANG . "_{$module_data}_files 
+            WHERE file_id IN ({$placeholders}) AND status = 1";
     $stmt = $db->prepare($sql);
     $stmt->execute($fileIds);
     $rows = $stmt->fetchAll();
@@ -288,14 +288,22 @@ function compressFiles($fileIds, $zipFilePath)
     foreach ($rows as $row) {
         $realPath = NV_ROOTDIR . $row['file_path'];
         if (file_exists($realPath)) {
-            $filePaths[] = $realPath;
+            $fileName = iconv('UTF-8', 'Windows-1252//TRANSLIT', $row['file_name']);
+            if ($fileName === false) {
+                $fileName = $row['file_name'];
+            }
+            
+            $filePaths[] = [
+                PCLZIP_ATT_FILE_NAME => $realPath,
+                PCLZIP_ATT_FILE_NEW_FULL_NAME => $fileName
+            ];
         } else {
             return ['status' => $lang_module['error'], 'message' => $lang_module['f_hasnt_exit'] . $realPath];
         }
     }
 
     if (count($filePaths) > 0) {
-        $return = $zip->add($filePaths, PCLZIP_OPT_REMOVE_PATH, NV_ROOTDIR . '/uploads/fileserver');
+        $return = $zip->create($filePaths);
         if ($return == 0) {
             return ['status' => $lang_module['error'], 'message' => $lang_module['zip_false'] . $zip->errorInfo(true)];
         }

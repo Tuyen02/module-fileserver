@@ -94,7 +94,7 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
 
     if ($stmt->execute()) {
         updateLog($row['lev'], 'edit', $file_id);
-        nv_insert_logs(NV_LANG_DATA, $module_name, 'edit', $file_id, $user_info['userid']);
+        nv_insert_logs(NV_LANG_DATA, $module_name, 'edit','File id: ' . $file_id, $user_info['userid']);
 
         if ($row['lev'] > 0) {
             updateParentFolderSize($row['lev']);

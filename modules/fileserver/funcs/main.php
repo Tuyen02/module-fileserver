@@ -275,7 +275,7 @@ if (!empty($action)) {
             $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmta->execute();
             updateLog($lev, $action, $file_id);
-            nv_insert_logs(NV_LANG_DATA, $module_name, $action, $file_id, $user_info['userid']);
+            nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . $file_id, $user_info['userid']);
             updateParentFolderSize($lev);
 
             nv_jsonOutput(['status' => 'success', 'message' => $lang_module['create_ok'], 'redirect' => $page_url]);
@@ -294,7 +294,7 @@ if (!empty($action)) {
             $deleted = deleteFileOrFolder($fileId);
             if ($deleted) {
                 updateLog($lev, $action, $fileId);
-                nv_insert_logs(NV_LANG_DATA, $module_name, $action, $fileId, $user_info['userid']);
+                nv_insert_logs(NV_LANG_DATA, $module_name, $action,'File id: ' . $fileId, $user_info['userid']);
                 nv_jsonOutput(['status' => 'success', 'message' => $lang_module['delete_ok'], 'redirect' => $page_url]);
             } else {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['delete_false']]);
@@ -342,7 +342,7 @@ if (!empty($action)) {
 
         if ($status == 'success' && !empty($deletedFileIds)) {
             updateLog($lev, $action, implode(',', $deletedFileIds));
-            nv_insert_logs(NV_LANG_DATA, $module_name, $action, implode(',', $deletedFileIds), $user_info['userid']);
+            nv_insert_logs(NV_LANG_DATA, $module_name, $action,'List file_id: ' . implode(',', $deletedFileIds), $user_info['userid']);
 
             nv_jsonOutput(['status' => 'success', 'message' => $mess, 'redirect' => $page_url]);
         } else {
@@ -414,7 +414,7 @@ if (!empty($action)) {
                         $stmtUpdateChildren->execute();
                     }
                     updateLog($lev, $action, $fileId);
-                    nv_insert_logs(NV_LANG_DATA, $module_name, $action, $fileId, $user_info['userid']);
+                    nv_insert_logs(NV_LANG_DATA, $module_name, $action,'File id: ' . $fileId, $user_info['userid']);
                     nv_jsonOutput(['status' => 'success', 'message' => $lang_module['rename_ok'], 'redirect' => $page_url]);
                 }
             }
@@ -520,7 +520,7 @@ if (!empty($action)) {
                 $stmta->execute();
 
                 updateLog($lev, $action, $compressed);
-                nv_insert_logs(NV_LANG_DATA, $module_name, $action, $compressed, $user_info['userid']);
+                nv_insert_logs(NV_LANG_DATA, $module_name, $action,'File id:' . $compressed, $user_info['userid']);
                 updateParentFolderSize($lev);
 
                 nv_jsonOutput(['status' => 'success', 'message' => $compressResult['message'], 'redirect' => $page_url]);
@@ -653,7 +653,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
                 $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 $stmta->execute();
                 updateLog($lev, 'upload', $file_id);
-                nv_insert_logs(NV_LANG_DATA, $module_name, $action, $file_id, $user_info['userid']);
+                nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id:' . $file_id, $user_info['userid']);
                 updateParentFolderSize($lev);
             }
             nv_redirect_location($page_url);
