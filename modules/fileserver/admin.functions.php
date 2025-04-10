@@ -153,19 +153,22 @@ function calculateFolderSize($folderId)
     return $db->query($sql)->fetchColumn();
 }
 
-function updateLog($lev, $action = '', $value = '')
+function updateLog($lev)
 {
     global $db, $module_data;
 
     $stats = calculateFileFolderStats($lev);
 
-    $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_logs 
-                  (action, value, lev, total_files, total_folders, total_size, log_time) 
-                  VALUES (:action, :value, :lev, :total_files, :total_folders, :total_size, :log_time)';
+    $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_stats 
+                  (lev, total_files, total_folders, total_size, log_time) 
+                  VALUES (:lev, :total_files, :total_folders, :total_size, :log_time)
+                  ON DUPLICATE KEY UPDATE 
+                  total_files = VALUES(total_files), 
+                  total_folders = VALUES(total_folders), 
+                  total_size = VALUES(total_size), 
+                  log_time = VALUES(log_time)';
 
     $stmtInsert = $db->prepare($sqlInsert);
-    $stmtInsert->bindValue(':action', $action, PDO::PARAM_STR);
-    $stmtInsert->bindValue(':value', $value, PDO::PARAM_STR);
     $stmtInsert->bindValue(':lev', $lev, PDO::PARAM_INT);
     $stmtInsert->bindValue(':total_files', $stats['files'], PDO::PARAM_INT);
     $stmtInsert->bindValue(':total_folders', $stats['folders'], PDO::PARAM_INT);
@@ -292,8 +295,8 @@ function deleteFileOrFolder($fileId)
 
     if ($stmt->execute()) {
 
-        updateLog($lev, 'delete', $fileId);
-        nv_insert_logs(NV_LANG_DATA, $module_name, 'delete', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
+        updateLog($lev);
+        nv_insert_logs(NV_LANG_DATA, $module_name, 'Delete', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
 
         return true;
     }
@@ -354,8 +357,8 @@ function restoreFileOrFolder($fileId)
     $stmt->bindValue(':file_id', $fileId, PDO::PARAM_INT);
 
     if ($stmt->execute()) {
-        updateLog($row['lev'], 'restore', $fileId);
-        nv_insert_logs(NV_LANG_DATA, $module_name, 'restore', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
+        updateLog($row['lev']);
+        nv_insert_logs(NV_LANG_DATA, $module_name, 'Restore', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
 
         return true;
     }
@@ -392,7 +395,8 @@ function deletePermanently($fileId)
             rmdir($fullPath);
         }
 
-        $sql = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+        $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                SET status = -1 
                 WHERE file_path LIKE :file_path AND status = 0';
         $stmt = $db->prepare($sql);
         $stmt->bindValue(':file_path', $row['file_path'] . '%', PDO::PARAM_STR);
@@ -403,12 +407,13 @@ function deletePermanently($fileId)
         }
     }
 
-    $db->query('DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId);
-
-    if ($db->query('DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId)) {
-        updateLog($row['lev'], 'delete_permanent', $fileId);
-        nv_insert_logs(NV_LANG_DATA, $module_name, 'delete_permanent', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
-
+    $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+            SET status = -1 
+            WHERE file_id = ' . $fileId;
+            
+    if ($db->query($sql)) {
+        updateLog($row['lev']);
+        nv_insert_logs(NV_LANG_DATA, $module_name, 'Delete', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
         return true;
     }
 

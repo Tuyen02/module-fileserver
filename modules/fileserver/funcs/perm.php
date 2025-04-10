@@ -78,13 +78,13 @@ if (defined('NV_IS_SPADMIN')) {
 
         $status = 'success';
         $message = $lang_module['update_ok'];
-        nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['perm'], $file_id, $user_info['userid']);
 
         $stmt->execute();
         $row = $stmt->fetch();
 
         $group_level = $row['p_group'];
         $other_level = $row['p_other'];
+        nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['perm'], 'File id: ' . $file_id .'. Nhóm người dùng mức: ' . $group_level .'. Nhóm khác mức: ' . $other_level , $user_info['userid']);
     }
 } else {
     $status = $lang_module['error'];

@@ -194,7 +194,7 @@ function exportExcel()
         $objWriter->save($file_path);
         $zip->add($file_path, PCLZIP_OPT_REMOVE_PATH, $file_folder_path);
 
-        updateLog(0, 'export_excel', basename($file_path));
+        updateLog(0);
         nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['export'], $lang_module['export_title'], $admin_info['userid']);
 
 
@@ -250,14 +250,14 @@ if ($nv_Request->get_int('download', 'get', 0) == 1) {
                 $zipArchive->close();
 
                 if (file_exists($zipFullPath)) {
-                    updateLog($file_id, 'download_folder', $zipFileName);
+                    updateLog($file_id);
                     $download = new NukeViet\Files\Download($zipFullPath, NV_ROOTDIR . $tmp_dir, $zipFileName);
                     $download->download_file();
                     exit;
                 }
             }
         } elseif (file_exists($file_path)) {
-            updateLog($file_id, 'download_file', $file_name);
+            updateLog($file_id);
             $base_dir = '/uploads/fileserver/';
             $download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . $base_dir, $file_name);
             $download->download_file();
@@ -283,7 +283,7 @@ while ($row = $result->fetch()) {
     $row['created_at'] = date('d/m/Y', $row['created_at']);
     $row['file_size'] = ($row['is_folder'] == 1)
         ? number_format(calculateFolderSize($row['file_id']) / 1024, 2) . ' KB'
-        : ($row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--');
+        : ($row['file_size'] ? ($row['file_size'] >= 1048576 ? number_format($row['file_size'] / 1048576, 2) . ' MB' : number_format($row['file_size'] / 1024, 2) . ' KB') : '--');
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');
 }

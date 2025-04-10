@@ -5,14 +5,16 @@ if (!defined('NV_IS_FILE_ADMIN')) {
 }
 $page_title = 'FILE SERVER';
 
-$sql = 'SELECT d.group_id, title FROM ' . NV_GROUPS_GLOBALTABLE . ' AS g LEFT JOIN ' . NV_GROUPSDETAIL_GLOBALTABLE . ' d 
-    ON g.group_id = d.group_id AND d.lang = ' . $db->quote(NV_LANG_DATA) . '
-    WHERE g.idsite = ' . $global_config['idsite'] . ' OR (g.idsite = 0 AND g.group_id > 3 AND g.siteus = 1) 
-    ORDER BY g.idsite, g.weight ASC';
+$sql = 'SELECT group_id, title 
+        FROM ' . NV_GROUPSDETAIL_GLOBALTABLE . ' 
+        WHERE lang = ' . $db->quote(NV_LANG_DATA) . ' 
+        AND group_id != 6
+        ORDER BY group_id ASC';
 $result = $db->query($sql);
 $post = [];
 $mess = '';
 $err = '';
+
 $post['group_ids'] = $nv_Request->get_array('group_ids', 'post', []);
 $group_ids_str = implode(',', $post['group_ids']);
 
@@ -84,6 +86,7 @@ $xtpl->assign('OP', $op);
 $xtpl->assign('POST', $post);
 
 foreach ($result as $row) {
+    $row['title'] = ($row['group_id'] < 10) ? $lang_global['level' . $row['group_id']] : $row['title'];
     $checked = in_array($row['group_id'], $post['group_ids']) ? 'selected' : '';
     $xtpl->assign('ROW', $row);
     $xtpl->assign('CHECKED', $checked);

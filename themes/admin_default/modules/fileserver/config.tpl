@@ -33,6 +33,14 @@
                     <td>{LANG.elas_pass}</td>
                     <td><input type="password" name="elas_pass" id="elas_pass" value="{CONFIG.elas_pass}" class="form-control" /></td>
                 </tr>
+                <tr>
+                    <td>{LANG.use_captcha}</td>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="use_captcha" id="use_captcha" value="1" {USE_CAPTCHA_CHECKED} /> {LANG.enable_captcha}
+                        </label>
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>

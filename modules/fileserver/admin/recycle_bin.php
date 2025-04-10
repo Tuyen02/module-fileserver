@@ -106,7 +106,7 @@ if (!empty($action)) {
             $deleted = deletePermanently($fileId);
             if ($deleted) {
                 $status = 'success';
-                updateLog($lev, 'delete_permanent', $fileId);
+                updateLog($lev);
                 $mess = $lang_module['delete_ok'];
                 nv_insert_logs(NV_LANG_DATA, $module_name, $action,'File id: ' . $fileId, $admin_info['userid']);
             } else {
@@ -135,7 +135,7 @@ if (!empty($action)) {
         }
         if (!empty($deletedFileIds)) {
             $status = 'success';
-            updateLog($lev, 'delete_all_permanent', implode(',', $deletedFileIds));
+            updateLog($lev);
             nv_insert_logs(NV_LANG_DATA, $module_name, $action,'File id: ' . implode(',', $deletedFileIds), $admin_info['userid']);
             $mess = $lang_module['delete_ok'];
         } else {
@@ -152,7 +152,7 @@ if (!empty($action)) {
             $restored = restoreFileOrFolder($fileId);
             if ($restored) {
                 $status = 'success';
-                updateLog($lev, 'restore', $fileId);
+                updateLog($lev);
                 nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . $fileId, $admin_info['userid']);
                 $mess = $lang_module['restore_ok'];
             } else {
@@ -180,7 +180,7 @@ if (!empty($action)) {
         }
         if (!empty($restoredFileIds)) {
             $status = 'success';
-            updateLog($lev, 'restore_all', implode(',', $restoredFileIds));
+            updateLog($lev);
             nv_insert_logs(NV_LANG_DATA, $module_name, $action,'File id: ' . implode(',', $restoredFileIds), $admin_info['userid']);
             $mess = $lang_module['restore_ok'];
         } else {
@@ -229,7 +229,7 @@ foreach ($result as $row) {
     $row['icon_class'] = getFileIconClass($row);
     $row['url_delete'] = $base_url . '&file_id=' . $row['file_id'] . '&action=delete&checksess=' . $row['checksess'];
     $row['url_restore'] = $base_url . '&file_id=' . $row['file_id'] . '&action=restore';
-    $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
+    $row['file_size'] = $row['file_size'] ? ($row['file_size'] >= 1048576 ? number_format($row['file_size'] / 1048576, 2) . ' MB' : number_format($row['file_size'] / 1024, 2) . ' KB') : '--';
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');
 }

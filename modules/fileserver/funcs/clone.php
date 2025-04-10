@@ -139,7 +139,7 @@ if ($copy == 1) {
                     $stmt_permissions_insert->bindParam(':p_other', $permissions['p_other']);
                     $stmt_permissions_insert->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                     $stmt_permissions_insert->execute();
-                    updateLog($target_lev, 'copy', $new_file_id);
+                    updateLog($target_lev);
                     nv_insert_logs(NV_LANG_DATA, $module_name, 'copy','File id: ' . $new_file_id, $user_info['userid']);
 
                     if ($target_lev > 0) {
@@ -221,7 +221,7 @@ if ($move == 1) {
                     $stmt_permissions_insert->bindParam(':p_other', $permissions['p_other']);
                     $stmt_permissions_insert->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                     $stmt_permissions_insert->execute();
-                    updateLog($target_lev, 'move', $file_id);
+                    updateLog($target_lev);
                     nv_insert_logs(NV_LANG_DATA, $module_name, 'move','File id: ' . $file_id, $user_info['userid']);
 
 

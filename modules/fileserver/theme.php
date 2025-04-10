@@ -44,7 +44,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
 
     foreach ($result as $row) {
         if (!empty($logs)) {
-            $row['total_size'] = $logs['total_size'] ? number_format($logs['total_size'] / 1024, 2) . ' KB' : '--';
+            $row['total_size'] = $logs['total_size'] ? ($logs['total_size'] >= 1048576 ? number_format($logs['total_size'] / 1048576, 2) . ' MB' : number_format($logs['total_size'] / 1024, 2) . ' KB') : '--';
             $row['total_files'] = $logs['total_files'];
             $row['total_folders'] = $logs['total_folders'];
         }
@@ -103,7 +103,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
         $xtpl->assign('DOWNLOAD', $row['url_download']);
         $xtpl->parse('main.file_row.download');
 
-        $row['file_size'] = $row['file_size'] ? number_format($row['file_size'] / 1024, 2) . ' KB' : '--';
+        $row['file_size'] = $row['file_size'] ? ($row['file_size'] >= 1048576 ? number_format($row['file_size'] / 1048576, 2) . ' MB' : number_format($row['file_size'] / 1024, 2) . ' KB') : '--';
         $xtpl->assign('ROW', $row);
         $xtpl->parse('main.file_row');
     }
@@ -115,9 +115,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
 
     if ($module_config[$module_name]['captcha_type'] == 'recaptcha' and $reCaptchaPass and $global_config['recaptcha_ver'] == 3) {
         $xtpl->parse('main.recaptcha3');
-    }
-
-    elseif ($module_config[$module_name]['captcha_type'] == 'recaptcha' and $reCaptchaPass and $global_config['recaptcha_ver'] == 2) {
+    } elseif ($module_config[$module_name]['captcha_type'] == 'recaptcha' and $reCaptchaPass and $global_config['recaptcha_ver'] == 2) {
         $xtpl->assign('RECAPTCHA_ELEMENT', 'recaptcha' . nv_genpass(8));
         $xtpl->assign('N_CAPTCHA', $lang_global['securitycode1']);
         $xtpl->parse('main.recaptcha');

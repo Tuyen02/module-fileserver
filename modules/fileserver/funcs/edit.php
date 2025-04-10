@@ -53,13 +53,23 @@ $status = '';
 $message = '';
 
 if (!defined('NV_IS_SPADMIN')) {
-    $sql_per = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
-    $result_per = $db->query($sql_per);
-    $row_per = $result_per->fetch();
-
-    if (empty($row_per) || ($row_per['p_group'] < 3 && $row_per['p_other'] < 3)) {
+    $is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
+    
+    if (!$is_group_user) {
         $status = $lang_module['error'];
-        $message = $lang_module['not_thing_to_do'];
+        $message = $lang_module['not_permission_to_edit'];
+    } else {
+        $sql_per = 'SELECT p_group FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
+        $result_per = $db->query($sql_per);
+        $row_per = $result_per->fetch();
+
+        if (empty($row_per)) {
+            $status = $lang_module['error'];
+            $message = $lang_module['file_not_found'];
+        } elseif ($row_per['p_group'] < 3) {
+            $status = $lang_module['error'];
+            $message = $lang_module['not_permission_to_edit'];
+        }
     }
 }
 
@@ -93,7 +103,7 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
     $stmt->bindValue(':elastic', 0, PDO::PARAM_INT);
 
     if ($stmt->execute()) {
-        updateLog($row['lev'], 'edit', $file_id);
+        updateLog($row['lev']);
         nv_insert_logs(NV_LANG_DATA, $module_name, 'edit','File id: ' . $file_id, $user_info['userid']);
 
         if ($row['lev'] > 0) {

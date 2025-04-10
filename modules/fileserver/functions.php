@@ -149,7 +149,7 @@ if (defined('NV_IS_SPADMIN')) {
     $arr_per = [];
 } elseif (isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array))) {
     $arr_per = array_column(
-        $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_group > 1')->fetchAll(),
+        $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_group >= 2')->fetchAll(),
         'file_id'
     );
 
@@ -159,7 +159,7 @@ if (defined('NV_IS_SPADMIN')) {
     );
 } else {
     $arr_per = array_column(
-        $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_other > 1')->fetchAll(),
+        $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_other >= 2')->fetchAll(),
         'file_id'
     );
 
@@ -422,19 +422,22 @@ function updateParentFolderSize($folderId)
     }
 }
 
-function updateLog($lev, $action = '', $value = '')
+function updateLog($lev)
 {
     global $db, $module_data;
 
     $stats = calculateFileFolderStats($lev);
 
-    $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_logs 
-                  (action, value, lev, total_files, total_folders, total_size, log_time) 
-                  VALUES (:action, :value, :lev, :total_files, :total_folders, :total_size, :log_time)';
+    $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_stats 
+                  (lev, total_files, total_folders, total_size, log_time) 
+                  VALUES (:lev, :total_files, :total_folders, :total_size, :log_time)
+                  ON DUPLICATE KEY UPDATE 
+                  total_files = VALUES(total_files), 
+                  total_folders = VALUES(total_folders), 
+                  total_size = VALUES(total_size), 
+                  log_time = VALUES(log_time)';
 
     $stmtInsert = $db->prepare($sqlInsert);
-    $stmtInsert->bindValue(':action', $action, PDO::PARAM_STR);
-    $stmtInsert->bindValue(':value', $value, PDO::PARAM_STR);
     $stmtInsert->bindValue(':lev', $lev, PDO::PARAM_INT);
     $stmtInsert->bindValue(':total_files', $stats['files'], PDO::PARAM_INT);
     $stmtInsert->bindValue(':total_folders', $stats['folders'], PDO::PARAM_INT);

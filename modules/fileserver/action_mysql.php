@@ -16,9 +16,8 @@ if (!defined('NV_IS_FILE_MODULES')) {
 $sql_drop_module = [];
 
 $sql_drop_module[] = 'DROP TABLE IF EXISTS ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_files';
-$sql_drop_module[] = 'DROP TABLE IF EXISTS ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_trash';
 $sql_drop_module[] = 'DROP TABLE IF EXISTS ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_permissions';
-$sql_drop_module[] = 'DROP TABLE IF EXISTS ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_logs';
+$sql_drop_module[] = 'DROP TABLE IF EXISTS ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_stats';
 
 $sql_create_module = $sql_drop_module;
 
@@ -51,12 +50,8 @@ $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_
     updated_at INT(11) NOT NULL DEFAULT 0
 )ENGINE=MyISAM';
 
-$sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_logs (
-    log_id INT PRIMARY KEY AUTO_INCREMENT,
-    action varchar(250) NOT NULL DEFAULT "",
-    value varchar(250) NOT NULL DEFAULT "",
-    description VARCHAR(250) NOT NULL DEFAULT "",
-    lev INT NOT NULL,
+$sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_stats (
+    lev INT PRIMARY KEY NOT NULL,
     total_files INT NOT NULL,
     total_folders INT NOT NULL,
     total_size INT NOT NULL,

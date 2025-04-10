@@ -87,3 +87,5 @@ $lang_module['error_sync_elastic'] = 'Lỗi đồng bộ dữ liệu';
 $lang_module['sync_elastic_success'] = 'Đồng bộ dữ liệu thành công, đã cập nhật %d bản ghi vào ElasticSearch';
 $lang_module['sync_elastic_failed'] = 'Đồng bộ dữ liệu thất bại';
 $lang_module['confirm_sync_elastic'] = 'Bạn có chắc chắn muốn đồng bộ dữ liệu với ElasticSearch không?';
+$lang_module['use_captcha'] = 'Sử dụng Captcha';
+$lang_module['enable_captcha'] = 'Bật Captcha';
