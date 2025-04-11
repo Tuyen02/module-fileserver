@@ -30,6 +30,50 @@ function getUserCache()
     return $user_cache;
 }
 
+function createFolderSheet($objPHPExcel, $folderId, $folderName, $user_cache, $arr_header_row, $styleTitleArray, $styleTableArray, $title_char_from, $title_number_from) {
+    global $db, $module_data;
+
+    $folderSheet = $objPHPExcel->createSheet();
+    $folderSheet->setTitle(substr($folderName, 0, 31));
+    $folderSheet->fromArray($arr_header_row, null, $title_char_from . $title_number_from);
+    $title_char_to = chr(ord($title_char_from) + count($arr_header_row) - 1);
+    $folderSheet->getStyle($title_char_from . $title_number_from . ':' . $title_char_to . $title_number_from)
+        ->applyFromArray($styleTitleArray);
+
+    $folderFiles = $db->query('SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . $folderId)->fetchAll();
+    $j = 4;
+    $folder_stt = 0;
+
+    foreach ($folderFiles as $folderFile) {
+        $j++;
+        $folder_stt++;
+        $table_char_from = $title_char_from;
+
+        $folderSheet->setCellValue($table_char_from++ . $j, $folder_stt);
+        $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_name']);
+        $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_path']);
+        $size = ($folderFile['is_folder'] == 1)
+            ? number_format(calculateFolderSize($folderFile['file_id']) / 1024, 2) . ' KB'
+            : ($folderFile['file_size'] ? number_format($folderFile['file_size'] / 1024, 2) . ' KB' : '--');
+        $folderSheet->setCellValue($table_char_from++ . $j, $size);
+        $username = $user_cache[$folderFile['uploaded_by']] ?? 'Unknown';
+        $folderSheet->setCellValue($table_char_from++ . $j, $username);
+        $folderSheet->setCellValue($table_char_from++ . $j, date('d/m/Y H:i:s', $folderFile['created_at']));
+        $folderSheet->setCellValue($table_char_from++ . $j, ($folderFile['is_folder'] == 1) ? 'Thư mục' : 'Tệp tin');
+        $folderSheet->setCellValue($table_char_from++ . $j, ($folderFile['status'] == 1) ? 'Hoạt động' : 'Không hoạt động');
+        $folderSheet->getRowDimension($j)->setRowHeight(20);
+
+        if ($folderFile['is_folder'] == 1) {
+            createFolderSheet($objPHPExcel, $folderFile['file_id'], $folderFile['file_name'], $user_cache, $arr_header_row, $styleTitleArray, $styleTableArray, $title_char_from, $title_number_from);
+        }
+    }
+
+    $folderSheet->getStyle('A4:H' . $j)->applyFromArray($styleTableArray);
+    foreach (['A' => 5, 'B' => 50, 'C' => 50, 'D' => 15, 'E' => 40, 'F' => 30, 'G' => 15, 'H' => 15] as $col => $width) {
+        $folderSheet->getColumnDimension($col)->setWidth($width);
+    }
+}
+
 function exportExcel()
 {
     global $db, $module_data, $lang_module, $sys_info, $module_name, $admin_info;
@@ -103,7 +147,7 @@ function exportExcel()
             ->setCategory($module_name);
 
         $objWorksheet = $objPHPExcel->getActiveSheet();
-        $objWorksheet->setTitle('Main');
+        $objWorksheet->setTitle('Danh sách gốc');
         $objWorksheet->getPageSetup()
             ->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE)
             ->setPaperSize(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4)
@@ -144,40 +188,7 @@ function exportExcel()
             $objWorksheet->getRowDimension($i)->setRowHeight(20);
 
             if ($_data2['is_folder'] == 1) {
-                $folderSheet = $objPHPExcel->createSheet();
-                $folderSheet->setTitle(substr($_data2['file_name'], 0, 31));
-                $folderSheet->fromArray($arr_header_row, null, $title_char_from . $title_number_from);
-                $folderSheet->getStyle($title_char_from . $title_number_from . ':' . $title_char_to . $title_number_from)
-                    ->applyFromArray($styleTitleArray);
-
-                $folderFiles = $db->query('SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . $_data2['file_id'])->fetchAll();
-                $j = 4;
-                $folder_stt = 0;
-
-                foreach ($folderFiles as $folderFile) {
-                    $j++;
-                    $folder_stt++;
-                    $table_char_from = $title_char_from;
-
-                    $folderSheet->setCellValue($table_char_from++ . $j, $folder_stt);
-                    $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_name']);
-                    $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_path']);
-                    $size = ($folderFile['is_folder'] == 1)
-                        ? number_format(calculateFolderSize($folderFile['file_id']) / 1024, 2) . ' KB'
-                        : ($folderFile['file_size'] ? number_format($folderFile['file_size'] / 1024, 2) . ' KB' : '--');
-                    $folderSheet->setCellValue($table_char_from++ . $j, $size);
-                    $username = $user_cache[$folderFile['uploaded_by']] ?? 'Unknown';
-                    $folderSheet->setCellValue($table_char_from++ . $j, $username);
-                    $folderSheet->setCellValue($table_char_from++ . $j, date('d/m/Y H:i:s', $folderFile['created_at']));
-                    $folderSheet->setCellValue($table_char_from++ . $j, ($folderFile['is_folder'] == 1) ? 'Thư mục' : 'Tệp tin');
-                    $folderSheet->setCellValue($table_char_from++ . $j, ($folderFile['status'] == 1) ? 'Hoạt động' : 'Không hoạt động');
-                    $folderSheet->getRowDimension($j)->setRowHeight(20);
-                }
-
-                $folderSheet->getStyle('A4:H' . $j)->applyFromArray($styleTableArray);
-                foreach (['A' => 5, 'B' => 50, 'C' => 50, 'D' => 15, 'E' => 40, 'F' => 30, 'G' => 15, 'H' => 15] as $col => $width) {
-                    $folderSheet->getColumnDimension($col)->setWidth($width);
-                }
+                createFolderSheet($objPHPExcel, $_data2['file_id'], $_data2['file_name'], $user_cache, $arr_header_row, $styleTitleArray, $styleTableArray, $title_char_from, $title_number_from);
             }
         }
 
