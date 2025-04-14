@@ -337,60 +337,30 @@ if (!empty($action)) {
     }
 
     if ($action == 'deleteAll') {
-        if (!defined('NV_IS_SPADMIN')) {
-            $is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
-
-            foreach ($fileIds as $fileId) {
-                $sql = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $fileId;
-                $permissions = $db->query($sql)->fetch();
-
-                if ($permissions) {
-                    $current_permission = $is_group_user ? $permissions['p_group'] : $permissions['p_other'];
-
-                    if (!$is_group_user && $permissions['p_group'] == 3) {
-                        nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_permission_group_only']]);
-                    }
-
-                    if ($current_permission < 3) {
-                        nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_permission_to_delete']]);
-                    }
-                } else {
-                    nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_not_found']]);
-                }
-            }
+        if (empty($fileIds)) {
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
         }
 
         $deletedFileIds = [];
-        $status = 'success';
-        $mess = $lang_module['delete_ok'];
-
-        foreach ($fileIds as $index => $fileId) {
+        foreach ($fileIds as $fileId) {
             $fileId = (int) $fileId;
-            $checksess = isset($checksessArray[$index]) ? $checksessArray[$index] : '';
-
-            if ($fileId > 0 && $checksess == md5($fileId . NV_CHECK_SESSION)) {
+            $checksess = md5($fileId . NV_CHECK_SESSION);
+            if ($fileId > 0) {
                 $deleted = deleteFileOrFolder($fileId);
                 if ($deleted) {
                     $deletedFileIds[] = $fileId;
-                } else {
-                    $status = 'error';
-                    $mess = $lang_module['delete_false'];
-                    break;
                 }
-            } else {
-                $status = 'error';
-                $mess = $lang_module['checksess_invalid'];
-                break;
             }
         }
 
-        if ($status == 'success' && !empty($deletedFileIds)) {
+        if (!empty($deletedFileIds)) {
+            $status = 'success';
             updateLog($lev);
-            nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'List file_id: ' . implode(',', $deletedFileIds), $user_info['userid']);
-
+            nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . implode(',', $deletedFileIds), $admin_info['userid']);
+            $mess = $lang_module['delete_ok'];
             nv_jsonOutput(['status' => 'success', 'message' => $mess, 'redirect' => $page_url]);
         } else {
-            nv_jsonOutput(['status' => $status, 'message' => $mess]);
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['delete_false']]);
         }
     }
 

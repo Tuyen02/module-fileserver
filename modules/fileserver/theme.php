@@ -15,7 +15,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 
 function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs, $reCaptchaPass)
 {
-    global $module_file, $global_config, $lang_module, $module_name, $module_config, $lang_global;
+    global $module_file, $global_config, $lang_module, $module_name, $module_config, $lang_global, $user_info, $module_data, $db;
 
     $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
@@ -42,6 +42,17 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
         $xtpl->parse('main.success');
     }
 
+    $show_create_buttons = false;
+    if (defined('NV_IS_SPADMIN')) {
+        $show_create_buttons = true;
+    }
+
+    if ($show_create_buttons) {
+        $xtpl->parse('main.can_create');
+        $xtpl->parse('main.can_compress');
+        $xtpl->parse('main.can_delete_all');
+    }
+
     foreach ($result as $row) {
         if (!empty($logs)) {
             $row['total_size'] = $logs['total_size'] ? ($logs['total_size'] >= 1048576 ? number_format($logs['total_size'] / 1048576, 2) . ' MB' : number_format($logs['total_size'] / 1024, 2) . ' KB') : '--';
@@ -49,17 +60,16 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
             $row['total_folders'] = $logs['total_folders'];
         }
 
-        $row['created_at'] = date('d/m/Y', $row['created_at']);
-
+        $row['created_at'] = date('d/m/Y H:i:s', $row['created_at']);
         $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
         $row['icon_class'] = getFileIconClass($row);
+
+        $sql_permissions = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $row['file_id'];
+        $permissions = $db->query($sql_permissions)->fetch();
 
         if ($permissions) {
             $row['p_group'] = $permissions['p_group'];
             $row['p_other'] = $permissions['p_other'];
-            $row['permissions'] = $row['p_group'] . $row['p_other'];
-        } else {
-            $row['permissions'] = 'N/A';
         }
 
         $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'] . '&page=' . $page;
@@ -74,6 +84,32 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
         $row['url_compress'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=compress/' . $row['alias'];
         $row['url_share'] = $url_share;
 
+        $current_permission = 1; 
+        if (defined('NV_IS_SPADMIN')) {
+            $current_permission = 3;    
+        } elseif (defined('NV_IS_USER')) {
+            if (isset($user_info['in_groups']) && is_array($user_info['in_groups'])) {
+                if (!empty(array_intersect($user_info['in_groups'], explode(',', $module_config[$module_name]['group_admin_fileserver'])))) {
+                    $current_permission = isset($row['p_group']) ? intval($row['p_group']) : 1;
+                } else {
+                    if (isset($row['userid']) && $row['userid'] == $user_info['userid']) {
+                        $current_permission = 3; 
+                    } else {
+                        $current_permission = isset($row['p_group']) ? intval($row['p_group']) : 1;
+                    }
+                }
+            }
+        } else {
+            $current_permission = isset($row['p_other']) ? intval($row['p_other']) : 1;
+        }
+
+        if ($current_permission < 2 && !defined('NV_IS_SPADMIN')) {
+            continue;
+        }
+
+        $row['file_size'] = $row['file_size'] ? ($row['file_size'] >= 1048576 ? number_format($row['file_size'] / 1048576, 2) . ' MB' : number_format($row['file_size'] / 1024, 2) . ' KB') : '--';
+        $xtpl->assign('ROW', $row);
+        
         $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
         if ($row['compressed'] != 0) {
             $xtpl->assign('VIEW', $row['url_compress']);
@@ -88,9 +124,6 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
                 $xtpl->assign('VIEW', $row['url_edit']);
                 $xtpl->parse('main.file_row.view');
 
-                $xtpl->assign('COPY', $row['url_clone']);
-                $xtpl->parse('main.file_row.copy');
-
                 if ($fileInfo == 'txt' || $fileInfo == 'php' || $fileInfo == 'html' || $fileInfo == 'css' || $fileInfo == 'js' || $fileInfo == 'json' || $fileInfo == 'xml' || $fileInfo == 'sql' || $fileInfo == 'pdf' || $fileInfo == 'doc' || $fileInfo == 'docx' || $fileInfo == 'xls' || $fileInfo == 'xlsx') {
                     $xtpl->assign('EDIT', $row['url_edit']);
                     $xtpl->parse('main.file_row.edit');
@@ -103,8 +136,23 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
         $xtpl->assign('DOWNLOAD', $row['url_download']);
         $xtpl->parse('main.file_row.download');
 
-        $row['file_size'] = $row['file_size'] ? ($row['file_size'] >= 1048576 ? number_format($row['file_size'] / 1048576, 2) . ' MB' : number_format($row['file_size'] / 1024, 2) . ' KB') : '--';
-        $xtpl->assign('ROW', $row);
+        if (defined('NV_IS_SPADMIN') || $current_permission == 3) {
+            $xtpl->parse('main.file_row.delete');
+            $xtpl->parse('main.file_row.rename');
+            
+            if (defined('NV_IS_SPADMIN')) {
+                $xtpl->parse('main.file_row.share');
+            }
+            
+            if ($row['is_folder'] == 0) {
+                if (in_array(strtolower(pathinfo($row['file_name'], PATHINFO_EXTENSION)), 
+                    ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql', 'pdf', 'doc', 'docx', 'xls', 'xlsx'])) {
+                    $xtpl->parse('main.file_row.edit');
+                }
+                $xtpl->parse('main.file_row.copy');
+            }
+        }
+
         $xtpl->parse('main.file_row');
     }
 

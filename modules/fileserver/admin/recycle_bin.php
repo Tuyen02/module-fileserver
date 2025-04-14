@@ -25,7 +25,7 @@ $breadcrumbs = [];
 $current_lev = $lev;
 
 while ($current_lev > 0) {
-    $sql1 = 'SELECT file_name, file_path, lev, alias, deleted_at FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 0 and file_id = ' . $current_lev;
+    $sql1 = 'SELECT file_name, file_path, lev, alias, deleted_at FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 0 AND file_id = ' . $current_lev;
     $result1 = $db->query($sql1);
     $row1 = $result1->fetch();
     if ($row1) {
@@ -45,36 +45,22 @@ foreach ($breadcrumbs as $breadcrumb) {
     $array_mod_title[] = $breadcrumb;
 }
 
-$sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 0 AND lev = :lev';
-$total_sql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 0 AND lev = :lev';
+$sql = 'SELECT f.* FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f WHERE f.status = 0';
+
+if ($lev > 0) {
+    $sql .= ' AND f.lev = ' . $lev;
+}
 
 if (!empty($search_term)) {
-    $sql .= ' AND file_name LIKE :search_term';
-    $total_sql .= ' AND file_name LIKE :search_term';
+    $sql .= ' AND f.file_name LIKE :search_term';
 }
 
 if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
     $is_folder = ($search_type == 'file') ? 0 : 1;
-    $sql .= ' AND is_folder = :is_folder';
-    $total_sql .= ' AND is_folder = :is_folder';
+    $sql .= ' AND f.is_folder = :is_folder';
 }
 
-$total_stmt = $db->prepare($total_sql);
-$total_stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
-if (!empty($search_term)) {
-    $total_stmt->bindValue(':search_term', '%' . $search_term . '%', PDO::PARAM_STR);
-}
-if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
-    $total_stmt->bindValue(':is_folder', $is_folder, PDO::PARAM_INT);
-}
-$total_stmt->execute();
-$total = $total_stmt->fetchColumn();
-
-$sql .= ' ORDER BY file_id ASC LIMIT :limit OFFSET :offset';
 $stmt = $db->prepare($sql);
-$stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
-$stmt->bindValue(':limit', $perpage, PDO::PARAM_INT);
-$stmt->bindValue(':offset', ($page - 1) * $perpage, PDO::PARAM_INT);
 if (!empty($search_term)) {
     $stmt->bindValue(':search_term', '%' . $search_term . '%', PDO::PARAM_STR);
 }
@@ -82,10 +68,101 @@ if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
     $stmt->bindValue(':is_folder', $is_folder, PDO::PARAM_INT);
 }
 $stmt->execute();
-$result = $stmt->fetchAll();
+$all_items = $stmt->fetchAll();
+
+$filtered_result = [];
+if ($lev == 0) {
+    $all_file_ids = array_column($all_items, 'file_id');
+    
+    foreach ($all_items as $item) {
+        if ($item['is_folder'] == 1) {
+            $has_children = false;
+            foreach ($all_items as $potential_child) {
+                if ($potential_child['lev'] == $item['file_id']) {
+                    $has_children = true;
+                    break;
+                }
+            }
+            
+            $has_parent = false;
+            foreach ($all_items as $potential_parent) {
+                if ($potential_parent['file_id'] == $item['lev']) {
+                    $has_parent = true;
+                    break;
+                }
+            }
+            
+            if (!$has_children && !$has_parent) {
+                $filtered_result[] = $item;
+                continue;
+            }
+        }
+
+        if ($item['is_folder'] == 0) {
+            $has_parent = false;
+            foreach ($all_items as $potential_parent) {
+                if ($potential_parent['file_id'] == $item['lev']) {
+                    $has_parent = true;
+                    break;
+                }
+            }
+            if (!$has_parent) {
+                $filtered_result[] = $item;
+                continue;
+            }
+        }
+
+        if ($item['is_folder'] == 1) {
+            $is_root_folder = true;
+            $current_item = $item;
+            
+            while ($current_item['lev'] > 0) {
+                $parent_exists = false;
+                foreach ($all_items as $potential_parent) {
+                    if ($potential_parent['file_id'] == $current_item['lev']) {
+                        $parent_exists = true;
+                        $current_item = $potential_parent;
+                        break;
+                    }
+                }
+                if ($parent_exists) {
+                    $is_root_folder = false;
+                    break;
+                } else {
+                    break;
+                }
+            }
+            
+            if ($is_root_folder) {
+                $has_deleted_children = false;
+                foreach ($all_items as $potential_child) {
+                    if ($potential_child['lev'] == $item['file_id']) {
+                        $has_deleted_children = true;
+                        break;
+                    }
+                }
+                if ($has_deleted_children || $item['lev'] == 0) {
+                    $filtered_result[] = $item;
+                }
+            }
+        }
+    }
+} else {
+    $filtered_result = $all_items;
+}
+
+usort($filtered_result, function($a, $b) {
+    if ($a['is_folder'] != $b['is_folder']) {
+        return $b['is_folder'] - $a['is_folder'];
+    }
+    return strcasecmp($a['file_name'], $b['file_name']);
+});
+
+$total = count($filtered_result);
+$filtered_result = array_slice($filtered_result, ($page - 1) * $perpage, $perpage);
 
 if ($lev > 0) {
-    $base_dir = $db->query('SELECT file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 0 and file_id = ' . $lev)->fetchColumn();
+    $base_dir = $db->query('SELECT file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 0 AND file_id = ' . $lev)->fetchColumn();
     $full_dir = NV_ROOTDIR . $base_dir;
     $page_url .= '&lev=' . $lev;
 }
@@ -103,12 +180,12 @@ if (!empty($action)) {
         if ($fileId <= 0 || $checksess != md5($fileId . NV_CHECK_SESSION)) {
             $mess = $lang_module['checksess_false'];
         } else {
-            $deleted = deletePermanently($fileId);
+            $deleted = deleteFileOrFolder($fileId);
             if ($deleted) {
                 $status = 'success';
                 updateLog($lev);
                 $mess = $lang_module['delete_ok'];
-                nv_insert_logs(NV_LANG_DATA, $module_name, $action,'File id: ' . $fileId, $admin_info['userid']);
+                nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . $fileId, $admin_info['userid']);
             } else {
                 $mess = $lang_module['delete_false'];
             }
@@ -127,7 +204,7 @@ if (!empty($action)) {
             $fileId = (int) $fileId;
             $checksess = isset($checksessArray[$index]) ? $checksessArray[$index] : '';
             if ($fileId > 0 && $checksess == md5($fileId . NV_CHECK_SESSION)) {
-                $deleted = deletePermanently($fileId);
+                $deleted = deleteFileOrFolder($fileId);
                 if ($deleted) {
                     $deletedFileIds[] = $fileId;
                 }
@@ -136,7 +213,7 @@ if (!empty($action)) {
         if (!empty($deletedFileIds)) {
             $status = 'success';
             updateLog($lev);
-            nv_insert_logs(NV_LANG_DATA, $module_name, $action,'File id: ' . implode(',', $deletedFileIds), $admin_info['userid']);
+            nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . implode(',', $deletedFileIds), $admin_info['userid']);
             $mess = $lang_module['delete_ok'];
         } else {
             $mess = $lang_module['delete_false'];
@@ -181,7 +258,7 @@ if (!empty($action)) {
         if (!empty($restoredFileIds)) {
             $status = 'success';
             updateLog($lev);
-            nv_insert_logs(NV_LANG_DATA, $module_name, $action,'File id: ' . implode(',', $restoredFileIds), $admin_info['userid']);
+            nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . implode(',', $restoredFileIds), $admin_info['userid']);
             $mess = $lang_module['restore_ok'];
         } else {
             $mess = $lang_module['restore_false'];
@@ -207,6 +284,22 @@ $xtpl->assign('SELECTED_FILE', $selected_file);
 $xtpl->assign('SELECTED_FOLDER', $selected_folder);
 $xtpl->assign('LEV', $lev);
 
+foreach ($filtered_result as $row) {
+    $row['deleted_at'] = date('d/m/Y H:i:s', $row['created_at']);
+    $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
+    $row['icon_class'] = getFileIconClass($row);
+    $row['url_delete'] = $base_url . '&file_id=' . $row['file_id'] . '&action=delete&checksess=' . $row['checksess'];
+    $row['url_restore'] = $base_url . '&file_id=' . $row['file_id'] . '&action=restore';
+    $row['file_size'] = $row['file_size'] ? ($row['file_size'] >= 1048576 ? number_format($row['file_size'] / 1048576, 2) . ' MB' : number_format($row['file_size'] / 1024, 2) . ' KB') : '--';
+    if ($row['is_folder']) {
+        $row['url_view'] = $base_url . '&lev=' . $row['file_id'];
+    } else {
+        $row['url_view'] = '';
+    }
+    $xtpl->assign('ROW', $row);
+    $xtpl->parse('main.file_row');
+}
+
 if ($total > $perpage) {
     $page_url = $base_url . '&lev=' . $lev . '&search=' . $search_term . '&search_type=' . $search_type;
     $generate_page = nv_generate_page($page_url, $total, $perpage, $page);
@@ -221,17 +314,6 @@ if ($error) {
 if ($success) {
     $xtpl->assign('SUCCESS', $success);
     $xtpl->parse('main.success');
-}
-
-foreach ($result as $row) {
-    $row['deleted_at'] = NV_CURRENTTIME;
-    $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
-    $row['icon_class'] = getFileIconClass($row);
-    $row['url_delete'] = $base_url . '&file_id=' . $row['file_id'] . '&action=delete&checksess=' . $row['checksess'];
-    $row['url_restore'] = $base_url . '&file_id=' . $row['file_id'] . '&action=restore';
-    $row['file_size'] = $row['file_size'] ? ($row['file_size'] >= 1048576 ? number_format($row['file_size'] / 1048576, 2) . ' MB' : number_format($row['file_size'] / 1024, 2) . ' KB') : '--';
-    $xtpl->assign('ROW', $row);
-    $xtpl->parse('main.file_row');
 }
 
 if ($_SERVER['REQUEST_URI'] != $base_url) {

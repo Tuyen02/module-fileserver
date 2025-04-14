@@ -223,9 +223,14 @@ if ($nv_Request->isset_request('submit', 'post')) {
     $error = exportExcel();
 }
 
-if ($nv_Request->get_int('download', 'get', 0) == 1) {
+$base_dir = '/uploads/fileserver/';
+$tmp_dir = '/data/tmp/';
+
+$download = $nv_Request->get_int('download', 'get', 0);
+if ($download == 1) {
     $file_id = $nv_Request->get_int('file_id', 'get', 0);
-    $sql = 'SELECT file_path, file_name, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = :file_id';
+
+    $sql = "SELECT file_path, file_name, is_folder FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = :file_id";
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
     $stmt->execute();
@@ -235,44 +240,50 @@ if ($nv_Request->get_int('download', 'get', 0) == 1) {
         $file_path = NV_ROOTDIR . $file['file_path'];
         $file_name = $file['file_name'];
         $is_folder = $file['is_folder'];
+        $zip = '';
 
         if ($is_folder == 1) {
             $zipFileName = $file_name . '.zip';
-            $tmp_dir = '/data/tmp/';
-            $zipFullPath = NV_ROOTDIR . $tmp_dir . $zipFileName;
+            $zipFilePath = $tmp_dir . $zipFileName;
+            $zipFullPath = NV_ROOTDIR . $zipFilePath;
+
             $zipArchive = new ZipArchive();
+            if ($zipArchive->open($zipFullPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+                $zipArchive->addEmptyDir($file_name);
 
-            if ($zipArchive->open($zipFullPath, ZipArchive::CREATE) == TRUE) {
-                $files = new RecursiveIteratorIterator(
-                    new RecursiveDirectoryIterator($file_path),
-                    RecursiveIteratorIterator::LEAVES_ONLY
-                );
+                $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($file_path), RecursiveIteratorIterator::LEAVES_ONLY);
 
-                foreach ($files as $file) {
-                    if (!$file->isDir()) {
-                        $filePath = $file->getRealPath();
-                        $relativePath = substr($filePath, strlen($file_path) + 1);
-                        $zipArchive->addFile($filePath, $relativePath);
-                    } else {
-                        $relativePath = substr($file->getPathname(), strlen($file_path) + 1);
-                        $zipArchive->addEmptyDir($relativePath);
+                foreach ($files as $name => $fileInfo) {
+                    if (!$fileInfo->isDir()) {
+                        $fileRealPath = $fileInfo->getRealPath();
+                        $relativePath = substr($fileRealPath, strlen($file_path) + 1);
+                        $zipArchive->addFile($fileRealPath, $file_name . '/' . $relativePath);
                     }
                 }
                 $zipArchive->close();
 
                 if (file_exists($zipFullPath)) {
-                    updateLog($file_id);
-                    $download = new NukeViet\Files\Download($zipFullPath, NV_ROOTDIR . $tmp_dir, $zipFileName);
-                    $download->download_file();
-                    exit;
+                    $zip = $zipFullPath;
                 }
             }
-        } elseif (file_exists($file_path)) {
-            updateLog($file_id);
-            $base_dir = '/uploads/fileserver/';
-            $download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . $base_dir, $file_name);
-            $download->download_file();
-            exit;
+        } elseif (pathinfo($file_path, PATHINFO_EXTENSION) == 'zip') {
+            if (file_exists($file_path)) {
+                $zip = $file_path;
+            }
+        } else {
+            if (file_exists($file_path)) {
+                $zip = $file_path;
+            }
+        }
+
+        if (!empty($zip) && file_exists($zip)) {
+            $downloadPath = ($is_folder == 1) ? $tmp_dir : $base_dir;
+            $_download = new NukeViet\Files\Download($zip, NV_ROOTDIR . $downloadPath, basename($zip), true, 0);
+            $_download->download_file();
+
+            if (file_exists($zipFullPath)) {
+                unlink($zipFullPath);
+            }
         }
     }
 }
@@ -291,7 +302,7 @@ $stt = 1;
 while ($row = $result->fetch()) {
     $row['stt'] = $stt++;
     $row['url_download'] = NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=export&file_id=' . $row['file_id'] . '&download=1';
-    $row['created_at'] = date('d/m/Y', $row['created_at']);
+    $row['created_at'] = date('d/m/Y H:i:s', $row['created_at']);
     $row['file_size'] = ($row['is_folder'] == 1)
         ? number_format(calculateFolderSize($row['file_id']) / 1024, 2) . ' KB'
         : ($row['file_size'] ? ($row['file_size'] >= 1048576 ? number_format($row['file_size'] / 1048576, 2) . ' MB' : number_format($row['file_size'] / 1024, 2) . ' KB') : '--');

@@ -5,7 +5,7 @@
 <h1>Nội dung file nén</h1>
 <div class="tree well">{TREE_HTML}</div>
 <form method="post">
-  <button type="button" class="btn btn-secondary" id="backButton">
+  <button type="button" class="btn btn-info" id="backButton">
     <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
   </button>
   <button type="submit" name="action" value="unzip" class="btn btn-primary">

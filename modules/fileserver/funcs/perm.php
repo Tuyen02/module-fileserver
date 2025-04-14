@@ -22,11 +22,26 @@ $row = $stmt->fetch();
 
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
 
-$array_mod_title[] = [
-    'catid' => 0,
-    'title' => $row['file_name'],
-    'link' => $base_url
-];
+$breadcrumbs = [];
+$current_lev = $lev;
+
+while ($current_lev > 0) {
+    $sql1 = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
+    $result1 = $db->query($sql1);
+    $row1 = $result1->fetch();
+    $breadcrumbs[] = [
+        'catid' => $current_lev,
+        'title' => $row1['file_name'],
+        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=main/' . $row1['alias'] . '&page=' . $page
+    ];
+    $current_lev = $row1['lev'];
+}
+
+$breadcrumbs = array_reverse($breadcrumbs);
+
+foreach ($breadcrumbs as $breadcrumb) {
+    $array_mod_title[] = $breadcrumb;
+}
 
 $group_level = $row['p_group'];
 $other_level = $row['p_other'];
@@ -61,20 +76,7 @@ if (defined('NV_IS_SPADMIN')) {
             $insert_stmt->execute();
         }
 
-        $sql_children = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . $file_id;
-        $children_stmt = $db->query($sql_children);
-
-        while ($child = $children_stmt->fetch()) {
-            $sql_update_child = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
-                                 SET p_group = :p_group, p_other = :p_other, updated_at = :updated_at 
-                                 WHERE file_id = :file_id';
-            $update_child_stmt = $db->prepare($sql_update_child);
-            $update_child_stmt->bindParam(':p_group', $group_permission);
-            $update_child_stmt->bindParam(':p_other', $other_permission);
-            $update_child_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-            $update_child_stmt->bindParam(':file_id', $child['file_id'], PDO::PARAM_INT);
-            $update_child_stmt->execute();
-        }
+        updatePermissionsRecursively( $file_id, $group_permission, $other_permission);
 
         $status = 'success';
         $message = $lang_module['update_ok'];

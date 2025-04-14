@@ -140,6 +140,8 @@ if (!empty($array_op)) {
     $lev = $nv_Request->get_int('lev', 'get,post', 0);
 }
 
+updateLog($lev);
+
 $config_value = $module_config[$module_name]['group_admin_fileserver'];
 $config_value_array = explode(',', $config_value);
 
@@ -196,11 +198,23 @@ function deleteFileOrFolder($fileId)
     $filePath = $row['file_path'];
     $isFolder = $row['is_folder'];
     $fullPath = NV_ROOTDIR . $filePath;
-    $lev = $row['lev'];
 
-    $relativePath = str_replace($base_dir, '', $filePath);
-    $newPath = $trash_dir . $relativePath;
+    if ($isFolder) {
+        $sqlDeletedChildren = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                             WHERE lev = ' . $fileId . ' AND status = 0';
+        $deletedChildren = $db->query($sqlDeletedChildren)->fetchAll();
+    }
+
+    $relativePath = basename($filePath);
+    $newPath = $trash_dir . '/' . $relativePath;
     $newFullPath = NV_ROOTDIR . $newPath;
+
+    $counter = 1;
+    while (file_exists($newFullPath)) {
+        $newPath = $trash_dir . '/' . $relativePath . '(' . $counter . ')';
+        $newFullPath = NV_ROOTDIR . $newPath;
+        $counter++;
+    }
 
     $newDir = dirname($newFullPath);
     if (!file_exists($newDir)) {
@@ -211,29 +225,39 @@ function deleteFileOrFolder($fileId)
         if (!rename($fullPath, $newFullPath)) {
             return false;
         }
-    } else {
-        return false;
+    }
+
+    if ($isFolder && !empty($deletedChildren)) {
+        foreach ($deletedChildren as $child) {
+            $childCurrentPath = NV_ROOTDIR . $child['file_path'];
+            $childNewPath = $newFullPath . '/' . basename($child['file_path']);
+            
+            if (file_exists($childCurrentPath)) {
+                rename($childCurrentPath, $childNewPath);
+            }
+            
+            $sqlUpdateChild = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                             SET file_path = :new_path
+                             WHERE file_id = :file_id';
+            $stmtChild = $db->prepare($sqlUpdateChild);
+            $stmtChild->bindValue(':new_path', $newPath . '/' . basename($child['file_path']), PDO::PARAM_STR);
+            $stmtChild->bindValue(':file_id', $child['file_id'], PDO::PARAM_INT);
+            $stmtChild->execute();
+        }
     }
 
     if ($isFolder) {
-        $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                SET status = 0, 
-                    file_path = REPLACE(file_path, :old_base, :new_base),
-                    elastic = 0,
-                    deleted_at = :deleted_at
-                WHERE file_path LIKE :file_path';
-        $stmt = $db->prepare($sql);
-        $stmt->bindValue(':old_base', $base_dir, PDO::PARAM_STR);
-        $stmt->bindValue(':new_base', $trash_dir, PDO::PARAM_STR);
-        $stmt->bindValue(':file_path', $filePath . '%', PDO::PARAM_STR);
-        $stmt->bindValue(':deleted_at', NV_CURRENTTIME, PDO::PARAM_INT);
-        $stmt->execute();
+        $sqlChildren = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                       WHERE lev = ' . $fileId . ' AND status = 1';
+        $children = $db->query($sqlChildren)->fetchAll();
+        foreach ($children as $child) {
+            deleteFileOrFolder($child['file_id']);
+        }
     }
 
     $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
                   SET status = 0, 
                       file_path = :new_path,
-                      elastic = 0,
                       deleted_at = :deleted_at
                   WHERE file_id = :file_id';
     $stmt = $db->prepare($sqlUpdate);
@@ -241,8 +265,6 @@ function deleteFileOrFolder($fileId)
     $stmt->bindValue(':file_id', $fileId, PDO::PARAM_INT);
     $stmt->bindValue(':deleted_at', NV_CURRENTTIME, PDO::PARAM_INT);
     $stmt->execute();
-
-    updateParentFolderSize($lev);
 
     return true;
 }
@@ -377,20 +399,16 @@ function calculateFileFolderStats($lev)
     $total_folders = 0;
     $total_size = 0;
 
-    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status =  1 AND lev = ' . $lev;
+    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev = ' . $lev;
     $files = $db->query($sql)->fetchAll();
 
     foreach ($files as $file) {
         if ($file['is_folder'] == 1) {
             $total_folders++;
-            $folder_stats = calculateFileFolderStats($file['file_id']);
-            $total_files += $folder_stats['files'];
-            $total_folders += $folder_stats['folders'];
-            $total_size += $folder_stats['size'];
         } else {
             $total_files++;
-            $total_size += $file['file_size'];
         }
+        $total_size += $file['file_size'];
     }
     return [
         'files' => $total_files,
@@ -413,6 +431,8 @@ function updateParentFolderSize($folderId)
     $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
     $stmt->bindValue(':file_id', $folderId, PDO::PARAM_INT);
     $stmt->execute();
+
+    updateLog($folderId);
 
     $sql = 'SELECT lev FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $folderId;
     $parentId = $db->query($sql)->fetchColumn();
@@ -564,6 +584,29 @@ function normalizePath($path)
     }
 
     return '/' . implode('/', $absolutes);
+}
+
+function updatePermissionsRecursively( $file_id, $group_permission, $other_permission) {
+
+    global $db, $module_data;
+    $sql_update = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
+                   SET p_group = :p_group, p_other = :p_other, updated_at = :updated_at 
+                   WHERE file_id = :file_id';
+    $update_stmt = $db->prepare($sql_update);
+    $update_stmt->bindParam(':p_group', $group_permission);
+    $update_stmt->bindParam(':p_other', $other_permission);
+    $update_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+    $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+    $update_stmt->execute();
+
+    $sql_children = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = :file_id';
+    $children_stmt = $db->prepare($sql_children);
+    $children_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+    $children_stmt->execute();
+
+    while ($child = $children_stmt->fetch()) {
+        updatePermissionsRecursively( $child['file_id'], $group_permission, $other_permission);
+    }
 }
 
 // function pr($a)

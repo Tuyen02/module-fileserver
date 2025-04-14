@@ -22,13 +22,15 @@
 
     <br>
     <form action="" method="post" enctype="multipart/form-data" id="uploadForm" class="form-inline my-2 my-lg-0">
+        <!-- BEGIN: can_create -->
+        <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">{LANG.create_btn}</a>
+        <button type="button" class="btn btn-primary" id="uploadButton">{LANG.upload_btn}</button>
+        <!-- END: can_create -->
         <!-- BEGIN: back -->
-        <button type="button" class="btn btn-warning" id="backButton">
+        <button type="button" class="btn btn-info" id="backButton">
             <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
         </button>
         <!-- END: back -->
-        <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">{LANG.create_btn}</a>
-        <button type="button" class="btn btn-primary" id="uploadButton">{LANG.upload_btn}</button>
         <input type="file" name="uploadfile" id="uploadfile" required style="display: none;">
         <input type="hidden" name="lev" id="lev" value="{ROW.lev}">
         <input type="hidden" name="submit_upload" value="1">
@@ -42,15 +44,15 @@
                 <th scope="col">{LANG.f_name}</th>
                 <th scope="col">{LANG.f_size}</th>
                 <th scope="col">{LANG.created_at}</th>
-                <!-- <th scope="col">{LANG.module_title}</th>
-                <th scope="col">{LANG.module_title}</th> -->
                 <th scope="col">{LANG.option}</th>
             </tr>
         </thead>
         <tbody>
             <!-- BEGIN: file_row -->
             <tr>
-                <td><input type="checkbox" name="files[]" value="{ROW.file_id}" data-checksess="{ROW.checksess}"></td>
+                <td>
+                    <input type="checkbox" name="files[]" value="{ROW.file_id}" data-checksess="{ROW.checksess}">
+                </td>
                 <td>
                     <a href="{VIEW}">
                         <i class="fa {ROW.icon_class}" aria-hidden="true"></i>
@@ -59,35 +61,41 @@
                 </td>
                 <td>{ROW.file_size}</td>
                 <td>{ROW.created_at}</td>
-                <!-- <td>
-                    <a href="{ROW.url_perm}">{ROW.permissions}</i>
-                    </a>
-                </td>
-                <td>{ROW.username} {ROW.uploaded_by}</td> -->
                 <td>
+                    <!-- BEGIN: delete -->
                     <button class="btn btn-sm btn-danger delete" data-file-id="{ROW.file_id}"
                         data-checksess="{CHECK_SESS}" data-url="{ROW.url_delete}" title="{LANG.delete_btn}">
                         <i class="fa fa-trash-o"></i>
                     </button>
+                    <!-- END: delete -->
+
+                    <!-- BEGIN: rename -->
                     <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}"
                         data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal"
                         title="{LANG.rename_btn}">
                         <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
                     </button>
+                    <!-- END: rename -->
+
+                    <!-- BEGIN: share -->
                     <a href="{ROW.url_perm}" class="btn btn-sm btn-info share" title="{LANG.perm_btn}">
                         <i class="fa fa-link"></i>
                     </a>
+                    <!-- END: share -->
+
                     <!-- BEGIN: download -->
                     <a href="{DOWNLOAD}" class="btn btn-sm btn-success download" data-file-id="{ROW.file_id}"
                         title="{LANG.download_btn}">
                         <i class="fa fa-download" aria-hidden="true"></i>
                     </a>
                     <!-- END: download -->
+
                     <!-- BEGIN: edit -->
                     <a href="{EDIT}" class="btn btn-sm btn-info" title="{LANG.edit_btn}">
                         <i class="fa fa-pencil-square"></i>
                     </a>
                     <!-- END: edit -->
+
                     <!-- BEGIN: copy -->
                     <a href="{COPY}" class="btn btn-sm btn-info" title="{LANG.copy}">
                         <i class="fa fa-clone"></i>
@@ -111,12 +119,17 @@
         </tfoot>
     </table>
     <hr>
+    <!-- BEGIN: can_compress -->
     <a href="#" class="btn btn-primary" id="compressButton" data-toggle="modal" data-target="#compressModal">
         <i class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}
     </a>
-    <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll"><i class="fa fa-trash"
-            aria-hidden="true"></i> {LANG.delete_btn}
+    <!-- END: can_compress -->
+
+    <!-- BEGIN: can_delete_all -->
+    <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll">
+        <i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}
     </button>
+    <!-- END: can_delete_all -->
 
     <div class="modal fade" id="compressModal" tabindex="-1" role="dialog" aria-labelledby="compressModalLabel"
         aria-hidden="true">
@@ -376,7 +389,7 @@
             data: formData,
             processData: false,
             contentType: false,
-            dataType: 'json', 
+            dataType: 'json',
             success: function (res) {
                 console.log('Upload response:', res);
                 alert(res.message || 'Tải lên thành công.');
@@ -466,7 +479,7 @@
                         action: 'check_filename',
                         zipFileName: zipFileName,
                         files: selectedFiles,
-                        lev: $('#lev').val() 
+                        lev: $('#lev').val()
                     },
                     dataType: 'json',
                     success: function (res) {
@@ -515,16 +528,16 @@
                         zipFileName: zipFileName,
                         files: selectedFiles
                     },
-                    dataType: 'json', 
+                    dataType: 'json',
                     success: function (res) {
-                        console.log('Compress response:', res); 
-                        alert(res.message); 
+                        console.log('Compress response:', res);
+                        alert(res.message);
                         if (res.status === 'success' && res.redirect) {
                             window.location.reload();
                         }
                     },
                     error: function (xhr) {
-                        console.log('Compress error:', xhr.responseText); 
+                        console.log('Compress error:', xhr.responseText);
                         let errorMessage = 'Đã xảy ra lỗi khi nén file.';
                         if (xhr.responseJSON && xhr.responseJSON.message) {
                             errorMessage = xhr.responseJSON.message;
@@ -561,10 +574,10 @@
         e.preventDefault();
 
         const selectedFiles = [];
-        const checksessArray = [];
-        document.querySelectorAll('input[name="files[]"]:checked').forEach(input => {
+        const checksessArray = {};
+        document.querySelectorAll('input[name="files[]"]:checked').forEach((input, index) => {
             selectedFiles.push(input.value);
-            checksessArray.push(input.getAttribute('data-checksess'));
+            checksessArray[index] = input.getAttribute('data-checksess');
         });
 
         if (selectedFiles.length == 0) {
@@ -574,9 +587,6 @@
         if (!confirm("Bạn có chắc chắn muốn xóa tất cả các file đã chọn?")) {
             return;
         }
-
-        console.log(selectedFiles);
-        console.log(checksessArray);
 
         $.ajax({
             type: 'POST',
@@ -589,10 +599,12 @@
             success: function (res) {
                 console.log(res);
                 alert(res.message);
-                location.reload();
+                if (res.status === 'success' && res.redirect) {
+                    window.location.reload();
+                }
             },
-            error: function () {
-                alert(res.message);
+            error: function (xhr) {
+                alert(xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Đã có lỗi xảy ra');
             }
         });
     });

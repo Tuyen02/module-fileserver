@@ -70,7 +70,7 @@
             <!-- END: excel -->
             <input type="hidden" name="file_id" value="{FILE_ID}">
         </div>
-        <a href="{url_view}" class="btn btn-warning">
+        <a href="{url_view}" class="btn btn-info">
             <i class="fa fa-chevron-circle-left"></i> {LANG.back_btn}
         </a>
         <button type="submit" class="btn btn-primary">{LANG.save_btn}</button>

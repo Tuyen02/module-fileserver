@@ -47,6 +47,7 @@ $lang_module['file_type'] = 'Loại file';
 $lang_module['file_path'] = 'Đường dẫn';
 $lang_module['deleted_at'] = 'Ngày xóa';
 $lang_module['created_at'] = 'Ngày tạo';
+$lang_module['option'] = 'Tùy chọn';
 $lang_module['export_title'] = 'Xuất dữ liệu hệ thống';
 $lang_module['export_file'] = 'Xuất file';
 $lang_module['import_file'] = 'Nhập dữ liệu vào hệ thống';

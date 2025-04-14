@@ -35,10 +35,10 @@
                 </tr>
             </tbody>
         </table>
-        <button type="button" class="btn btn-secondary" id="backButton">
+        <button type="button" class="btn btn-info" id="backButton">
             <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
         </button>
-        <button type="submit" name="submit" value="1" class="btn btn-success">{LANG.save_btn}</button>
+        <button type="submit" name="submit" value="1" class="btn btn-primary">{LANG.save_btn}</button>
     </form>
 </div>
 <br>

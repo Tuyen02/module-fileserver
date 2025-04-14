@@ -8,7 +8,7 @@ require_once NV_ROOTDIR . '/vendor/autoload.php';
 
 use Elastic\Elasticsearch\ClientBuilder;
 
-$page_title = $lang_module['config_elastic'];
+$page_title = $lang_module['config'];
 $message = '';
 $message_type = '';
 
@@ -17,7 +17,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
     $use_elastic = $nv_Request->get_int('use_elastic', 'post', 0);
     $array_config['use_elastic'] = $use_elastic;
     $use_captcha = $nv_Request->get_int('use_captcha', 'post', 0);
-    $array_config['captcha_type'] = $use_captcha ? 'recaptcha' : ''; 
+    $array_config['captcha_type'] = $use_captcha ? 'captcha' : ''; 
 
     if ($use_elastic) {
         $array_config['elas_host'] = $nv_Request->get_title('elas_host', 'post', '');
@@ -158,7 +158,7 @@ $xtpl->assign('NV_OP_VARIABLE', NV_OP_VARIABLE);
 $xtpl->assign('MODULE_NAME', $module_name);
 $xtpl->assign('OP', $op);
 $xtpl->assign('CONFIG', $array_config);
-$xtpl->assign('USE_CAPTCHA_CHECKED', $array_config['captcha_type'] == 'recaptcha' ? ' checked="checked"' : '');if ($message != '') {
+$xtpl->assign('USE_CAPTCHA_CHECKED', $array_config['captcha_type'] == 'captcha' ? ' checked="checked"' : '');if ($message != '') {
     $xtpl->assign('MESSAGE', $message);
     $xtpl->assign('MESSAGE_TYPE', $message_type);
     $xtpl->parse('main.message');

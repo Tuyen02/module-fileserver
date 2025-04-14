@@ -236,68 +236,97 @@ function getAllChildFileIds($fileId)
 function deleteFileOrFolder($fileId)
 {
     global $db, $module_data, $admin_info, $module_name;
-    $base_dir = '/uploads/fileserver';
-    $trash_dir = '/data/tmp/fileserver_trash';
 
-    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
+    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId . ' AND status = 0';
     $row = $db->query($sql)->fetch();
 
     if (!$row) {
         return false;
     }
 
-    $filePath = $row['file_path'];
-    $isFolder = $row['is_folder'];
-    $fullPath = NV_ROOTDIR . $filePath;
-    $lev = $row['lev'];
+    if ($row['is_folder']) {
+        $sqlChildren = 'WITH RECURSIVE file_tree AS (
+            -- Lấy các con trực tiếp
+            SELECT file_id, file_path, lev, is_folder, 1 as level
+            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files
+            WHERE lev = ' . $fileId . ' AND status = 0
+            
+            UNION ALL
+            
+            -- Lấy tiếp các con của con
+            SELECT f.file_id, f.file_path, f.lev, f.is_folder, ft.level + 1
+            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+            INNER JOIN file_tree ft ON f.lev = ft.file_id
+            WHERE f.status = 0
+        )
+        SELECT * FROM file_tree ORDER BY level DESC';
+        
+        $children = $db->query($sqlChildren)->fetchAll();
 
-    $relativePath = str_replace($base_dir, '', $filePath);
-    $newPath = $trash_dir . $relativePath;
-    $newFullPath = NV_ROOTDIR . $newPath;
+        if (!empty($children)) {
+            foreach ($children as $child) {
+                $childFullPath = NV_ROOTDIR . $child['file_path'];
+                if (file_exists($childFullPath)) {
+                    if ($child['is_folder']) {
+                        if (is_dir($childFullPath)) {
+                            $files = new RecursiveIteratorIterator(
+                                new RecursiveDirectoryIterator($childFullPath, RecursiveDirectoryIterator::SKIP_DOTS),
+                                RecursiveIteratorIterator::CHILD_FIRST
+                            );
+                            foreach ($files as $fileinfo) {
+                                if ($fileinfo->isDir()) {
+                                    rmdir($fileinfo->getRealPath());
+                                } else {
+                                    unlink($fileinfo->getRealPath());
+                                }
+                            }
+                            rmdir($childFullPath);
+                        }
+                    } else {
+                        unlink($childFullPath);
+                    }
+                }
+            }
 
-    $newDir = dirname($newFullPath);
-    if (!file_exists($newDir)) {
-        mkdir($newDir, 0777, true);
-    }
-
-    if (file_exists($fullPath)) {
-        if (!rename($fullPath, $newFullPath)) {
-            return false;
+            $childIds = array_column($children, 'file_id');
+            $sqlUpdateChildren = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                                SET status = -1,
+                                    deleted_at = ' . NV_CURRENTTIME . '
+                                WHERE file_id IN (' . implode(',', $childIds) . ')';
+            $db->query($sqlUpdateChildren);
         }
-    } else {
-        return false;
     }
 
-    if ($isFolder) {
-        $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                SET status = 0, 
-                    file_path = REPLACE(file_path, :old_base, :new_base),
-                    elastic = 0,
-                    deleted_at = :deleted_at
-                WHERE file_path LIKE :file_path';
-        $stmt = $db->prepare($sql);
-        $stmt->bindValue(':old_base', $base_dir, PDO::PARAM_STR);
-        $stmt->bindValue(':new_base', $trash_dir, PDO::PARAM_STR);
-        $stmt->bindValue(':file_path', $filePath . '%', PDO::PARAM_STR);
-        $stmt->bindValue(':deleted_at', NV_CURRENTTIME, PDO::PARAM_INT);
+    $fullPath = NV_ROOTDIR . $row['file_path'];
+    if (file_exists($fullPath)) {
+        if ($row['is_folder']) {
+            if (is_dir($fullPath)) {
+                $files = new RecursiveIteratorIterator(
+                    new RecursiveDirectoryIterator($fullPath, RecursiveDirectoryIterator::SKIP_DOTS),
+                    RecursiveIteratorIterator::CHILD_FIRST
+                );
+                foreach ($files as $fileinfo) {
+                    if ($fileinfo->isDir()) {
+                        rmdir($fileinfo->getRealPath());
+                    } else {
+                        unlink($fileinfo->getRealPath());
+                    }
+                }
+                rmdir($fullPath);
+            }
+        } else {
+            unlink($fullPath);
+        }
     }
 
-    $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                  SET status = 0, 
-                      file_path = :new_path,
-                      elastic = 0,
-                      deleted_at = :deleted_at
-                  WHERE file_id = :file_id';
-    $stmt = $db->prepare($sqlUpdate);
-    $stmt->bindValue(':new_path', $newPath, PDO::PARAM_STR);
-    $stmt->bindValue(':file_id', $fileId, PDO::PARAM_INT);
-    $stmt->bindValue(':deleted_at', NV_CURRENTTIME, PDO::PARAM_INT);
-
-    if ($stmt->execute()) {
-
-        updateLog($lev);
+    $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+            SET status = -1,
+                deleted_at = ' . NV_CURRENTTIME . '
+            WHERE file_id = ' . $fileId;
+            
+    if ($db->query($sql)) {
+        updateLog($row['lev']);
         nv_insert_logs(NV_LANG_DATA, $module_name, 'Delete', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
-
         return true;
     }
 
@@ -317,11 +346,38 @@ function restoreFileOrFolder($fileId)
         return false;
     }
 
+    if ($row['is_folder']) {
+        $sqlChildren = 'WITH RECURSIVE file_tree AS (
+            SELECT file_id, file_path, lev, is_folder, file_name, 1 as level
+            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files
+            WHERE lev = ' . $fileId . ' AND status = 0
+            
+            UNION ALL
+            
+            SELECT f.file_id, f.file_path, f.lev, f.is_folder, f.file_name, ft.level + 1
+            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+            INNER JOIN file_tree ft ON f.lev = ft.file_id
+            WHERE f.status = 0
+        )
+        SELECT * FROM file_tree ORDER BY level ASC';
+        
+        $children = $db->query($sqlChildren)->fetchAll();
+    }
+
     $oldPath = $row['file_path'];
     $newPath = str_replace($trash_dir, $base_dir, $oldPath);
 
     $oldFullPath = NV_ROOTDIR . $oldPath;
     $newFullPath = NV_ROOTDIR . $newPath;
+
+    $parentLev = $row['lev'];
+    $parentStatus = $db->query('SELECT status FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $parentLev)->fetchColumn();
+
+    if ($parentStatus === false || $parentStatus == 0) {
+        $newPath = str_replace($trash_dir, $base_dir, $oldPath);
+        $newFullPath = NV_ROOTDIR . $newPath;
+        $row['lev'] = 0;
+    }
 
     $newDir = dirname($newFullPath);
     if (!file_exists($newDir)) {
@@ -332,93 +388,60 @@ function restoreFileOrFolder($fileId)
         return false;
     }
 
-    if ($row['is_folder']) {
-        $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                SET status = 1,
-                    file_path = REPLACE(file_path, :old_base, :new_base),
-                    elastic = 0,
-                    deleted_at = 0
-                WHERE file_path LIKE :file_path';
-        $stmt = $db->prepare($sql);
-        $stmt->bindValue(':old_base', $trash_dir, PDO::PARAM_STR);
-        $stmt->bindValue(':new_base', $base_dir, PDO::PARAM_STR);
-        $stmt->bindValue(':file_path', $oldPath . '%', PDO::PARAM_STR);
-        $stmt->execute();
-    }
-
     $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
             SET status = 1,
                 file_path = :new_path,
+                lev = :new_lev,
                 elastic = 0,
                 deleted_at = 0
-            WHERE file_id = :file_id';
+            WHERE file_id = :file_id AND status = 0';
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':new_path', $newPath, PDO::PARAM_STR);
+    $stmt->bindValue(':new_lev', $row['lev'], PDO::PARAM_INT);
     $stmt->bindValue(':file_id', $fileId, PDO::PARAM_INT);
 
-    if ($stmt->execute()) {
-        updateLog($row['lev']);
-        nv_insert_logs(NV_LANG_DATA, $module_name, 'Restore', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
-
-        return true;
-    }
-
-    return false;
-}
-
-function deletePermanently($fileId)
-{
-    global $db, $module_data, $admin_info, $module_name;
-
-    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId . ' AND status = 0';
-    $row = $db->query($sql)->fetch();
-
-    if (!$row) {
+    if (!$stmt->execute()) {
         return false;
     }
 
-    $fullPath = NV_ROOTDIR . $row['file_path'];
-
-    if ($row['is_folder']) {
-        if (is_dir($fullPath)) {
-            $files = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($fullPath, RecursiveDirectoryIterator::SKIP_DOTS),
-                RecursiveIteratorIterator::CHILD_FIRST
-            );
-            foreach ($files as $fileinfo) {
-                if ($fileinfo->isDir()) {
-                    rmdir($fileinfo->getRealPath());
-                } else {
-                    unlink($fileinfo->getRealPath());
-                }
-            }
-            rmdir($fullPath);
-        }
-
-        $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                SET status = -1 
-                WHERE file_path LIKE :file_path AND status = 0';
-        $stmt = $db->prepare($sql);
-        $stmt->bindValue(':file_path', $row['file_path'] . '%', PDO::PARAM_STR);
-        $stmt->execute();
-    } else {
-        if (file_exists($fullPath)) {
-            unlink($fullPath);
-        }
-    }
-
-    $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-            SET status = -1 
-            WHERE file_id = ' . $fileId;
+    if ($row['is_folder'] && !empty($children)) {
+        foreach ($children as $child) {
+            $childOldPath = $child['file_path'];
+            $childNewPath = str_replace($trash_dir, $base_dir, $childOldPath);
             
-    if ($db->query($sql)) {
-        updateLog($row['lev']);
-        nv_insert_logs(NV_LANG_DATA, $module_name, 'Delete', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
-        return true;
+            $childOldFullPath = NV_ROOTDIR . $childOldPath;
+            $childNewFullPath = NV_ROOTDIR . $childNewPath;
+
+            $childNewDir = dirname($childNewFullPath);
+            if (!file_exists($childNewDir)) {
+                mkdir($childNewDir, 0777, true);
+            }
+
+            if (file_exists($childOldFullPath)) {
+                rename($childOldFullPath, $childNewFullPath);
+            }
+
+            $sqlUpdateChild = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                             SET status = 1,
+                                 file_path = :new_path,
+                                 elastic = 0,
+                                 deleted_at = 0
+                             WHERE file_id = :file_id AND status = 0';
+            $stmtChild = $db->prepare($sqlUpdateChild);
+            $stmtChild->bindValue(':new_path', $childNewPath, PDO::PARAM_STR);
+            $stmtChild->bindValue(':file_id', $child['file_id'], PDO::PARAM_INT);
+            $stmtChild->execute();
+
+            nv_insert_logs(NV_LANG_DATA, $module_name, 'Restore', 'ID: ' . $child['file_id'] . ' | File: ' . $child['file_name'], $admin_info['userid']);
+        }
     }
 
-    return false;
+    updateLog($row['lev']);
+    nv_insert_logs(NV_LANG_DATA, $module_name, 'Restore', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
+
+    return true;
 }
+
 
 // function pr($a)
 // {
