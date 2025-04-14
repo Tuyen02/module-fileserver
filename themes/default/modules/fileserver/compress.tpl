@@ -4,7 +4,7 @@
 <!-- END: message -->
 <h1>Nội dung file nén</h1>
 <div class="tree well">{TREE_HTML}</div>
-<form method="post">
+<form method="post" id="unzipForm">
   <button type="button" class="btn btn-info" id="backButton">
     <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
   </button>
@@ -41,6 +41,29 @@
   $(document).ready(function () {
     $("#backButton").click(function () {
       window.history.back();
+    });
+
+    $("#unzipForm").on("submit", function(e) {
+      e.preventDefault();
+      
+      $.ajax({
+        type: "POST",
+        url: window.location.href,
+        data: {
+          action: "unzip"
+        },
+        dataType: "json",
+        success: function(response) {
+          alert(response.message);
+          if (response.status === "success" && response.redirect) {
+            window.location.href = response.redirect;
+          }
+        },
+        error: function(xhr) {
+          console.log("Lỗi giải nén:", xhr.responseText);
+          alert("Đã xảy ra lỗi khi giải nén file");
+        }
+      });
     });
   });
 </script>

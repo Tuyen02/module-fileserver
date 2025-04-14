@@ -3,10 +3,6 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
-if (!defined('NV_IS_SPADMIN')) {
-    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
-}
-
 $page_title = $lang_module['compress'];
 
 $action = $nv_Request->get_title('action', 'post', '');
@@ -37,6 +33,12 @@ if (!$row) {
     $extractTo = NV_ROOTDIR . $base_dir . '/' . pathinfo($row['file_name'], PATHINFO_FILENAME);
 
     if ($action == 'unzip' && $row['compressed'] != 0) {
+        if (!defined('NV_IS_SPADMIN')) {
+            $status = $lang_module['error'];
+            $message = $lang_module['not_thing_to_do'];
+            nv_jsonOutput(['status' => 'error', 'message' => $message]);
+        }
+
         if (!is_dir($extractTo)) {
             mkdir($extractTo, 777, true);
         }
@@ -70,7 +72,7 @@ if (!$row) {
             nv_insert_logs(NV_LANG_DATA, $module_name, $action, $new_id, $user_info['userid']);
 
             $redirect_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '&page=' . $page;
-            nv_redirect_location($redirect_url);
+            nv_jsonOutput(['status' => 'success', 'message' => $message, 'redirect' => $redirect_url]);
         } else {
             $status = $lang_module['error'];
             $message = $lang_module['unzip_false'];
@@ -84,6 +86,7 @@ if (!$row) {
                 $stmt->execute($fileIds);
                 $list = $stmt->fetchAll(PDO::FETCH_ASSOC);
             }
+            nv_jsonOutput(['status' => 'success', 'message' => $message]);
         }
     } else {
         $compressed = $row['compressed'];
