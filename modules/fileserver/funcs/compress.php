@@ -39,12 +39,51 @@ if (!$row) {
             nv_jsonOutput(['status' => 'error', 'message' => $message]);
         }
 
+        $original_name = pathinfo($row['file_name'], PATHINFO_FILENAME);
+        $new_name = $original_name;
+        $counter = 1;
+        $new_path = $base_dir . '/' . $new_name;
+        
+        while (file_exists(NV_ROOTDIR . $new_path)) {
+            $new_name = $original_name . '(' . $counter . ')';
+            $new_path = $base_dir . '/' . $new_name;
+            $counter++;
+        }
+        
+        $extractTo = NV_ROOTDIR . $new_path;
+
         if (!is_dir($extractTo)) {
             mkdir($extractTo, 777, true);
         }
 
         $zipArchive = new ZipArchive();
         if ($zipArchive->open($zipFilePath) == TRUE) {
+            $numFiles = $zipArchive->numFiles;
+            $processedNames = [];
+            
+            for ($i = 0; $i < $numFiles; $i++) {
+                $fileName = $zipArchive->getNameIndex($i);
+                $pathInfo = pathinfo($fileName);
+                $dirName = $pathInfo['dirname'] == '.' ? '' : $pathInfo['dirname'] . '/';
+                $baseName = $pathInfo['filename'];
+                $extension = isset($pathInfo['extension']) ? '.' . $pathInfo['extension'] : '';
+                
+                $newFileName = $fileName;
+                $counter = 1;
+                
+                while (isset($processedNames[$dirName . $baseName . $extension])) {
+                    $baseName = $pathInfo['filename'] . '(' . $counter . ')';
+                    $newFileName = $dirName . $baseName . $extension;
+                    $counter++;
+                }
+                
+                if ($fileName !== $newFileName) {
+                    $zipArchive->renameName($fileName, $newFileName);
+                }
+                
+                $processedNames[$newFileName] = true;
+            }
+            
             $zipArchive->extractTo($extractTo);
             $zipArchive->close();
 
@@ -52,9 +91,6 @@ if (!$row) {
 
             $status = $lang_module['success'];
             $message = $lang_module['unzip_ok'];
-
-            $new_name = nv_unhtmlspecialchars(pathinfo($row['file_name'], PATHINFO_FILENAME));
-            $new_path = $base_dir . '/' . $new_name;
 
             $insert_sql = 'INSERT INTO ' . NV_PREFIXLANG . '_fileserver_files 
                            (file_name, file_path, file_size, is_folder, compressed, created_at) 
@@ -69,6 +105,27 @@ if (!$row) {
             $new_id = $db->lastInsertId();
             updateAlias($new_id, $new_name);
             addToDatabase($extractTo, $new_id);
+            $insert_permission = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
+                        (file_id, p_group, p_other, updated_at) 
+                        VALUES (:file_id, :p_group, :p_other, :updated_at)';
+            $stmt_permission = $db->prepare($insert_permission);
+            $stmt_permission->bindValue(':file_id', $new_id, PDO::PARAM_INT);
+            $stmt_permission->bindValue(':p_group', 1, PDO::PARAM_INT);
+            $stmt_permission->bindValue(':p_other', 1, PDO::PARAM_INT);
+            $stmt_permission->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+            $stmt_permission->execute();
+
+            $sql_get_children = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . $new_id;
+            $children = $db->query($sql_get_children)->fetchAll();
+            foreach ($children as $child) {
+                $stmt_permission = $db->prepare($insert_permission);
+                $stmt_permission->bindValue(':file_id', $child['file_id'], PDO::PARAM_INT);
+                $stmt_permission->bindValue(':p_group', 1, PDO::PARAM_INT);
+                $stmt_permission->bindValue(':p_other', 1, PDO::PARAM_INT);
+                $stmt_permission->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+                $stmt_permission->execute();
+            }
+
             nv_insert_logs(NV_LANG_DATA, $module_name, $action, $new_id, $user_info['userid']);
 
             $redirect_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '&page=' . $page;

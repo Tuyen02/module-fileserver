@@ -9,7 +9,7 @@ $use_elastic = $module_config['fileserver']['use_elastic'];
 
 $page = $nv_Request->get_int('page', 'get', 1);
 
-$sql = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $file_id;
+$sql = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status =1 and file_id = ' . $file_id;
 $result = $db->query($sql);
 $row = $result->fetch();
 
