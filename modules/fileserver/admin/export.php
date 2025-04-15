@@ -54,7 +54,7 @@ function createFolderSheet($objPHPExcel, $folderId, $folderName, $user_cache, $a
         $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_path']);
         $size = ($folderFile['is_folder'] == 1)
             ? number_format(calculateFolderSize($folderFile['file_id']) / 1024, 2) . ' KB'
-            : ($folderFile['file_size'] ? number_format($folderFile['file_size'] / 1024, 2) . ' KB' : '--');
+            : ($folderFile['file_size'] ? nv_convertfromBytes($folderFile['file_size']) : '--');
         $folderSheet->setCellValue($table_char_from++ . $j, $size);
         $username = $user_cache[$folderFile['uploaded_by']] ?? 'Unknown';
         $folderSheet->setCellValue($table_char_from++ . $j, $username);
@@ -178,7 +178,7 @@ function exportExcel()
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_path']);
             $size = ($_data2['is_folder'] == 1)
                 ? number_format(calculateFolderSize($_data2['file_id']) / 1024, 2) . ' KB'
-                : ($_data2['file_size'] ? number_format($_data2['file_size'] / 1024, 2) . ' KB' : '--');
+                : ($_data2['file_size'] ? nv_convertfromBytes($_data2['file_size']) : '--');
             $objWorksheet->setCellValue($table_char_from++ . $i, $size);
             $username = $user_cache[$_data2['uploaded_by']] ?? 'Unknown';
             $objWorksheet->setCellValue($table_char_from++ . $i, $username);
@@ -305,7 +305,7 @@ while ($row = $result->fetch()) {
     $row['created_at'] = date('d/m/Y H:i:s', $row['created_at']);
     $row['file_size'] = ($row['is_folder'] == 1)
         ? number_format(calculateFolderSize($row['file_id']) / 1024, 2) . ' KB'
-        : ($row['file_size'] ? ($row['file_size'] >= 1048576 ? number_format($row['file_size'] / 1048576, 2) . ' MB' : number_format($row['file_size'] / 1024, 2) . ' KB') : '--');
+        : ($row['file_size'] ? nv_convertfromBytes($row['file_size']) : '--');
     $xtpl->assign('ROW', $row);
     $xtpl->parse('main.file_row');
 }

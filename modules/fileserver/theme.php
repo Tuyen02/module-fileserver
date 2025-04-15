@@ -107,7 +107,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
             continue;
         }
 
-        $row['file_size'] = $row['file_size'] ? ($row['file_size'] >= 1048576 ? number_format($row['file_size'] / 1048576, 2) . ' MB' : number_format($row['file_size'] / 1024, 2) . ' KB') : '--';
+        $row['file_size'] = nv_convertfromBytes($row['file_size']);
         $xtpl->assign('ROW', $row);
         
         $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);

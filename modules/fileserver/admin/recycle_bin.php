@@ -290,7 +290,7 @@ foreach ($filtered_result as $row) {
     $row['icon_class'] = getFileIconClass($row);
     $row['url_delete'] = $base_url . '&file_id=' . $row['file_id'] . '&action=delete&checksess=' . $row['checksess'];
     $row['url_restore'] = $base_url . '&file_id=' . $row['file_id'] . '&action=restore';
-    $row['file_size'] = $row['file_size'] ? ($row['file_size'] >= 1048576 ? number_format($row['file_size'] / 1048576, 2) . ' MB' : number_format($row['file_size'] / 1024, 2) . ' KB') : '--';
+    $row['file_size'] = nv_convertfromBytes($row['file_size']);
     if ($row['is_folder']) {
         $row['url_view'] = $base_url . '&lev=' . $row['file_id'];
     } else {
