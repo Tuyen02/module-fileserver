@@ -90,3 +90,5 @@ $lang_module['sync_elastic_failed'] = 'Đồng bộ dữ liệu thất bại';
 $lang_module['confirm_sync_elastic'] = 'Bạn có chắc chắn muốn đồng bộ dữ liệu với ElasticSearch không?';
 $lang_module['use_captcha'] = 'Sử dụng Captcha';
 $lang_module['enable_captcha'] = 'Bật Captcha';
+$lang_module['elastic_not_enabled'] = 'Elasticsearch chưa được bật. Vui lòng bật và cấu hình trước khi đồng bộ.';
+$lang_module['elastic_config_incomplete'] = 'Cấu hình Elasticsearch chưa đầy đủ. Vui lòng điền đầy đủ thông tin.';

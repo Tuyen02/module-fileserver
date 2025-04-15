@@ -66,10 +66,12 @@
             <!-- END: file_row -->
         </tbody>
     </table>
+    <!-- BEGIN: has_items -->
     <button type="button" class="btn btn-success mt-2" id="restoreAll"><i class="fa fa-reply" aria-hidden="true"></i>
         {LANG.restore}</button>
     <button type="button" class="btn btn-danger mt-2" id="deleteAll"><i class="fa fa-trash" aria-hidden="true"></i>
         {LANG.delete_btn}</button>
+    <!-- END: has_items -->
     <hr>
 
     <!-- BEGIN: generate_page -->

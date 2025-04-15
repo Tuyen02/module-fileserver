@@ -50,14 +50,60 @@ if ($rank > 0) {
     $base_url .= '&rank=' . $rank;
 }
 
-$sql = 'SELECT file_id, file_name, file_path, lev FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-    WHERE lev = ' . $lev . ' AND is_folder = 1 AND status = 1 ORDER BY file_id ASC';
-$directories = $db->query($sql)->fetchAll();
+$sql = 'SELECT f.*, p.p_group, p.p_other 
+        FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+        LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p 
+        ON f.file_id = p.file_id
+        WHERE f.lev = ' . $lev . ' 
+        AND f.is_folder = 1 
+        AND f.status = 1 
+        ORDER BY f.file_id ASC';
+$result = $db->query($sql);
+$all_directories = $result->fetchAll();
+
+function checkPermission($directory, $user_info, $is_admin = false) {
+    if ($is_admin) {
+        return true;
+    }
+    
+    if (isset($directory['userid']) && $directory['userid'] == $user_info['userid']) {
+        return true;
+    }
+    
+    if (isset($user_info['in_groups']) && is_array($user_info['in_groups'])) {
+        if (isset($directory['p_group']) && $directory['p_group'] >= 2) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+$directories = [];
+foreach ($all_directories as $dir) {
+    if (checkPermission($dir, $user_info, defined('NV_IS_SPADMIN'))) {
+        $directories[] = $dir;
+    }
+}
 
 if (empty($directories)) {
-    $sql = 'SELECT file_id, alias, file_name, file_path, lev FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-            WHERE lev = 0 AND is_folder = 1 AND status = 1 ORDER BY file_id ASC';
-    $directories = $db->query($sql)->fetchAll();
+    $sql = 'SELECT f.*, p.p_group, p.p_other 
+            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+            LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p 
+            ON f.file_id = p.file_id
+            WHERE f.lev = 0 
+            AND f.is_folder = 1 
+            AND f.status = 1 
+            ORDER BY f.file_id ASC';
+    $result = $db->query($sql);
+    $all_root_directories = $result->fetchAll();
+    
+    $directories = [];
+    foreach ($all_root_directories as $dir) {
+        if (checkPermission($dir, $user_info, defined('NV_IS_SPADMIN'))) {
+            $directories[] = $dir;
+        }
+    }
 }
 
 if ($copy == 1) {

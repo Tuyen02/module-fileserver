@@ -284,6 +284,10 @@ $xtpl->assign('SELECTED_FILE', $selected_file);
 $xtpl->assign('SELECTED_FOLDER', $selected_folder);
 $xtpl->assign('LEV', $lev);
 
+if (!empty($filtered_result)) {
+    $xtpl->parse('main.has_items');
+}
+
 foreach ($filtered_result as $row) {
     $row['deleted_at'] = date('d/m/Y H:i:s', $row['created_at']);
     $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);

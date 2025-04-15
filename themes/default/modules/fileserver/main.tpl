@@ -105,6 +105,7 @@
             </tr>
             <!-- END: file_row -->
         </tbody>
+        <!-- BEGIN: stats -->
         <tfoot>
             <tr>
                 <td class="gray" colspan="7">
@@ -117,8 +118,8 @@
                 </td>
             </tr>
         </tfoot>
+        <!-- END: stats -->
     </table>
-    <hr>
     <!-- BEGIN: can_compress -->
     <a href="#" class="btn btn-primary" id="compressButton" data-toggle="modal" data-target="#compressModal">
         <i class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}

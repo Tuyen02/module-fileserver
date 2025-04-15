@@ -54,28 +54,53 @@
                     <td><input type="password" name="elas_pass" id="elas_pass" value="{CONFIG.elas_pass}"
                             class="form-control" /></td>
                 </tr>
+                <tr>
+                    <td>{LANG.sync_elastic}</td>
+                    <td>
+                        <button type="button" class="btn btn-info" id="sync_elastic_btn" onclick="syncElastic()" disabled>
+                            <i class="fa fa-refresh"></i> {LANG.sync_elastic}
+                        </button>
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
     <div class="text-center">
         <input type="hidden" name="submit" value="1" />
         <input type="submit" value="{LANG.save}" class="btn btn-primary" />
-        <input type="button" value="{LANG.sync_elastic}" id="sync_elastic_btn" class="btn btn-info"
-            onclick="syncElastic()" disabled />
     </div>
 </form>
 
 <script>
     function toggleElasticFields() {
         var useElastic = document.getElementById('use_elastic').checked;
-        document.getElementById('elas_host').disabled = !useElastic;
-        document.getElementById('elas_port').disabled = !useElastic;
-        document.getElementById('elas_user').disabled = !useElastic;
-        document.getElementById('elas_pass').disabled = !useElastic;
-        document.getElementById('sync_elastic_btn').disabled = !useElastic;
+        var elasticFields = ['elas_host', 'elas_port', 'elas_user', 'elas_pass'];
+        
+        elasticFields.forEach(function(field) {
+            document.getElementById(field).disabled = !useElastic;
+        });
+        
+        var syncBtn = document.getElementById('sync_elastic_btn');
+        syncBtn.disabled = !useElastic;
     }
 
     function syncElastic() {
+        var useElastic = document.getElementById('use_elastic').checked;
+        var host = document.getElementById('elas_host').value;
+        var port = document.getElementById('elas_port').value;
+        var user = document.getElementById('elas_user').value;
+        var pass = document.getElementById('elas_pass').value;
+
+        if (!useElastic) {
+            alert('{LANG.elastic_not_enabled}');
+            return;
+        }
+
+        if (!host || !port || !user || !pass) {
+            alert('{LANG.elastic_config_incomplete}');
+            return;
+        }
+
         if (confirm('{LANG.confirm_sync_elastic}')) {
             var form = document.createElement('form');
             form.method = 'post';

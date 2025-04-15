@@ -50,6 +50,10 @@
 <div class="alert {MESSAGE_CLASS}">{MESSAGE}</div>
 <!-- END: message -->
 
+<a href="{url_view}" class="btn btn-info">
+    <i class="fa fa-chevron-circle-left"></i> {LANG.back_btn}
+</a>
+
 <div class="editor-container">
     <form action="" method="post">
         <div class="form-group">
@@ -70,12 +74,14 @@
             <!-- END: excel -->
             <input type="hidden" name="file_id" value="{FILE_ID}">
         </div>
-        <a href="{url_view}" class="btn btn-info">
-            <i class="fa fa-chevron-circle-left"></i> {LANG.back_btn}
-        </a>
-        <button type="submit" class="btn btn-primary">{LANG.save_btn}</button>
+        <!-- BEGIN: can_save -->
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary">{LANG.save_btn}</button>
+        </div>
+        <!-- END: can_save -->
     </form>
 </div>
+<hr>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/css/css.min.js"></script>

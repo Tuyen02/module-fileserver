@@ -66,7 +66,14 @@ if ($nv_Request->isset_request('sync_elastic', 'post')) {
             'elas_pass' => $module_config['fileserver']['elas_pass']
         ];
 
-        if ($elastic_config['use_elastic']) {
+        if (!$elastic_config['use_elastic']) {
+            $message = $lang_module['elastic_not_enabled'];
+            $message_type = 'warning';
+        } elseif (empty($elastic_config['elas_host']) || empty($elastic_config['elas_port']) 
+                  || empty($elastic_config['elas_user']) || empty($elastic_config['elas_pass'])) {
+            $message = $lang_module['elastic_config_incomplete'];
+            $message_type = 'warning';
+        } else {
             $client = ClientBuilder::create()
                 ->setHosts([$elastic_config['elas_host'] . ':' . $elastic_config['elas_port']])
                 ->setBasicAuthentication($elastic_config['elas_user'], $elastic_config['elas_pass'])
@@ -158,7 +165,8 @@ $xtpl->assign('NV_OP_VARIABLE', NV_OP_VARIABLE);
 $xtpl->assign('MODULE_NAME', $module_name);
 $xtpl->assign('OP', $op);
 $xtpl->assign('CONFIG', $array_config);
-$xtpl->assign('USE_CAPTCHA_CHECKED', $array_config['captcha_type'] == 'captcha' ? ' checked="checked"' : '');if ($message != '') {
+$xtpl->assign('USE_CAPTCHA_CHECKED', $array_config['captcha_type'] == 'captcha' ? ' checked="checked"' : '');
+if ($message != '') {
     $xtpl->assign('MESSAGE', $message);
     $xtpl->assign('MESSAGE_TYPE', $message_type);
     $xtpl->parse('main.message');

@@ -177,27 +177,6 @@ if (!empty($action)) {
     $status = $lang_module['error'];
     $mess = $lang_module['sys_err'];
 
-    if (!defined('NV_IS_SPADMIN')) {
-        $is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
-
-        $sql = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . intval($fileId);
-        $permissions = $db->query($sql)->fetch();
-
-        if ($permissions) {
-            $current_permission = $is_group_user ? $permissions['p_group'] : $permissions['p_other'];
-
-            if (!$is_group_user && $permissions['p_group'] == 3) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_permission_group_only']]);
-            }
-
-            if ($current_permission < 3) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_permission_to_edit']]);
-            }
-        } else {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_not_found']]);
-        }
-    }
-
     if ($action == 'create') {
         $name_f = $nv_Request->get_title('name_f', 'post', '');
         $type = $nv_Request->get_int('type', 'post', 0);
@@ -367,27 +346,6 @@ if (!empty($action)) {
     if ($action == 'rename') {
         $fileId = intval($nv_Request->get_int('file_id', 'post', 0));
         $newName = trim($nv_Request->get_title('new_name', 'post', ''));
-
-        if (!defined('NV_IS_SPADMIN')) {
-            $is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
-
-            $sql = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $fileId;
-            $permissions = $db->query($sql)->fetch();
-
-            if ($permissions) {
-                $current_permission = $is_group_user ? $permissions['p_group'] : $permissions['p_other'];
-
-                if (!$is_group_user && $permissions['p_group'] == 3) {
-                    nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_permission_group_only']]);
-                }
-
-                if ($current_permission < 3) {
-                    nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_permission_to_rename']]);
-                }
-            } else {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_not_found']]);
-            }
-        }
 
         $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id =' . $fileId;
         $stmt = $db->prepare($sql);

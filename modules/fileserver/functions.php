@@ -140,16 +140,29 @@ if (!empty($array_op)) {
     $lev = $nv_Request->get_int('lev', 'get,post', 0);
 }
 
-updateLog($lev);
+$config_value = isset($module_config[$module_name]['group_admin_fileserver']) ? $module_config[$module_name]['group_admin_fileserver'] : '';
+$config_value_array = !empty($config_value) ? explode(',', $config_value) : [];
 
-$config_value = $module_config[$module_name]['group_admin_fileserver'];
-$config_value_array = explode(',', $config_value);
+if ($lev > 0 && !defined('NV_IS_SPADMIN')) {
+    $sql_permissions = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $lev;
+    $permissions = $db->query($sql_permissions)->fetch(PDO::FETCH_ASSOC);
+
+    $is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty($config_value_array) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
+
+    $current_permission = $permissions ? ($is_group_user ? $permissions['p_group'] : $permissions['p_other']) : 1;
+
+    if ($current_permission == 1) {
+        nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
+    }
+}
+
+updateLog($lev);
 
 $arr_per = [];
 
 if (defined('NV_IS_SPADMIN')) {
     $arr_per = [];
-} elseif (isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array))) {
+} elseif (isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty($config_value_array)) {
     $arr_per = array_column(
         $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_group >= 2')->fetchAll(),
         'file_id'
@@ -231,11 +244,11 @@ function deleteFileOrFolder($fileId)
         foreach ($deletedChildren as $child) {
             $childCurrentPath = NV_ROOTDIR . $child['file_path'];
             $childNewPath = $newFullPath . '/' . basename($child['file_path']);
-            
+
             if (file_exists($childCurrentPath)) {
                 rename($childCurrentPath, $childNewPath);
             }
-            
+
             $sqlUpdateChild = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
                              SET file_path = :new_path
                              WHERE file_id = :file_id';
@@ -314,7 +327,7 @@ function compressFiles($fileIds, $zipFilePath)
             if ($fileName === false) {
                 $fileName = $row['file_name'];
             }
-            
+
             $filePaths[] = [
                 PCLZIP_ATT_FILE_NAME => $realPath,
                 PCLZIP_ATT_FILE_NEW_FULL_NAME => $fileName
@@ -586,7 +599,8 @@ function normalizePath($path)
     return '/' . implode('/', $absolutes);
 }
 
-function updatePermissionsRecursively( $file_id, $group_permission, $other_permission) {
+function updatePermissionsRecursively($file_id, $group_permission, $other_permission)
+{
 
     global $db, $module_data;
     $sql_update = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
@@ -605,7 +619,7 @@ function updatePermissionsRecursively( $file_id, $group_permission, $other_permi
     $children_stmt->execute();
 
     while ($child = $children_stmt->fetch()) {
-        updatePermissionsRecursively( $child['file_id'], $group_permission, $other_permission);
+        updatePermissionsRecursively($child['file_id'], $group_permission, $other_permission);
     }
 }
 

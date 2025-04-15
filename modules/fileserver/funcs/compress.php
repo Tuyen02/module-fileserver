@@ -33,11 +33,6 @@ if (!$row) {
     $extractTo = NV_ROOTDIR . $base_dir . '/' . pathinfo($row['file_name'], PATHINFO_FILENAME);
 
     if ($action == 'unzip' && $row['compressed'] != 0) {
-        if (!defined('NV_IS_SPADMIN')) {
-            $status = $lang_module['error'];
-            $message = $lang_module['not_thing_to_do'];
-            nv_jsonOutput(['status' => 'error', 'message' => $message]);
-        }
 
         $original_name = pathinfo($row['file_name'], PATHINFO_FILENAME);
         $new_name = $original_name;
@@ -110,7 +105,7 @@ if (!$row) {
                         VALUES (:file_id, :p_group, :p_other, :updated_at)';
             $stmt_permission = $db->prepare($insert_permission);
             $stmt_permission->bindValue(':file_id', $new_id, PDO::PARAM_INT);
-            $stmt_permission->bindValue(':p_group', 1, PDO::PARAM_INT);
+            $stmt_permission->bindValue(':p_group', 2, PDO::PARAM_INT);
             $stmt_permission->bindValue(':p_other', 1, PDO::PARAM_INT);
             $stmt_permission->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmt_permission->execute();
@@ -120,7 +115,7 @@ if (!$row) {
             foreach ($children as $child) {
                 $stmt_permission = $db->prepare($insert_permission);
                 $stmt_permission->bindValue(':file_id', $child['file_id'], PDO::PARAM_INT);
-                $stmt_permission->bindValue(':p_group', 1, PDO::PARAM_INT);
+                $stmt_permission->bindValue(':p_group', 2, PDO::PARAM_INT);
                 $stmt_permission->bindValue(':p_other', 1, PDO::PARAM_INT);
                 $stmt_permission->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 $stmt_permission->execute();

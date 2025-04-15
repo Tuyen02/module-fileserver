@@ -64,9 +64,6 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
         $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
         $row['icon_class'] = getFileIconClass($row);
 
-        $sql_permissions = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $row['file_id'];
-        $permissions = $db->query($sql_permissions)->fetch();
-
         if ($permissions) {
             $row['p_group'] = $permissions['p_group'];
             $row['p_other'] = $permissions['p_other'];
@@ -104,34 +101,13 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
         }
 
         if ($current_permission < 2 && !defined('NV_IS_SPADMIN')) {
-            continue;
+            nv_redirect_location($base_url);
         }
 
         $row['file_size'] = nv_convertfromBytes($row['file_size']);
         $xtpl->assign('ROW', $row);
         
         $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
-        if ($row['compressed'] != 0) {
-            $xtpl->assign('VIEW', $row['url_compress']);
-            $xtpl->parse('main.file_row.view');
-        } else
-            if ($row['is_folder'] == 1) {
-                $row['file_size'] = calculateFolderSize($row['file_id']);
-
-                $xtpl->assign('VIEW', $row['url_view']);
-                $xtpl->parse('main.file_row.view');
-            } else {
-                $xtpl->assign('VIEW', $row['url_edit']);
-                $xtpl->parse('main.file_row.view');
-
-                if ($fileInfo == 'txt' || $fileInfo == 'php' || $fileInfo == 'html' || $fileInfo == 'css' || $fileInfo == 'js' || $fileInfo == 'json' || $fileInfo == 'xml' || $fileInfo == 'sql' || $fileInfo == 'pdf' || $fileInfo == 'doc' || $fileInfo == 'docx' || $fileInfo == 'xls' || $fileInfo == 'xlsx') {
-                    $xtpl->assign('EDIT', $row['url_edit']);
-                    $xtpl->parse('main.file_row.edit');
-                } else if ($fileInfo == 'png' || $fileInfo == 'jpg' || $fileInfo == 'jpeg' || $fileInfo == 'gif' || $fileInfo == 'mp3' || $fileInfo == 'mp4') {
-                    $xtpl->assign('VIEW', $row['url_edit_img']);
-                    $xtpl->parse('main.file_row.view');
-                }
-            }
 
         $xtpl->assign('DOWNLOAD', $row['url_download']);
         $xtpl->parse('main.file_row.download');
@@ -145,15 +121,58 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
             }
             
             if ($row['is_folder'] == 0) {
-                if (in_array(strtolower(pathinfo($row['file_name'], PATHINFO_EXTENSION)), 
-                    ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql', 'pdf', 'doc', 'docx', 'xls', 'xlsx'])) {
-                    $xtpl->parse('main.file_row.edit');
+                $xtpl->assign('VIEW', $row['url_edit']);
+                $xtpl->parse('main.file_row.view');
+
+                if ($row['compressed'] != 0) {
+                    $xtpl->assign('VIEW', $row['url_compress']);
+                    $xtpl->parse('main.file_row.view');
                 }
+
+                if ($fileInfo == 'txt' || $fileInfo == 'php' || $fileInfo == 'html' || $fileInfo == 'css' || $fileInfo == 'js' || $fileInfo == 'json' || $fileInfo == 'xml' || $fileInfo == 'sql' || $fileInfo == 'doc' || $fileInfo == 'docx' || $fileInfo == 'xls' || $fileInfo == 'xlsx') {
+                    $xtpl->assign('EDIT', $row['url_edit']);
+                    $xtpl->parse('main.file_row.edit');
+                    
+                } else if ($fileInfo == 'png' || $fileInfo == 'jpg' || $fileInfo == 'jpeg' || $fileInfo == 'gif' || $fileInfo == 'mp3' || $fileInfo == 'mp4') {
+                    $xtpl->assign('VIEW', $row['url_edit_img']);
+                    $xtpl->parse('main.file_row.view');
+                }
+
+                $xtpl->assign('COPY', $row['url_clone']);
                 $xtpl->parse('main.file_row.copy');
+            }else{
+                $xtpl->assign('VIEW', $row['url_view']);
+                $xtpl->parse('main.file_row.view');
+            }
+        }else {
+            if ($row['is_folder'] == 0) {
+                $xtpl->assign('VIEW', $row['url_edit']);
+                $xtpl->parse('main.file_row.view');
+
+                if ($row['compressed'] != 0) {
+                    $xtpl->assign('VIEW', $row['url_compress']);
+                    $xtpl->parse('main.file_row.view');
+                }
+
+                if ($fileInfo == 'txt' || $fileInfo == 'php' || $fileInfo == 'html' || $fileInfo == 'css' || $fileInfo == 'js' || $fileInfo == 'json' || $fileInfo == 'xml' || $fileInfo == 'sql' || $fileInfo == 'pdf' || $fileInfo == 'doc' || $fileInfo == 'docx' || $fileInfo == 'xls' || $fileInfo == 'xlsx') {
+                    $xtpl->assign('EDIT', $row['url_edit']);
+                    
+                } else if ($fileInfo == 'png' || $fileInfo == 'jpg' || $fileInfo == 'jpeg' || $fileInfo == 'gif' || $fileInfo == 'mp3' || $fileInfo == 'mp4') {
+                    $xtpl->assign('VIEW', $row['url_edit_img']);
+                    $xtpl->parse('main.file_row.view');
+                }
+
+            }else{
+                $xtpl->assign('VIEW', $row['url_view']);
+                $xtpl->parse('main.file_row.view');
             }
         }
 
         $xtpl->parse('main.file_row');
+    }
+
+    if (defined('NV_IS_SPADMIN')) {
+        $xtpl->parse('main.stats');
     }
 
     if (($_SERVER['REQUEST_URI'] != '/' . $module_name . '/') && ($_SERVER['REQUEST_URI'] != '/' . NV_LANG_DATA . '/' . $module_name . '/')) {
@@ -272,9 +291,9 @@ function nv_fileserver_edit_img($row, $file_id, $file_extension)
     return $xtpl->text('main');
 }
 
-function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url,$status, $message)
+function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $status, $message)
 {
-    global $module_file, $global_config, $lang_module, $module_name;
+    global $module_file, $global_config, $lang_module, $module_name, $user_info, $module_data, $db, $module_config;
 
     $xtpl = new XTemplate('edit.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
@@ -283,7 +302,33 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
     $xtpl->assign('FILE_NAME', $file_name);
     $xtpl->assign('url_view', $view_url);
 
+    $current_permission = 1;
+    if (defined('NV_IS_SPADMIN')) {
+        $current_permission = 3;
+    } elseif (defined('NV_IS_USER')) {
+        if (isset($user_info['in_groups']) && is_array($user_info['in_groups'])) {
+            if (!empty(array_intersect($user_info['in_groups'], explode(',', $module_config[$module_name]['group_admin_fileserver'])))) {
+                $sql = 'SELECT p_group FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
+                $result = $db->query($sql);
+                $perm = $result->fetch();
+                $current_permission = isset($perm['p_group']) ? intval($perm['p_group']) : 1;
+            } else {
+                if (isset($row['userid']) && $row['userid'] == $user_info['userid']) {
+                    $current_permission = 3;
+                } else {
+                    $sql = 'SELECT p_group FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
+                    $result = $db->query($sql);
+                    $perm = $result->fetch();
+                    $current_permission = isset($perm['p_group']) ? intval($perm['p_group']) : 1;
+                }
+            }
+        }
+    }
     $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+
+    if (($current_permission >= 3 || defined('NV_IS_SPADMIN')) && $file_extension != 'pdf') {
+        $xtpl->parse('main.can_save');
+    }
 
     if (!empty($message)) {
         $message_class = ($status == 'success') ? 'alert-success' : 'alert-danger';
