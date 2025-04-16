@@ -27,9 +27,14 @@
     </button>
 </div>
 <!-- END: back -->
+<!-- BEGIN: root_option -->
+<a href="{ROOT_URL}">
+    <i class="fa fa-folder-o" aria-hidden="true"></i> {LANG.root_directory}
+</a><br>
+<!-- END: root_option -->
 <!-- BEGIN: directory_option -->
 <a href="{DIRECTORY.url}">
-    <i class="fa fa-folder-o" aria-hidden="true"></i> {DIRECTORY.file_name}{NO_DIRECTORY}
+    <i class="fa fa-folder-o" aria-hidden="true"></i> {DIRECTORY.file_name}
 </a><br>
 <!-- END: directory_option -->
 <p>

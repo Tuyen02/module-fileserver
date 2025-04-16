@@ -132,3 +132,4 @@ $lang_module['permission_note'] = 'Lưu ý về phân quyền:';
 $lang_module['permission_note_group'] = '- Nhóm người dùng: Có thể xem (mức 2) hoặc xem và chỉnh sửa (mức 3)';
 $lang_module['permission_note_other'] = '- Nhóm khác: Chỉ có thể xem (mức 2) hoặc không cho phép xem (mức 1)';
 $lang_module['permission_note_admin'] = '- Quản trị viên: Có đầy đủ quyền';
+$lang_module['root_directory'] = '... ';

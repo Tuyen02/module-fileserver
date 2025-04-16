@@ -199,7 +199,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
     return $xtpl->text('main');
 }
 
-function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $status, $message, $selected_folder_path, $view_url, $directories, $page_url, $base_url)
+function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $status, $message, $selected_folder_path, $view_url, $directories, $page_url, $base_url, $has_root_level)
 {
     global $module_file, $global_config, $lang_module;
 
@@ -213,15 +213,20 @@ function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $status, $m
 
     $xtpl->assign('url_view', $view_url);
 
-    if (!$selected_folder_path == '') {
+    if (!empty($selected_folder_path)) {
         $xtpl->assign('BACK', '');
         $xtpl->parse('main.back');
     }
 
     foreach ($directories as $directory) {
-        $directory['url'] = $page_url . '&amp;rank=' . $directory['file_id'];
+        $directory['url'] = $page_url . '&rank=' . $directory['file_id'];
         $xtpl->assign('DIRECTORY', $directory);
         $xtpl->parse('main.directory_option');
+    }
+
+    if ($has_root_level) {
+        $xtpl->assign('ROOT_URL', $page_url . '&root=1');
+        $xtpl->parse('main.root_option');
     }
 
     if (!empty($message)) {
@@ -231,10 +236,10 @@ function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $status, $m
         $xtpl->parse('main.message');
     }
 
-    $url_copy = $base_url . '&amp;copy=1';
+    $url_copy = $base_url . '&copy=1';
     $xtpl->assign('url_copy', $url_copy);
 
-    $url_move = $base_url . '&amp;move=1';
+    $url_move = $base_url . '&move=1';
     $xtpl->assign('url_move', $url_move);
 
     $xtpl->parse('main');
@@ -355,30 +360,36 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
     return $xtpl->text('main');
 }
 
-function nv_fileserver_perm($row, $file_id, $group_read_checked, $group_write_checked, $other_read_checked, $other_write_checked,$status, $message)
+function nv_fileserver_perm($row, $file_id, $group_level, $other_level,$status, $message)
 {
     global $module_file, $global_config, $lang_module, $module_name;
 
     $xtpl = new XTemplate('perm.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
+    $xtpl->assign('FILE_NAME', $row['file_name']);
+    $xtpl->assign('FILE_PATH', $row['file_path']);
     $xtpl->assign('FILE_ID', $file_id);
-    $xtpl->assign('FILE_NAME', htmlspecialchars($row['file_name']));
-    $xtpl->assign('FILE_PATH', htmlspecialchars($row['file_path']));
-    $xtpl->assign('GROUP_READ_CHECKED', $group_read_checked);
-    $xtpl->assign('GROUP_WRITE_CHECKED', $group_write_checked);
-    $xtpl->assign('OTHER_READ_CHECKED', $other_read_checked);
-    $xtpl->assign('OTHER_WRITE_CHECKED', $other_write_checked);
-
-    if (!empty($message)) {
-        $message_class = ($status == 'success') ? 'alert-success' : 'alert-danger';
-        $xtpl->assign('MESSAGE_CLASS', $message_class);
+    
+    $xtpl->assign('GROUP_LEVEL_1', $group_level == 1 ? 'selected' : '');
+    $xtpl->assign('GROUP_LEVEL_2', $group_level == 2 ? 'selected' : '');
+    $xtpl->assign('GROUP_LEVEL_3', $group_level == 3 ? 'selected' : '');
+    
+    $xtpl->assign('OTHER_LEVEL_1', $other_level == 1 ? 'selected' : '');
+    $xtpl->assign('OTHER_LEVEL_2', $other_level == 2 ? 'selected' : '');
+    
+    if ($status) {
+        $xtpl->assign('MESSAGE_CLASS', $status == 'success' ? 'alert-success' : 'alert-danger');
         $xtpl->assign('MESSAGE', $message);
         $xtpl->parse('main.message');
     }
-
+    
     $xtpl->parse('main');
-
-    return $xtpl->text('main');
+    $contents = $xtpl->text('main');
+    
+    include NV_ROOTDIR . '/includes/header.php';
+    echo nv_site_theme($contents);
+    include NV_ROOTDIR . '/includes/footer.php';
+    
 }
 function nv_fileserver_share($row, $file_content, $file_id, $file_name, $view, $view_url, $message)
 {

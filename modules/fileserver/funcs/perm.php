@@ -26,13 +26,16 @@ $breadcrumbs = [];
 $current_lev = $lev;
 
 while ($current_lev > 0) {
-    $sql1 = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
+    $sql1 = 'SELECT file_name, file_path, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
     $result1 = $db->query($sql1);
     $row1 = $result1->fetch();
+    if($row1['is_folder'] == 1) {
+        $op = $module_info['alias']['main'];
+    }
     $breadcrumbs[] = [
         'catid' => $current_lev,
         'title' => $row1['file_name'],
-        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=main/' . $row1['alias'] . '&page=' . $page
+        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row1['alias'] . '&page=' . $page
     ];
     $current_lev = $row1['lev'];
 }
@@ -93,27 +96,7 @@ if (defined('NV_IS_SPADMIN')) {
     $message = $lang_module['not_thing_to_do'];
 }
 
-$xtpl = new XTemplate('perm.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
-$xtpl->assign('LANG', $lang_module);
-$xtpl->assign('FILE_NAME', $row['file_name']);
-$xtpl->assign('FILE_PATH', $row['file_path']);
-$xtpl->assign('FILE_ID', $file_id);
-
-$xtpl->assign('GROUP_LEVEL_1', $group_level == 1 ? 'selected' : '');
-$xtpl->assign('GROUP_LEVEL_2', $group_level == 2 ? 'selected' : '');
-$xtpl->assign('GROUP_LEVEL_3', $group_level == 3 ? 'selected' : '');
-
-$xtpl->assign('OTHER_LEVEL_1', $other_level == 1 ? 'selected' : '');
-$xtpl->assign('OTHER_LEVEL_2', $other_level == 2 ? 'selected' : '');
-
-if ($status) {
-    $xtpl->assign('MESSAGE_CLASS', $status == 'success' ? 'alert-success' : 'alert-danger');
-    $xtpl->assign('MESSAGE', $message);
-    $xtpl->parse('main.message');
-}
-
-$xtpl->parse('main');
-$contents = $xtpl->text('main');
+$contents = nv_fileserver_perm($row, $file_id, $group_level, $other_level,$status, $message);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

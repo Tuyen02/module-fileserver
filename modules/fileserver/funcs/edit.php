@@ -21,13 +21,16 @@ $breadcrumbs = [];
 $current_lev = $lev;
 
 while ($current_lev > 0) {
-    $sql1 = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
+    $sql1 = 'SELECT file_name, file_path, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
     $result1 = $db->query($sql1);
     $row1 = $result1->fetch();
+    if($row1['is_folder'] == 1) {
+        $op = $module_info['alias']['main'];
+    }
     $breadcrumbs[] = [
         'catid' => $current_lev,
         'title' => $row1['file_name'],
-        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=main/' . $row1['alias'] . '&page=' . $page
+        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row1['alias'] . '&page=' . $page
     ];
     $current_lev = $row1['lev'];
 }
