@@ -92,44 +92,70 @@ if (!defined('NV_IS_SPADMIN')) {
 }
 
 if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
-    if ($file_extension == 'pdf') {
-        $file_path = $row['file_path'];
-    } elseif (in_array($file_extension, ['doc', 'docx'])) {
-        $file_content = $nv_Request->get_string('file_content', 'post');
+    $old_content = '';
+    $has_changes = false;
+    
+    if (in_array($file_extension, ['doc', 'docx'])) {
         $zip = new ZipArchive;
         if ($zip->open($full_path) == true) {
             if (($index = $zip->locateName('word/document.xml')) != false) {
-                $xml = new SimpleXMLElement('<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>');
-                $body = $xml->addChild('w:body');
-                $body->addChild('w:p', htmlspecialchars($file_content));
-                $zip->addFromString('word/document.xml', $xml->asXML());
+                $data = $zip->getFromIndex($index);
+                $xml = new SimpleXMLElement($data);
+                $old_content = strip_tags($xml->asXML());
             }
             $zip->close();
         }
-    } else {
-        $file_content = $nv_Request->get_string('file_content', 'post');
-        file_put_contents($full_path, $file_content);
+    } else if ($file_extension != 'pdf') {
+        $old_content = file_get_contents($full_path);
     }
 
-    $file_size = filesize($full_path);
-
-    $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET updated_at = :updated_at, file_size = :file_size, elastic = :elastic WHERE file_id = :file_id';
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-    $stmt->bindValue(':file_size', $file_size, PDO::PARAM_INT);
-    $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-    $stmt->bindValue(':elastic', 0, PDO::PARAM_INT);
-
-    if ($stmt->execute()) {
-        updateLog($row['lev']);
-        nv_insert_logs(NV_LANG_DATA, $module_name, 'edit','File id: ' . $file_id, $user_info['userid']);
-
-        if ($row['lev'] > 0) {
-            updateParentFolderSize($row['lev']);
+    if (in_array($file_extension, ['doc', 'docx'])) {
+        $file_content = $nv_Request->get_string('file_content', 'post');
+        $has_changes = ($file_content != $old_content);
+        if ($has_changes) {
+            $zip = new ZipArchive;
+            if ($zip->open($full_path) == true) {
+                if (($index = $zip->locateName('word/document.xml')) != false) {
+                    $xml = new SimpleXMLElement('<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>');
+                    $body = $xml->addChild('w:body');
+                    $body->addChild('w:p', htmlspecialchars($file_content));
+                    $zip->addFromString('word/document.xml', $xml->asXML());
+                }
+                $zip->close();
+            }
         }
+    } else if ($file_extension != 'pdf') {
+        $file_content = $nv_Request->get_string('file_content', 'post');
+        $has_changes = ($file_content != $old_content);
+        if ($has_changes) {
+            file_put_contents($full_path, $file_content);
+        }
+    }
 
+    if ($has_changes) {
+        $file_size = filesize($full_path);
+
+        $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET updated_at = :updated_at, file_size = :file_size, elastic = :elastic WHERE file_id = :file_id';
+        $stmt = $db->prepare($sql);
+        $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+        $stmt->bindValue(':file_size', $file_size, PDO::PARAM_INT);
+        $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+        $stmt->bindValue(':elastic', 0, PDO::PARAM_INT);
+
+        if ($stmt->execute()) {
+            updateLog($row['lev']);
+            nv_insert_logs(NV_LANG_DATA, $module_name, 'edit', 'File id: ' . $file_id, $user_info['userid']);
+
+            if ($row['lev'] > 0) {
+                updateParentFolderSize($row['lev']);
+            }
+
+            $status = $lang_module['success'];
+            $message = $lang_module['update_ok'];
+        }
+    } else {
         $status = $lang_module['success'];
-        $message = $lang_module['update_ok'];
+        $message = $lang_module['no_changes'];
     }
 }
 

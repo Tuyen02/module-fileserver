@@ -21,7 +21,9 @@
                 <!-- END: loop -->
             </select>
         </div>
-        <button type="submit" class="btn btn-primary" value="1" name="submit">{LANG.submit}</button>
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary" value="1" name="submit">{LANG.submit}</button>
+        </div>
     </form>
 </div>
 <link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />

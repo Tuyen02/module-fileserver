@@ -35,10 +35,12 @@
                 </tr>
             </tbody>
         </table>
-        <button type="button" class="btn btn-info" id="backButton">
-            <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
-        </button>
-        <button type="submit" name="submit" value="1" class="btn btn-primary">{LANG.save_btn}</button>
+        <div class="text-center">
+            <button type="button" class="btn btn-info" id="backButton">
+                <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
+            </button>
+            <button type="submit" name="submit" value="1" class="btn btn-primary">{LANG.save_btn}</button>
+        </div>
     </form>
 </div>
 <br>

@@ -54,6 +54,9 @@ if (defined('NV_IS_SPADMIN')) {
         $group_permission = $nv_Request->get_int('group_permission', 'post', 0);
         $other_permission = $nv_Request->get_int('other_permission', 'post', 0);
 
+        $old_group_level = $group_level;
+        $old_other_level = $other_level;
+
         $sql_check = 'SELECT permission_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
         $check_stmt = $db->query($sql_check);
 
@@ -79,7 +82,7 @@ if (defined('NV_IS_SPADMIN')) {
             $insert_stmt->execute();
         }
 
-        updatePermissionsRecursively( $file_id, $group_permission, $other_permission);
+        updatePermissionsRecursively($file_id, $group_permission, $other_permission);
 
         $status = 'success';
         $message = $lang_module['update_ok'];
@@ -89,7 +92,10 @@ if (defined('NV_IS_SPADMIN')) {
 
         $group_level = $row['p_group'];
         $other_level = $row['p_other'];
-        nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['perm'], 'File id: ' . $file_id .'. Nhóm người dùng mức: ' . $group_level .'. Nhóm khác mức: ' . $other_level , $user_info['userid']);
+
+        if ($old_group_level != $group_level || $old_other_level != $other_level) {
+            nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['perm'], 'File id: ' . $file_id .'. Nhóm người dùng mức: ' . $group_level .'. Nhóm khác mức: ' . $other_level , $user_info['userid']);
+        }
     }
 } else {
     $status = $lang_module['error'];

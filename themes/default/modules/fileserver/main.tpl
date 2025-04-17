@@ -48,6 +48,11 @@
             </tr>
         </thead>
         <tbody>
+            <!-- BEGIN: no_data -->
+            <tr>
+                <td colspan="5" class="text-center">{LANG.no_data}</td>
+            </tr>
+            <!-- END: no_data -->
             <!-- BEGIN: file_row -->
             <tr>
                 <td>
@@ -120,6 +125,7 @@
         </tfoot>
         <!-- END: stats -->
     </table>
+
     <!-- BEGIN: can_compress -->
     <a href="#" class="btn btn-primary" id="compressButton" data-toggle="modal" data-target="#compressModal">
         <i class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}
