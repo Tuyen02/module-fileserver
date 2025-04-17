@@ -55,7 +55,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
 
     foreach ($result as $row) {
         if (!empty($logs)) {
-            $row['total_size'] = $logs['total_size'] ? ($logs['total_size'] >= 1048576 ? number_format($logs['total_size'] / 1048576, 2) . ' MB' : number_format($logs['total_size'] / 1024, 2) . ' KB') : '--';
+            $row['total_size'] = nv_convertfromBytes($logs['total_size']) ;
             $row['total_files'] = $logs['total_files'];
             $row['total_folders'] = $logs['total_folders'];
         }
