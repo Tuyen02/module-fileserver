@@ -134,3 +134,4 @@ $lang_module['permission_note_other'] = '- Nhóm khác: Chỉ có thể xem (m�
 $lang_module['permission_note_admin'] = '- Quản trị viên: Có đầy đủ quyền';
 $lang_module['root_directory'] = '... ';
 $lang_module['no_data'] = 'Không có dữ liệu';
+$lang_module['no_changes'] = 'Không có thay đổi';

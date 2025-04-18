@@ -184,6 +184,42 @@ if (defined('NV_IS_SPADMIN')) {
     );
 }
 
+function get_user_permission($file_id, $row = array()) {
+    global $module_config, $module_name, $user_info, $module_data, $db;
+
+    $current_permission = 1; 
+    if (defined('NV_IS_SPADMIN')) {
+        return 3;
+    }
+
+    if (defined('NV_IS_USER')) {
+        if (isset($user_info['in_groups']) && is_array($user_info['in_groups'])) {
+            if (!empty(array_intersect($user_info['in_groups'], explode(',', $module_config[$module_name]['group_admin_fileserver'])))) {
+                $sql = 'SELECT p_group FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
+                $result = $db->query($sql);
+                $perm = $result->fetch();
+                $current_permission = isset($perm['p_group']) ? intval($perm['p_group']) : 1;
+            } 
+            else if (isset($row['userid']) && $row['userid'] == $user_info['userid']) {
+                $current_permission = 3;
+            }
+            else {
+                $sql = 'SELECT p_group FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
+                $result = $db->query($sql);
+                $perm = $result->fetch();
+                $current_permission = isset($perm['p_group']) ? intval($perm['p_group']) : 1;
+            }
+        }
+    } else {
+        $sql = 'SELECT p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
+        $result = $db->query($sql);
+        $perm = $result->fetch();
+        $current_permission = isset($perm['p_other']) ? intval($perm['p_other']) : 1;
+    }
+
+    return $current_permission;
+}
+
 function updateAlias($file_id, $file_name)
 {
     global $db, $module_data;

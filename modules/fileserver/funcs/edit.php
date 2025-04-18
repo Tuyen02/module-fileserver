@@ -154,7 +154,7 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
             $message = $lang_module['update_ok'];
         }
     } else {
-        $status = $lang_module['success'];
+        $status = $lang_module['error'];
         $message = $lang_module['no_changes'];
     }
 }

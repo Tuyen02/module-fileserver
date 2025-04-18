@@ -82,33 +82,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
             $row['url_compress'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=compress/' . $row['alias'];
             $row['url_share'] = $url_share;
 
-            $current_permission = 1;
-            if (defined('NV_IS_SPADMIN')) {
-                $current_permission = 3;
-            } elseif (defined('NV_IS_USER')) {
-                if (isset($user_info['in_groups']) && is_array($user_info['in_groups'])) {
-                    if (!empty(array_intersect($user_info['in_groups'], explode(',', $module_config[$module_name]['group_admin_fileserver'])))) {
-                        $sql = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $row['file_id'];
-                        $result = $db->query($sql);
-                        $perm = $result->fetch();
-                        $current_permission = isset($perm['p_group']) ? intval($perm['p_group']) : 1;
-                    } else {
-                        if (isset($row['userid']) && $row['userid'] == $user_info['userid']) {
-                            $current_permission = 3;
-                        } else {
-                            $sql = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $row['file_id'];
-                            $result = $db->query($sql);
-                            $perm = $result->fetch();
-                            $current_permission = isset($perm['p_group']) ? intval($perm['p_group']) : 1;
-                        }
-                    }
-                }
-            } else {
-                $sql = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $row['file_id'];
-                $result = $db->query($sql);
-                $perm = $result->fetch();
-                $current_permission = isset($perm['p_other']) ? intval($perm['p_other']) : 1;
-            }
+            $current_permission = get_user_permission($row['file_id'], $row);
 
             $row['file_size'] = nv_convertfromBytes($row['file_size']);
             $xtpl->assign('ROW', $row);
@@ -210,8 +184,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
         }
     }
 
-    if (($_SERVER['REQUEST_URI'] != '/' . $module_name . '/') && ($_SERVER['REQUEST_URI'] != '/' . NV_LANG_DATA . '/' . $module_name . '/')) {
-        $xtpl->assign('BACK', '');
+    if ($lev > 0 && defined('NV_IS_SPADMIN')) {
         $xtpl->parse('main.back');
     }
 
