@@ -659,6 +659,69 @@ function updatePermissionsRecursively($file_id, $group_permission, $other_permis
     }
 }
 
+function checkChildrenPermissions($folder_id) {
+    global $db, $module_data, $lang_module, $user_info, $module_config, $module_name;
+
+    $sql = 'WITH RECURSIVE folder_tree AS (
+        SELECT file_id, file_name, lev, is_folder
+        FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+        WHERE file_id = ' . $folder_id . ' AND status = 1
+        
+        UNION ALL
+        
+        SELECT f.file_id, f.file_name, f.lev, f.is_folder
+        FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+        INNER JOIN folder_tree ft ON f.lev = ft.file_id
+        WHERE f.status = 1
+    )
+    SELECT file_id, file_name FROM folder_tree WHERE file_id != ' . $folder_id;
+
+    $result = $db->query($sql);
+    $restricted_files = [];
+    
+    while($row = $result->fetch()) {
+        $permission = get_user_permission($row['file_id']);
+        if ($permission <= 2) {
+            $restricted_files[] = $row['file_name'];
+        }
+    }
+
+    if (!empty($restricted_files)) {
+        return true;
+    }
+
+    return false;
+}
+
+function getParentPermissions($parent_id) {
+    global $db, $module_data;
+    
+    if ($parent_id <= 0) {
+        return [
+            'p_group' => 1,
+            'p_other' => 1
+        ];
+    }
+
+    $sql = 'SELECT p_group, p_other 
+            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
+            WHERE file_id = ' . $parent_id;
+    $result = $db->query($sql);
+    $row = $result->fetch();
+    
+    if ($row) {
+        return [
+            'p_group' => $row['p_group'],
+            'p_other' => $row['p_other']
+        ];
+    }
+    
+    return [
+        'p_group' => 1,
+        'p_other' => 1
+    ];
+}
+
 // function pr($a)
 // {
 //     exit('<pre><code>' . htmlspecialchars(print_r($a, true)) . '</code></pre>');

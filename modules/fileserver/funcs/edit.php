@@ -8,6 +8,7 @@ $page_title = $lang_module['edit'];
 $use_elastic = $module_config['fileserver']['use_elastic'];
 
 $page = $nv_Request->get_int('page', 'get', 1);
+$back_url = '';
 
 $sql = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status =1 and file_id = ' . $file_id;
 $result = $db->query($sql);
@@ -15,6 +16,22 @@ $row = $result->fetch();
 
 if (empty($row)) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
+}
+
+if ($row['lev'] > 0) {
+    $sql = 'SELECT lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $row['lev'];
+    $parent = $db->query($sql)->fetch();
+    if ($parent) {
+        $back_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
+        if ($parent['lev'] > 0) {
+            $sql = 'SELECT alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $parent['lev'];
+            $parent_alias = $db->query($sql)->fetchColumn();
+            if ($parent_alias) {
+                $op = $module_info['alias']['main'];
+                $back_url .= '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $parent_alias;
+            }
+        }
+    }
 }
 
 $breadcrumbs = [];
@@ -33,6 +50,7 @@ while ($current_lev > 0) {
         'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row1['alias'] . '&page=' . $page
     ];
     $current_lev = $row1['lev'];
+
 }
 
 $breadcrumbs = array_reverse($breadcrumbs);
@@ -159,7 +177,7 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
     }
 }
 
-$contents = nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $status, $message);
+$contents = nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $status, $message, $back_url);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

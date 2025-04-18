@@ -7,10 +7,11 @@ $page_title = $lang_module['perm'];
 
 $status = '';
 $message = '';
+$back_url = '';
 
 $page = $nv_Request->get_int('page', 'get', 1);
 
-$sql = 'SELECT f.file_name, f.file_path, f.alias,
+$sql = 'SELECT f.file_name, f.file_path, f.alias, f.lev,
         (SELECT p.p_group FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p WHERE p.file_id = f.file_id) AS p_group,
         (SELECT p.p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p WHERE p.file_id = f.file_id) AS p_other
         FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
@@ -19,6 +20,22 @@ $stmt = $db->prepare($sql);
 $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
 $stmt->execute();
 $row = $stmt->fetch();
+
+if ($row['lev'] > 0) {
+    $sql = 'SELECT lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $row['lev'];
+    $parent = $db->query($sql)->fetch();
+    if ($parent) {
+        $back_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
+        if ($parent['lev'] > 0) {
+            $sql = 'SELECT alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $parent['lev'];
+            $parent_alias = $db->query($sql)->fetchColumn();
+            if ($parent_alias) {
+                $op = $module_info['alias']['main'];
+                $back_url .= '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $parent_alias;
+            }
+        }
+    }
+}
 
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
 
@@ -102,7 +119,7 @@ if (defined('NV_IS_SPADMIN')) {
     $message = $lang_module['not_thing_to_do'];
 }
 
-$contents = nv_fileserver_perm($row, $file_id, $group_level, $other_level, $status, $message);
+$contents = nv_fileserver_perm($row, $file_id, $group_level, $other_level, $status, $message, $back_url);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

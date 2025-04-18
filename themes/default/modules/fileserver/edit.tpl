@@ -50,9 +50,11 @@
 <div class="alert {MESSAGE_CLASS}">{MESSAGE}</div>
 <!-- END: message -->
 
-<a href="{url_view}" class="btn btn-info">
+<!-- BEGIN: back -->
+<a href="{BACK_URL}" class="btn btn-info">
     <i class="fa fa-chevron-circle-left"></i> {LANG.back_btn}
 </a>
+<!-- END: back -->
 
 <div class="editor-container">
     <form action="" method="post">

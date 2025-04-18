@@ -27,9 +27,9 @@
         <button type="button" class="btn btn-primary" id="uploadButton">{LANG.upload_btn}</button>
         <!-- END: can_create -->
         <!-- BEGIN: back -->
-        <button type="button" class="btn btn-info" id="backButton">
+        <a href="{BACK_URL}" class="btn btn-info">
             <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
-        </button>
+        </a>
         <!-- END: back -->
         <input type="file" name="uploadfile" id="uploadfile" required style="display: none;">
         <input type="hidden" name="lev" id="lev" value="{ROW.lev}">
@@ -417,13 +417,6 @@
 
     document.getElementById('uploadfile').addEventListener('change', function () {
         document.getElementById('uploadForm').submit();
-    });
-
-    $(document).ready(function () {
-        $("#backButton").on("click", function (e) {
-            e.preventDefault();
-            window.history.back();
-        });
     });
 
     function submitShareForm() {

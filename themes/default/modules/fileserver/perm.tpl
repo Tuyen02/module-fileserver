@@ -36,9 +36,11 @@
             </tbody>
         </table>
         <div class="text-center">
-            <button type="button" class="btn btn-info" id="backButton">
+            <!-- BEGIN: back -->
+            <a href="{BACK_URL}" class="btn btn-info">
                 <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
-            </button>
+            </a>
+            <!-- END: back -->
             <button type="submit" name="submit" value="1" class="btn btn-primary">{LANG.save_btn}</button>
         </div>
     </form>

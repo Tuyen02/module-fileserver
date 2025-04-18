@@ -15,7 +15,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 
 function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs, $reCaptchaPass)
 {
-    global $module_file, $global_config, $lang_module, $module_name, $module_config, $lang_global, $user_info, $module_data, $db;
+    global $module_file, $global_config, $lang_module, $module_name, $module_config, $lang_global, $user_info, $module_data, $db, $back_url;
 
     $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
@@ -26,6 +26,11 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
     $xtpl->assign('SELECTED_ALL', $selected_all);
     $xtpl->assign('SELECTED_FILE', $selected_file);
     $xtpl->assign('SELECTED_FOLDER', $selected_folder);
+
+    if (!empty($back_url)) {
+        $xtpl->assign('BACK_URL', $back_url);
+        $xtpl->parse('main.back');
+    }
 
     if ($total > $perpage) {
         $page_url = $base_url . '&lev=' . $lev . '&search=' . $search_term . '&search_type=' . $search_type;
@@ -184,10 +189,6 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
         }
     }
 
-    if ($lev > 0 && defined('NV_IS_SPADMIN')) {
-        $xtpl->parse('main.back');
-    }
-
     if ($module_config[$module_name]['captcha_type'] == 'recaptcha' and $reCaptchaPass and $global_config['recaptcha_ver'] == 3) {
         $xtpl->parse('main.recaptcha3');
     } elseif ($module_config[$module_name]['captcha_type'] == 'recaptcha' and $reCaptchaPass and $global_config['recaptcha_ver'] == 2) {
@@ -304,7 +305,7 @@ function nv_fileserver_edit_img($row, $file_id, $file_extension)
     return $xtpl->text('main');
 }
 
-function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $status, $message)
+function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $status, $message, $back_url)
 {
     global $module_file, $global_config, $lang_module, $module_name, $user_info, $module_data, $db, $module_config;
 
@@ -314,6 +315,11 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
     $xtpl->assign('FILE_ID', $file_id);
     $xtpl->assign('FILE_NAME', $file_name);
     $xtpl->assign('url_view', $view_url);
+
+    if (!empty($back_url)) {
+        $xtpl->assign('BACK_URL', $back_url);
+        $xtpl->parse('main.back');
+    }
 
     $current_permission = 1;
     if (defined('NV_IS_SPADMIN')) {
@@ -368,7 +374,7 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
     return $xtpl->text('main');
 }
 
-function nv_fileserver_perm($row, $file_id, $group_level, $other_level, $status, $message)
+function nv_fileserver_perm($row, $file_id, $group_level, $other_level, $status, $message, $back_url)
 {
     global $module_file, $global_config, $lang_module, $module_name;
 
@@ -377,6 +383,11 @@ function nv_fileserver_perm($row, $file_id, $group_level, $other_level, $status,
     $xtpl->assign('FILE_NAME', $row['file_name']);
     $xtpl->assign('FILE_PATH', $row['file_path']);
     $xtpl->assign('FILE_ID', $file_id);
+
+    if (!empty($back_url)) {
+        $xtpl->assign('BACK_URL', $back_url);
+        $xtpl->parse('main.back');
+    }
 
     $xtpl->assign('GROUP_LEVEL_1', $group_level == 1 ? 'selected' : '');
     $xtpl->assign('GROUP_LEVEL_2', $group_level == 2 ? 'selected' : '');

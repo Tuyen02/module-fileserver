@@ -135,3 +135,5 @@ $lang_module['permission_note_admin'] = '- Quản trị viên: Có đầy đủ 
 $lang_module['root_directory'] = '... ';
 $lang_module['no_data'] = 'Không có dữ liệu';
 $lang_module['no_changes'] = 'Không có thay đổi';
+$lang_module['folder_has_restricted_items'] = 'Không thể thực hiện thao tác này vì thư mục chứa các file/folder mà bạn không có quyền thao tác.';
+$lang_module['not_permission_to_rename'] = 'Bạn không có quyền đổi tên file/folder này.';
