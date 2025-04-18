@@ -24,7 +24,7 @@ while ($current_lev > 0) {
     $sql1 = 'SELECT file_name, file_path, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
     $result1 = $db->query($sql1);
     $row1 = $result1->fetch();
-    if($row1['is_folder'] == 1) {
+    if ($row1['is_folder'] == 1) {
         $op = $module_info['alias']['main'];
     }
     $breadcrumbs[] = [
@@ -72,7 +72,7 @@ $message = '';
 
 if (!defined('NV_IS_SPADMIN')) {
     $is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
-    
+
     if (!$is_group_user) {
         $status = $lang_module['error'];
         $message = $lang_module['not_permission_to_edit'];
@@ -94,7 +94,7 @@ if (!defined('NV_IS_SPADMIN')) {
 if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
     $old_content = '';
     $has_changes = false;
-    
+
     if (in_array($file_extension, ['doc', 'docx'])) {
         $zip = new ZipArchive;
         if ($zip->open($full_path) == true) {

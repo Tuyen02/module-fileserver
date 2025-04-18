@@ -17,7 +17,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
     $use_elastic = $nv_Request->get_int('use_elastic', 'post', 0);
     $array_config['use_elastic'] = $use_elastic;
     $use_captcha = $nv_Request->get_int('use_captcha', 'post', 0);
-    $array_config['captcha_type'] = $use_captcha ? 'captcha' : ''; 
+    $array_config['captcha_type'] = $use_captcha ? 'captcha' : '';
 
     if ($use_elastic) {
         $array_config['elas_host'] = $nv_Request->get_title('elas_host', 'post', '');
@@ -69,8 +69,10 @@ if ($nv_Request->isset_request('sync_elastic', 'post')) {
         if (!$elastic_config['use_elastic']) {
             $message = $lang_module['elastic_not_enabled'];
             $message_type = 'warning';
-        } elseif (empty($elastic_config['elas_host']) || empty($elastic_config['elas_port']) 
-                  || empty($elastic_config['elas_user']) || empty($elastic_config['elas_pass'])) {
+        } elseif (
+            empty($elastic_config['elas_host']) || empty($elastic_config['elas_port'])
+            || empty($elastic_config['elas_user']) || empty($elastic_config['elas_pass'])
+        ) {
             $message = $lang_module['elastic_config_incomplete'];
             $message_type = 'warning';
         } else {

@@ -38,13 +38,13 @@ if (!$row) {
         $new_name = $original_name;
         $counter = 1;
         $new_path = $base_dir . '/' . $new_name;
-        
+
         while (file_exists(NV_ROOTDIR . $new_path)) {
             $new_name = $original_name . '(' . $counter . ')';
             $new_path = $base_dir . '/' . $new_name;
             $counter++;
         }
-        
+
         $extractTo = NV_ROOTDIR . $new_path;
 
         if (!is_dir($extractTo)) {
@@ -55,30 +55,30 @@ if (!$row) {
         if ($zipArchive->open($zipFilePath) == TRUE) {
             $numFiles = $zipArchive->numFiles;
             $processedNames = [];
-            
+
             for ($i = 0; $i < $numFiles; $i++) {
                 $fileName = $zipArchive->getNameIndex($i);
                 $pathInfo = pathinfo($fileName);
                 $dirName = $pathInfo['dirname'] == '.' ? '' : $pathInfo['dirname'] . '/';
                 $baseName = $pathInfo['filename'];
                 $extension = isset($pathInfo['extension']) ? '.' . $pathInfo['extension'] : '';
-                
+
                 $newFileName = $fileName;
                 $counter = 1;
-                
+
                 while (isset($processedNames[$dirName . $baseName . $extension])) {
                     $baseName = $pathInfo['filename'] . '(' . $counter . ')';
                     $newFileName = $dirName . $baseName . $extension;
                     $counter++;
                 }
-                
+
                 if ($fileName !== $newFileName) {
                     $zipArchive->renameName($fileName, $newFileName);
                 }
-                
+
                 $processedNames[$newFileName] = true;
             }
-            
+
             $zipArchive->extractTo($extractTo);
             $zipArchive->close();
 

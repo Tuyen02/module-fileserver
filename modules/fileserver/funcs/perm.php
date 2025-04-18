@@ -29,7 +29,7 @@ while ($current_lev > 0) {
     $sql1 = 'SELECT file_name, file_path, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
     $result1 = $db->query($sql1);
     $row1 = $result1->fetch();
-    if($row1['is_folder'] == 1) {
+    if ($row1['is_folder'] == 1) {
         $op = $module_info['alias']['main'];
     }
     $breadcrumbs[] = [
@@ -94,7 +94,7 @@ if (defined('NV_IS_SPADMIN')) {
         $other_level = $row['p_other'];
 
         if ($old_group_level != $group_level || $old_other_level != $other_level) {
-            nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['perm'], 'File id: ' . $file_id .'. Nhóm người dùng mức: ' . $group_level .'. Nhóm khác mức: ' . $other_level , $user_info['userid']);
+            nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['perm'], 'File id: ' . $file_id . '. Nhóm người dùng mức: ' . $group_level . '. Nhóm khác mức: ' . $other_level, $user_info['userid']);
         }
     }
 } else {
@@ -102,7 +102,7 @@ if (defined('NV_IS_SPADMIN')) {
     $message = $lang_module['not_thing_to_do'];
 }
 
-$contents = nv_fileserver_perm($row, $file_id, $group_level, $other_level,$status, $message);
+$contents = nv_fileserver_perm($row, $file_id, $group_level, $other_level, $status, $message);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

@@ -20,7 +20,7 @@ if (!defined('NV_IS_SPADMIN')) {
 $rank = $nv_Request->get_int('rank', 'get', 0);
 $copy = $nv_Request->get_int('copy', 'get', 0);
 $move = $nv_Request->get_int('move', 'get', 0);
-$root = $nv_Request->get_int('root', 'get', 0); 
+$root = $nv_Request->get_int('root', 'get', 0);
 $page = $nv_Request->get_int('page', 'get', 1);
 
 $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $file_id;
@@ -42,7 +42,7 @@ while ($current_lev > 0) {
     $sql1 = 'SELECT file_name, file_path, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
     $result1 = $db->query($sql1);
     $row1 = $result1->fetch();
-    if($row1['is_folder'] == 1) {
+    if ($row1['is_folder'] == 1) {
         $op = $module_info['alias']['main'];
     }
     $breadcrumbs[] = [
@@ -84,32 +84,33 @@ $sql = 'SELECT f.*, p.p_group, p.p_other
 $result = $db->query($sql);
 $all_directories = $result->fetchAll();
 
-function checkPermission($directory, $user_info, $is_admin = false) {
+function checkPermission($directory, $user_info, $is_admin = false)
+{
     if ($is_admin) {
         return true;
     }
-    
+
     if (isset($directory['userid']) && $directory['userid'] == $user_info['userid']) {
         return true;
     }
-    
+
     if (isset($user_info['in_groups']) && is_array($user_info['in_groups'])) {
         if (isset($directory['p_group']) && $directory['p_group'] >= 2) {
             return true;
         }
     }
-    
+
     return false;
 }
 
 $directories = [];
-$has_root_level = false; 
+$has_root_level = false;
 
 foreach ($all_directories as $dir) {
     if (checkPermission($dir, $user_info, defined('NV_IS_SPADMIN'))) {
         $directories[] = $dir;
         if ($dir['lev'] == 0) {
-            $has_root_level = true; 
+            $has_root_level = true;
         }
     }
 }
@@ -125,12 +126,12 @@ if (empty($directories)) {
             ORDER BY f.file_id ASC';
     $result = $db->query($sql);
     $all_root_directories = $result->fetchAll();
-    
+
     $directories = [];
     foreach ($all_root_directories as $dir) {
         if (checkPermission($dir, $user_info, defined('NV_IS_SPADMIN'))) {
             $directories[] = $dir;
-            $has_root_level = true; 
+            $has_root_level = true;
         }
     }
 }

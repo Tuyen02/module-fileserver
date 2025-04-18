@@ -73,7 +73,7 @@ $all_items = $stmt->fetchAll();
 $filtered_result = [];
 if ($lev == 0) {
     $all_file_ids = array_column($all_items, 'file_id');
-    
+
     foreach ($all_items as $item) {
         if ($item['is_folder'] == 1) {
             $has_children = false;
@@ -83,7 +83,7 @@ if ($lev == 0) {
                     break;
                 }
             }
-            
+
             $has_parent = false;
             foreach ($all_items as $potential_parent) {
                 if ($potential_parent['file_id'] == $item['lev']) {
@@ -91,7 +91,7 @@ if ($lev == 0) {
                     break;
                 }
             }
-            
+
             if (!$has_children && !$has_parent) {
                 $filtered_result[] = $item;
                 continue;
@@ -115,7 +115,7 @@ if ($lev == 0) {
         if ($item['is_folder'] == 1) {
             $is_root_folder = true;
             $current_item = $item;
-            
+
             while ($current_item['lev'] > 0) {
                 $parent_exists = false;
                 foreach ($all_items as $potential_parent) {
@@ -132,7 +132,7 @@ if ($lev == 0) {
                     break;
                 }
             }
-            
+
             if ($is_root_folder) {
                 $has_deleted_children = false;
                 foreach ($all_items as $potential_child) {
@@ -151,7 +151,7 @@ if ($lev == 0) {
     $filtered_result = $all_items;
 }
 
-usort($filtered_result, function($a, $b) {
+usort($filtered_result, function ($a, $b) {
     if ($a['is_folder'] != $b['is_folder']) {
         return $b['is_folder'] - $a['is_folder'];
     }

@@ -260,7 +260,7 @@ function deleteFileOrFolder($fileId)
             WHERE f.status = 0
         )
         SELECT * FROM file_tree ORDER BY level DESC';
-        
+
         $children = $db->query($sqlChildren)->fetchAll();
 
         if (!empty($children)) {
@@ -323,7 +323,7 @@ function deleteFileOrFolder($fileId)
             SET status = -1,
                 deleted_at = ' . NV_CURRENTTIME . '
             WHERE file_id = ' . $fileId;
-            
+
     if ($db->query($sql)) {
         updateLog($row['lev']);
         nv_insert_logs(NV_LANG_DATA, $module_name, 'Delete', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
@@ -360,7 +360,7 @@ function restoreFileOrFolder($fileId)
             WHERE f.status = 0
         )
         SELECT * FROM file_tree ORDER BY level ASC';
-        
+
         $children = $db->query($sqlChildren)->fetchAll();
     }
 
@@ -408,7 +408,7 @@ function restoreFileOrFolder($fileId)
         foreach ($children as $child) {
             $childOldPath = $child['file_path'];
             $childNewPath = str_replace($trash_dir, $base_dir, $childOldPath);
-            
+
             $childOldFullPath = NV_ROOTDIR . $childOldPath;
             $childNewFullPath = NV_ROOTDIR . $childNewPath;
 

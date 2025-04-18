@@ -56,7 +56,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
     } else {
         foreach ($result as $row) {
             if (!empty($logs)) {
-                $row['total_size'] = nv_convertfromBytes($logs['total_size']) ;
+                $row['total_size'] = nv_convertfromBytes($logs['total_size']);
                 $row['total_files'] = $logs['total_files'];
                 $row['total_folders'] = $logs['total_folders'];
             }
@@ -82,9 +82,9 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
             $row['url_compress'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=compress/' . $row['alias'];
             $row['url_share'] = $url_share;
 
-            $current_permission = 1; 
+            $current_permission = 1;
             if (defined('NV_IS_SPADMIN')) {
-                $current_permission = 3;    
+                $current_permission = 3;
             } elseif (defined('NV_IS_USER')) {
                 if (isset($user_info['in_groups']) && is_array($user_info['in_groups'])) {
                     if (!empty(array_intersect($user_info['in_groups'], explode(',', $module_config[$module_name]['group_admin_fileserver'])))) {
@@ -94,7 +94,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
                         $current_permission = isset($perm['p_group']) ? intval($perm['p_group']) : 1;
                     } else {
                         if (isset($row['userid']) && $row['userid'] == $user_info['userid']) {
-                            $current_permission = 3; 
+                            $current_permission = 3;
                         } else {
                             $sql = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $row['file_id'];
                             $result = $db->query($sql);
@@ -112,7 +112,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
 
             $row['file_size'] = nv_convertfromBytes($row['file_size']);
             $xtpl->assign('ROW', $row);
-            
+
             $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
 
             $xtpl->assign('DOWNLOAD', $row['url_download']);
@@ -122,7 +122,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
                 $xtpl->parse('main.file_row.delete');
                 $xtpl->parse('main.file_row.rename');
                 $xtpl->parse('main.file_row.share');
-                
+
                 if ($row['is_folder'] == 0) {
                     $xtpl->assign('VIEW', $row['url_edit']);
                     $xtpl->parse('main.file_row.view');
@@ -150,7 +150,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
                 if ($current_permission == 3) {
                     $xtpl->parse('main.file_row.delete');
                     $xtpl->parse('main.file_row.rename');
-                    
+
                     if ($row['is_folder'] == 0) {
                         $xtpl->assign('VIEW', $row['url_edit']);
                         $xtpl->parse('main.file_row.view');
@@ -281,7 +281,7 @@ function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $status, $m
     return $xtpl->text('main');
 }
 
-function nv_fileserver_compress($file_id, $list,$status, $message, $tree_html)
+function nv_fileserver_compress($file_id, $list, $status, $message, $tree_html)
 {
     global $module_file, $global_config, $lang_module;
 
@@ -395,7 +395,7 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
     return $xtpl->text('main');
 }
 
-function nv_fileserver_perm($row, $file_id, $group_level, $other_level,$status, $message)
+function nv_fileserver_perm($row, $file_id, $group_level, $other_level, $status, $message)
 {
     global $module_file, $global_config, $lang_module, $module_name;
 
@@ -404,20 +404,20 @@ function nv_fileserver_perm($row, $file_id, $group_level, $other_level,$status, 
     $xtpl->assign('FILE_NAME', $row['file_name']);
     $xtpl->assign('FILE_PATH', $row['file_path']);
     $xtpl->assign('FILE_ID', $file_id);
-    
+
     $xtpl->assign('GROUP_LEVEL_1', $group_level == 1 ? 'selected' : '');
     $xtpl->assign('GROUP_LEVEL_2', $group_level == 2 ? 'selected' : '');
     $xtpl->assign('GROUP_LEVEL_3', $group_level == 3 ? 'selected' : '');
-    
+
     $xtpl->assign('OTHER_LEVEL_1', $other_level == 1 ? 'selected' : '');
     $xtpl->assign('OTHER_LEVEL_2', $other_level == 2 ? 'selected' : '');
-    
+
     if ($status) {
         $xtpl->assign('MESSAGE_CLASS', $status == 'success' ? 'alert-success' : 'alert-danger');
         $xtpl->assign('MESSAGE', $message);
         $xtpl->parse('main.message');
     }
-    
+
     $xtpl->parse('main');
     return $xtpl->text('main');
 }
@@ -443,7 +443,3 @@ function nv_fileserver_share($row, $file_content, $file_id, $file_name, $view, $
 
     return $xtpl->text('main');
 }
-
-
-
-

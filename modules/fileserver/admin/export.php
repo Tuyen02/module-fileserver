@@ -30,7 +30,8 @@ function getUserCache()
     return $user_cache;
 }
 
-function createFolderSheet($objPHPExcel, $folderId, $folderName, $user_cache, $arr_header_row, $styleTitleArray, $styleTableArray, $title_char_from, $title_number_from) {
+function createFolderSheet($objPHPExcel, $folderId, $folderName, $user_cache, $arr_header_row, $styleTitleArray, $styleTableArray, $title_char_from, $title_number_from)
+{
     global $db, $module_data;
 
     $folderSheet = $objPHPExcel->createSheet();

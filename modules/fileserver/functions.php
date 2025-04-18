@@ -289,7 +289,7 @@ function checkIfParentIsFolder($db, $lev)
     if ($stmt) {
         return $stmt->fetchColumn();
     } else {
-        error_log($lang_module['Lỗi truy vấn trong checkIfParentIsFolder với lev: '] . intval($lev));
+        error_log($lang_module['checkIfParentIsFolder_false'] . intval($lev));
         return 0;
     }
 }
