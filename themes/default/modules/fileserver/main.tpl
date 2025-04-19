@@ -3,10 +3,10 @@
     <h1 class="text-center">{LANG.module_title}</h1>
     <br>
     <!-- BEGIN: error -->
-    <div class="alert alert-warning">{ERROR}</div>
+    <div class="alert alert-danger">{ERROR}</div>
     <!-- END: error -->
     <!-- BEGIN: success -->
-    <div class="alert alert-warning">{SUCCESS}</div>
+    <div class="alert alert-success">{SUCCESS}</div>
     <!-- END: success -->
     <form action="" method="get" id="searchForm" class="form-inline my-2 my-lg-0">
         <input type="hidden" name="lev" value="{ROW.lev}">
@@ -608,6 +608,5 @@
             }
         });
     });
-
 </script>
 <!-- END: main -->

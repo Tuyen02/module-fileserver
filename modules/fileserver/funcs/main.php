@@ -626,31 +626,82 @@ if ($download == 1) {
             $zipFilePath = $tmp_dir . $zipFileName;
             $zipFullPath = NV_ROOTDIR . $zipFilePath;
 
+            $sql = 'WITH RECURSIVE folder_tree AS (
+                SELECT f.file_id, f.file_name, f.file_path, f.lev, f.is_folder, p.p_group, p.p_other
+                FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+                LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id
+                WHERE f.file_id = ' . $file_id . ' AND f.status = 1
+                
+                UNION ALL
+                
+                SELECT f.file_id, f.file_name, f.file_path, f.lev, f.is_folder, p.p_group, p.p_other
+                FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+                LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id
+                INNER JOIN folder_tree ft ON f.lev = ft.file_id
+                WHERE f.status = 1
+            )
+            SELECT * FROM folder_tree';
+
+            $result = $db->query($sql);
+            $allowed_files = [];
+
+            while ($row = $result->fetch()) {
+                if (defined('NV_IS_SPADMIN')) {
+                    $allowed_files[] = $row;
+                } else {
+                    $is_group_user = false;
+                    if (defined('NV_IS_USER') && isset($user_info['in_groups']) && !empty($module_config[$module_name]['group_admin_fileserver'])) {
+                        $admin_groups = explode(',', $module_config[$module_name]['group_admin_fileserver']);
+                        $is_group_user = !empty(array_intersect($user_info['in_groups'], $admin_groups));
+                    }
+
+                    $current_permission = $is_group_user ? $row['p_group'] : $row['p_other'];
+                    if ($current_permission >= 2) {
+                        $allowed_files[] = $row;
+                    }
+                }
+            }
+
             $zipArchive = new ZipArchive();
             if ($zipArchive->open($zipFullPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
                 $zipArchive->addEmptyDir($file_name);
 
-                $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($file_path), RecursiveIteratorIterator::LEAVES_ONLY);
-
-                foreach ($files as $name => $fileInfo) {
-                    if (!$fileInfo->isDir()) {
-                        $fileRealPath = $fileInfo->getRealPath();
-                        $relativePath = substr($fileRealPath, strlen($file_path) + 1);
-                        $zipArchive->addFile($fileRealPath, $file_name . '/' . $relativePath);
+                foreach ($allowed_files as $allowed_file) {
+                    $full_path = NV_ROOTDIR . $allowed_file['file_path'];
+                    if (file_exists($full_path)) {
+                        if ($allowed_file['is_folder']) {
+                            $relative_path = substr($allowed_file['file_path'], strlen($file['file_path']));
+                            $zipArchive->addEmptyDir($file_name . $relative_path);
+                        } else {
+                            $relative_path = substr($allowed_file['file_path'], strlen($file['file_path']));
+                            $zipArchive->addFile($full_path, $file_name . $relative_path);
+                        }
                     }
                 }
+
                 $zipArchive->close();
 
                 if (file_exists($zipFullPath)) {
                     $zip = $zipFullPath;
                 }
             }
-        } elseif (pathinfo($file_path, PATHINFO_EXTENSION) == 'zip') {
-            if (file_exists($file_path)) {
-                $zip = $file_path;
-            }
         } else {
-            if (file_exists($file_path)) {
+            if (!defined('NV_IS_SPADMIN')) {
+                $sql = 'SELECT p.p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p 
+                        WHERE p.file_id = ' . $file_id;
+                $row = $db->query($sql)->fetch();
+
+                $is_group_user = false;
+                if (defined('NV_IS_USER') && isset($user_info['in_groups']) && !empty($module_config[$module_name]['group_admin_fileserver'])) {
+                    $admin_groups = explode(',', $module_config[$module_name]['group_admin_fileserver']);
+                    $is_group_user = !empty(array_intersect($user_info['in_groups'], $admin_groups));
+                }
+
+                $current_permission = $is_group_user ? $row['p_group'] : $row['p_other'];
+                if ($current_permission >= 2 && file_exists($file_path)) {
+                    $zip = $file_path;
+                }
+            } else if (file_exists($file_path)) {
                 $zip = $file_path;
             }
         }
@@ -663,6 +714,9 @@ if ($download == 1) {
             if (file_exists($zipFullPath)) {
                 unlink($zipFullPath);
             }
+            exit();
+        } else {
+            nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&error=' . urlencode($lang_module['file_not_found']));
         }
     }
 }
