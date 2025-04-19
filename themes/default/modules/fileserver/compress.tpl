@@ -8,9 +8,11 @@
   <button type="button" class="btn btn-info" id="backButton">
     <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
   </button>
+  <!-- BEGIN: can_unzip -->   
   <button type="submit" name="action" value="unzip" class="btn btn-primary">
     {LANG.unzip}
   </button>
+  <!-- END: can_unzip -->
 </form>
 <style>
   .tree {

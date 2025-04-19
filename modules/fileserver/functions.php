@@ -108,29 +108,7 @@ if ($use_elastic == 1) {
     }
 }
 
-$allowed_extensions = [
-    'doc',
-    'txt',
-    'docx',
-    'pdf',
-    'xlsx',
-    'xls',
-    'jpg',
-    'png',
-    'gif',
-    'jpeg',
-    'zip',
-    'rar',
-    'html',
-    'css',
-    'js',
-    'php',
-    'sql',
-    'mp3',
-    'mp4',
-    'ppt',
-    'pptx'
-];
+$allowed_extensions = ['doc', 'txt', 'docx', 'pdf', 'xlsx', 'xls', 'jpg', 'png', 'gif', 'jpeg', 'zip', 'rar', 'html', 'css', 'js', 'php', 'sql', 'mp3', 'mp4', 'ppt', 'pptx'];
 
 if (!empty($array_op)) {
     preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m);
@@ -184,10 +162,11 @@ if (defined('NV_IS_SPADMIN')) {
     );
 }
 
-function get_user_permission($file_id, $row = array()) {
+function get_user_permission($file_id, $row = array())
+{
     global $module_config, $module_name, $user_info, $module_data, $db;
 
-    $current_permission = 1; 
+    $current_permission = 1;
     if (defined('NV_IS_SPADMIN')) {
         return 3;
     }
@@ -199,11 +178,9 @@ function get_user_permission($file_id, $row = array()) {
                 $result = $db->query($sql);
                 $perm = $result->fetch();
                 $current_permission = isset($perm['p_group']) ? intval($perm['p_group']) : 1;
-            } 
-            else if (isset($row['userid']) && $row['userid'] == $user_info['userid']) {
+            } else if (isset($row['userid']) && $row['userid'] == $user_info['userid']) {
                 $current_permission = 3;
-            }
-            else {
+            } else {
                 $sql = 'SELECT p_group FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
                 $result = $db->query($sql);
                 $perm = $result->fetch();
@@ -635,31 +612,8 @@ function normalizePath($path)
     return '/' . implode('/', $absolutes);
 }
 
-function updatePermissionsRecursively($file_id, $group_permission, $other_permission)
+function checkChildrenPermissions($folder_id)
 {
-
-    global $db, $module_data;
-    $sql_update = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
-                   SET p_group = :p_group, p_other = :p_other, updated_at = :updated_at 
-                   WHERE file_id = :file_id';
-    $update_stmt = $db->prepare($sql_update);
-    $update_stmt->bindParam(':p_group', $group_permission);
-    $update_stmt->bindParam(':p_other', $other_permission);
-    $update_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-    $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-    $update_stmt->execute();
-
-    $sql_children = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = :file_id';
-    $children_stmt = $db->prepare($sql_children);
-    $children_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-    $children_stmt->execute();
-
-    while ($child = $children_stmt->fetch()) {
-        updatePermissionsRecursively($child['file_id'], $group_permission, $other_permission);
-    }
-}
-
-function checkChildrenPermissions($folder_id) {
     global $db, $module_data, $lang_module, $user_info, $module_config, $module_name;
 
     $sql = 'WITH RECURSIVE folder_tree AS (
@@ -678,8 +632,8 @@ function checkChildrenPermissions($folder_id) {
 
     $result = $db->query($sql);
     $restricted_files = [];
-    
-    while($row = $result->fetch()) {
+
+    while ($row = $result->fetch()) {
         $permission = get_user_permission($row['file_id']);
         if ($permission <= 2) {
             $restricted_files[] = $row['file_name'];
@@ -693,12 +647,13 @@ function checkChildrenPermissions($folder_id) {
     return false;
 }
 
-function getParentPermissions($parent_id) {
+function getParentPermissions($parent_id)
+{
     global $db, $module_data;
-    
+
     if ($parent_id <= 0) {
         return [
-            'p_group' => 1,
+            'p_group' => 2,
             'p_other' => 1
         ];
     }
@@ -708,21 +663,68 @@ function getParentPermissions($parent_id) {
             WHERE file_id = ' . $parent_id;
     $result = $db->query($sql);
     $row = $result->fetch();
-    
+
     if ($row) {
         return [
-            'p_group' => $row['p_group'],
-            'p_other' => $row['p_other']
+            'p_group' => intval($row['p_group']),
+            'p_other' => intval($row['p_other'])
+        ];
+    } else {
+        return [
+            'p_group' => 1,
+            'p_other' => 1
         ];
     }
-    
-    return [
-        'p_group' => 1,
-        'p_other' => 1
-    ];
 }
 
-// function pr($a)
-// {
-//     exit('<pre><code>' . htmlspecialchars(print_r($a, true)) . '</code></pre>');
-// }
+function getAllFileIds($parent_id, &$file_ids)
+{
+    global $db, $module_data;
+
+    $file_ids[] = $parent_id;
+
+    $sql = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+            WHERE lev = ' . $parent_id . ' AND status = 1';
+    $result = $db->query($sql);
+
+    while ($row = $result->fetch()) {
+        getAllFileIds($row['file_id'], $file_ids);
+    }
+}
+
+function updatePermissions($parent_id, $p_group, $p_other)
+{
+    global $db, $module_data;
+
+    $file_ids = [];
+
+    getAllFileIds($parent_id, $file_ids);
+
+    $file_ids = array_unique($file_ids);
+
+    foreach ($file_ids as $file_id) {
+        $sql_check = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
+                     WHERE file_id = ' . $file_id;
+        $exists = $db->query($sql_check)->fetchColumn();
+
+        if ($exists) {
+            $sql_update = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
+                          SET p_group = :p_group, 
+                              p_other = :p_other, 
+                              updated_at = :updated_at 
+                          WHERE file_id = :file_id';
+            $stmt = $db->prepare($sql_update);
+        } else {
+            $sql_insert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
+                          (file_id, p_group, p_other, updated_at) 
+                          VALUES (:file_id, :p_group, :p_other, :updated_at)';
+            $stmt = $db->prepare($sql_insert);
+        }
+
+        $stmt->bindValue(':file_id', $file_id, PDO::PARAM_INT);
+        $stmt->bindValue(':p_group', $p_group, PDO::PARAM_INT);
+        $stmt->bindValue(':p_other', $p_other, PDO::PARAM_INT);
+        $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+        $stmt->execute();
+    }
+}

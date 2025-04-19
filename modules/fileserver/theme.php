@@ -13,7 +13,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
-function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs, $reCaptchaPass)
+function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs, $reCaptchaPass, $back_url)
 {
     global $module_file, $global_config, $lang_module, $module_name, $module_config, $lang_global, $user_info, $module_data, $db, $back_url;
 
@@ -255,13 +255,18 @@ function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $status, $m
     return $xtpl->text('main');
 }
 
-function nv_fileserver_compress($file_id, $list, $status, $message, $tree_html)
+function nv_fileserver_compress($file_id, $list, $status, $message, $tree_html, $current_permission)
 {
     global $module_file, $global_config, $lang_module;
 
     $xtpl = new XTemplate('compress.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
     $xtpl->assign('FILE_ID', $file_id);
+
+    if ($current_permission = 3 || defined('NV_IS_SPADMIN')) {
+        $xtpl->parse('main.can_unzip');
+    }
+
 
     if (!empty($list)) {
         $xtpl->assign('TREE_HTML', $tree_html);
@@ -305,7 +310,7 @@ function nv_fileserver_edit_img($row, $file_id, $file_extension)
     return $xtpl->text('main');
 }
 
-function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $status, $message, $back_url)
+function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $status, $message, $back_url, $current_permission)
 {
     global $module_file, $global_config, $lang_module, $module_name, $user_info, $module_data, $db, $module_config;
 
@@ -321,29 +326,18 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
         $xtpl->parse('main.back');
     }
 
-    $current_permission = 1;
-    if (defined('NV_IS_SPADMIN')) {
-        $current_permission = 3;
-    } elseif (defined('NV_IS_USER')) {
-        if (isset($user_info['in_groups']) && is_array($user_info['in_groups'])) {
-            if (!empty(array_intersect($user_info['in_groups'], explode(',', $module_config[$module_name]['group_admin_fileserver'])))) {
-                $sql = 'SELECT p_group FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
-                $result = $db->query($sql);
-                $perm = $result->fetch();
-                $current_permission = isset($perm['p_group']) ? intval($perm['p_group']) : 1;
-            } else {
-                if (isset($row['userid']) && $row['userid'] == $user_info['userid']) {
-                    $current_permission = 3;
-                } else {
-                    $sql = 'SELECT p_group FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
-                    $result = $db->query($sql);
-                    $perm = $result->fetch();
-                    $current_permission = isset($perm['p_group']) ? intval($perm['p_group']) : 1;
-                }
-            }
-        }
-    }
+    $current_permission = get_user_permission($file_id, $row);
     $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+
+    if ($current_permission < 3 && !defined('NV_IS_SPADMIN')) {
+        $xtpl->assign('DISABLE_CLASS', 'readonly-editor');
+        $xtpl->assign('DISABLE_ATTR', 'readonly');
+        $xtpl->assign('READONLY', 'true');
+    } else {
+        $xtpl->assign('DISABLE_CLASS', '');
+        $xtpl->assign('DISABLE_ATTR', '');
+        $xtpl->assign('READONLY', 'false');
+    }
 
     if (($current_permission >= 3 || defined('NV_IS_SPADMIN')) && $file_extension != 'pdf') {
         $xtpl->parse('main.can_save');

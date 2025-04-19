@@ -8,6 +8,7 @@ $page_title = $lang_module['compress'];
 $action = $nv_Request->get_title('action', 'post', '');
 $page = $nv_Request->get_int('page', 'get', 1);
 $base_dir = '/uploads/fileserver';
+$current_permission = get_user_permission($lev, $row);
 
 $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $lev;
 $result = $db->query($sql);
@@ -33,6 +34,35 @@ if (!$row) {
     $extractTo = NV_ROOTDIR . $base_dir . '/' . pathinfo($row['file_name'], PATHINFO_FILENAME);
 
     if ($action == 'unzip' && $row['compressed'] != 0) {
+        if (!defined('NV_IS_SPADMIN')) {
+            $unauthorized_files = [];
+            $compressed_files = explode(',', $row['compressed']);
+
+            if (!empty($compressed_files)) {
+                $placeholders = implode(',', array_fill(0, count($compressed_files), '?'));
+                $sql = 'SELECT f.file_id, f.file_name, f.is_folder, p.p_group, p.p_other 
+                        FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f 
+                        LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id 
+                        WHERE f.file_id IN (' . $placeholders . ')';
+                $stmt = $db->prepare($sql);
+                $stmt->execute($compressed_files);
+                $files = $stmt->fetchAll();
+
+                foreach ($files as $file) {
+                    $current_permission = $is_group_user ? $file['p_group'] : $file['p_other'];
+                    if ($current_permission < 3) {
+                        $unauthorized_files[] = $file['file_name'];
+                    }
+                }
+            }
+
+            if (!empty($unauthorized_files)) {
+                nv_jsonOutput([
+                    'status' => 'error',
+                    'message' => $lang_module['folder_has_restricted_items'] . ': ' . implode(', ', $unauthorized_files)
+                ]);
+            }
+        }
 
         $original_name = pathinfo($row['file_name'], PATHINFO_FILENAME);
         $new_name = $original_name;
@@ -100,28 +130,11 @@ if (!$row) {
             $new_id = $db->lastInsertId();
             updateAlias($new_id, $new_name);
             addToDatabase($extractTo, $new_id);
-            $insert_permission = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
-                        (file_id, p_group, p_other, updated_at) 
-                        VALUES (:file_id, :p_group, :p_other, :updated_at)';
-            $stmt_permission = $db->prepare($insert_permission);
-            $stmt_permission->bindValue(':file_id', $new_id, PDO::PARAM_INT);
-            $stmt_permission->bindValue(':p_group', 2, PDO::PARAM_INT);
-            $stmt_permission->bindValue(':p_other', 1, PDO::PARAM_INT);
-            $stmt_permission->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-            $stmt_permission->execute();
 
-            $sql_get_children = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . $new_id;
-            $children = $db->query($sql_get_children)->fetchAll();
-            foreach ($children as $child) {
-                $stmt_permission = $db->prepare($insert_permission);
-                $stmt_permission->bindValue(':file_id', $child['file_id'], PDO::PARAM_INT);
-                $stmt_permission->bindValue(':p_group', 2, PDO::PARAM_INT);
-                $stmt_permission->bindValue(':p_other', 1, PDO::PARAM_INT);
-                $stmt_permission->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-                $stmt_permission->execute();
-            }
+            $permissions = getParentPermissions($lev);
+            updatePermissions($new_id, $permissions['p_group'], $permissions['p_other']);
 
-            nv_insert_logs(NV_LANG_DATA, $module_name, $action, $new_id, $user_info['userid']);
+            nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['unzip'], 'File id: ' . $new_id, $user_info['userid']);
 
             $redirect_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '&page=' . $page;
             nv_jsonOutput(['status' => 'success', 'message' => $message, 'redirect' => $redirect_url]);
@@ -157,7 +170,7 @@ if (!$row) {
 $tree = buildTree($list);
 $tree_html = displayTree($tree);
 
-$contents = nv_fileserver_compress($list, $row['file_id'], $status, $message, $tree_html);
+$contents = nv_fileserver_compress($list, $row['file_id'], $status, $message, $tree_html, $current_permission);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

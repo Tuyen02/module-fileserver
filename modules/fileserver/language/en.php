@@ -73,6 +73,7 @@ $lang_module['f_size'] = 'Size';
 $lang_module['created_at'] = 'Upload date';
 $lang_module['option'] = 'Options';
 $lang_module['delete_btn'] = 'Delete';
+$lang_module['deleteAll_btn'] = 'Delete all';
 $lang_module['rename_btn'] = 'Rename';
 $lang_module['edit_btn'] = 'Edit';
 $lang_module['share_btn'] = 'Share';
@@ -86,10 +87,12 @@ $lang_module['submit_btn'] = 'Confirm';
 $lang_module['perm_title'] = 'Change permissions for';
 $lang_module['perm_btn'] = 'Permissions';
 $lang_module['f_path'] = 'Path ';
-$lang_module['group'] = 'User Group';
-$lang_module['other'] = 'Other';
-$lang_module['read'] = 'Read';
-$lang_module['write'] = 'Write';
+$lang_module['group'] = 'User group';
+$lang_module['other'] = 'Other group';
+$lang_module['permission_level'] = 'Permission level';
+$lang_module['level_1'] = 'Disallow viewing';
+$lang_module['level_2'] = 'Allow viewing';
+$lang_module['level_3'] = 'Allow viewing and editing';
 $lang_module['save_btn'] = 'Save';
 $lang_module['unzip'] = 'Unzip';
 $lang_module['copy'] = 'Copy';
@@ -98,14 +101,50 @@ $lang_module['cancel'] = 'Cancel';
 $lang_module['choose_folder'] = 'Choose folder';
 $lang_module['file_extension_not_allowed'] = 'File extension not allowed. List of allowed extensions: docx, pdf, png, mp3, mp4, ...';
 $lang_module['copy_or_move'] = 'Copy or move';
+$lang_module['target_folder_not_found'] = 'Please select a destination folder below before proceeding.';
+
 $lang_module['compress'] = 'Compress';
+
 $lang_module['edit_img'] = 'Edit image';
+
 $lang_module['edit'] = 'Edit';
+
 $lang_module['perm'] = 'Permissions';
+
 $lang_module['rss'] = 'RSS';
+
 $lang_module['share'] = 'Share';
+
 $lang_module['full_size'] = 'Size:';
+
 $lang_module['total_file'] = 'Number of files:';
+
 $lang_module['total_folder'] = 'Number of folders:';
+
 $lang_module['compress_modal'] = 'Compress file';
-$lang_module['zip_file_name'] = 'Compressed file name';
+$lang_module['zip_file_name'] = 'Zip file name';
+$lang_module['name_exists_suggest'] = 'Name already exists. Do you want to continue? ';
+$lang_module['cancel_btn'] = 'Cancel';
+$lang_module['invalid_elastic_code'] = 'Invalid Elasticsearch configuration';
+$lang_module['error_start_elastic'] = 'Error initializing Elasticsearch client: ';
+$lang_module['error_sync_elastic'] = 'Error syncing Elasticsearch: ';
+$lang_module['error_update_elastic'] = 'Error updating Elasticsearch';
+$lang_module['elastic_index_response'] = 'Error responding Elasticsearch: ';
+$lang_module['error_elastic_index'] = 'Elasticsearch index error: ';
+$lang_module['cannot_update_db'] = 'Unable to update database: ';
+$lang_module['not_permission_to_view'] = 'You do not have permission to view this file.';
+$lang_module['not_permission_to_edit'] = 'You do not have permission to edit this file.';
+$lang_module['not_permission_to_delete'] = 'You do not have permission to delete this file.';
+$lang_module['not_permission_to_rename'] = 'You do not have permission to rename this file.';
+$lang_module['not_permission_to_compress'] = 'You do not have permission to compress this file.';
+$lang_module['not_permission_group_only'] = 'This file is only allowed to be edited by the user group.';
+$lang_module['file_not_found'] = 'File not found.';
+$lang_module['permission_note'] = 'Permission note:';
+$lang_module['permission_note_group'] = '- User group: Can view (level 2) or view and edit (level 3)';
+$lang_module['permission_note_other'] = '- Other groups: Can only view (level 2) or not allowed to view (level 1)';
+$lang_module['permission_note_admin'] = '- Administrator: Has full permissions';
+$lang_module['root_directory'] = '... ';
+$lang_module['no_data'] = 'No data';
+$lang_module['no_changes'] = 'No changes';
+$lang_module['folder_has_restricted_items'] = 'This operation cannot be performed because the directory contains files/folders for which you do not have permission.';
+$lang_module['not_permission_to_rename'] = 'You do not have permission to rename this file/folder.';

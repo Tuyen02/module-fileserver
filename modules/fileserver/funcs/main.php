@@ -165,7 +165,25 @@ if ($use_elastic == 1) {
 }
 
 if ($lev > 0) {
-    $base_dir = $db->query('SELECT file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $lev)->fetchColumn();
+    $sql = 'SELECT f.*, p.p_group, p.p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+           LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id 
+           WHERE f.file_id = ' . $lev . ' AND f.status = 1';
+    $row = $db->query($sql)->fetch();
+
+    if (!$row) {
+        nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
+    }
+
+    if (!defined('NV_IS_SPADMIN')) {
+        $is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
+        $current_permission = $is_group_user ? $row['p_group'] : $row['p_other'];
+
+        if ($current_permission < 1) {
+            nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
+        }
+    }
+
+    $base_dir = $row['file_path'];
     $full_dir = NV_ROOTDIR . $base_dir;
     $page_url .= '&lev=' . $lev;
 
@@ -276,9 +294,9 @@ if (!empty($action)) {
             $exe = $stmt->execute();
             $file_id = $db->lastInsertId();
             updateAlias($file_id, $name_f);
-            
+
             $parent_permissions = getParentPermissions($lev);
-            
+
             $sql1 = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
                     VALUES (:file_id, :p_group, :p_other, :updated_at)';
             $stmta = $db->prepare($sql1);
@@ -287,9 +305,9 @@ if (!empty($action)) {
             $stmta->bindValue(':p_other', $parent_permissions['p_other'], PDO::PARAM_INT);
             $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmta->execute();
-            
+
             updateLog($lev);
-            nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . $file_id, $user_info['userid']);
+            nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['create_btn'], 'File id: ' . $file_id, $user_info['userid']);
             updateParentFolderSize($lev);
 
             nv_jsonOutput(['status' => 'success', 'message' => $lang_module['create_ok'], 'redirect' => $page_url]);
@@ -322,7 +340,7 @@ if (!empty($action)) {
 
                     if ($row['is_folder'] == 1) {
                         $check_result = checkChildrenPermissions($fileId);
-                        if ($check_result == true ) {
+                        if ($check_result == true) {
                             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['folder_has_restricted_items']]);
                         }
                     }
@@ -334,7 +352,7 @@ if (!empty($action)) {
             $deleted = deleteFileOrFolder($fileId);
             if ($deleted) {
                 updateLog($lev);
-                nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . $fileId, $user_info['userid']);
+                nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['delete_btn'], 'File id: ' . $fileId, $user_info['userid']);
                 nv_jsonOutput(['status' => 'success', 'message' => $lang_module['delete_ok'], 'redirect' => $page_url]);
             } else {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['delete_false']]);
@@ -362,7 +380,7 @@ if (!empty($action)) {
         if (!empty($deletedFileIds)) {
             $status = 'success';
             updateLog($lev);
-            nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . implode(',', $deletedFileIds), $admin_info['userid']);
+            nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['deleteAll_btn'], 'File id: ' . implode(',', $deletedFileIds), $admin_info['userid']);
             $mess = $lang_module['delete_ok'];
             nv_jsonOutput(['status' => 'success', 'message' => $mess, 'redirect' => $page_url]);
         } else {
@@ -452,7 +470,7 @@ if (!empty($action)) {
                     $stmtUpdateChildren->execute();
                 }
                 updateLog($lev);
-                nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id:' . $fileId . '. Đổi tên : ' . $fileName . '=>' . $newName, $user_info['userid']);
+                nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['rename_btn'], 'File id: ' . $fileId . '. Đổi tên : ' . $fileName . '=>' . $newName, $user_info['userid']);
                 nv_jsonOutput(['status' => 'success', 'message' => $lang_module['rename_ok'], 'redirect' => $page_url]);
             }
         }
@@ -572,7 +590,7 @@ if (!empty($action)) {
                 $stmta->execute();
 
                 updateLog($lev);
-                nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id:' . $compressed, $user_info['userid']);
+                nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['zip_btn'], 'File id: ' . $compressed, $user_info['userid']);
                 updateParentFolderSize($lev);
 
                 nv_jsonOutput(['status' => 'success', 'message' => $compressResult['message'], 'redirect' => $page_url]);
@@ -705,7 +723,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
                 $stmta->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 $stmta->execute();
                 updateLog($lev);
-                nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id:' . $file_id, $user_info['userid']);
+                nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['upload_btn'], 'File id: ' . $file_id, $user_info['userid']);
                 updateParentFolderSize($lev);
             }
             nv_redirect_location($page_url);

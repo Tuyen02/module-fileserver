@@ -9,7 +9,7 @@ $use_elastic = $module_config['fileserver']['use_elastic'];
 
 $page = $nv_Request->get_int('page', 'get', 1);
 $back_url = '';
-
+$current_permission = get_user_permission($file_id, $row);
 $sql = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status =1 and file_id = ' . $file_id;
 $result = $db->query($sql);
 $row = $result->fetch();
@@ -50,7 +50,6 @@ while ($current_lev > 0) {
         'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row1['alias'] . '&page=' . $page
     ];
     $current_lev = $row1['lev'];
-
 }
 
 $breadcrumbs = array_reverse($breadcrumbs);
@@ -162,7 +161,7 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
 
         if ($stmt->execute()) {
             updateLog($row['lev']);
-            nv_insert_logs(NV_LANG_DATA, $module_name, 'edit', 'File id: ' . $file_id, $user_info['userid']);
+            nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['edit'], 'File id: ' . $file_id, $user_info['userid']);
 
             if ($row['lev'] > 0) {
                 updateParentFolderSize($row['lev']);
@@ -177,7 +176,7 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
     }
 }
 
-$contents = nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $status, $message, $back_url);
+$contents = nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $status, $message, $back_url, $current_permission);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

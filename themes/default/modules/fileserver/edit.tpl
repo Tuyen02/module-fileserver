@@ -22,26 +22,39 @@
     }
     #editor {
         height: auto;
-        min-height: 500px;
+        min-height: 800px;
+    }
+    .CodeMirror {
+        height: 800px !important;
+        font-size: 14px;
+        line-height: 1.6;
     }
     iframe {
         width: 100%;
-        height: 500px;
+        height: 800px;
     }
     textarea {
         width: 100%;
-        height: auto;
-        min-height: 300px;
+        height: 800px;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+    .readonly-editor {
+        opacity: 0.7;
+        pointer-events: none;
     }
     @media (max-width: 768px) {
         .editor-container {
             width: 90%;
         }
         iframe {
-            height: 300px;
+            height: 500px;
         }
         textarea {
-            min-height: 200px;
+            height: 500px;
+        }
+        .CodeMirror {
+            height: 500px !important;
         }
     }
 </style>
@@ -61,7 +74,7 @@
         <div class="form-group">
             <label>{FILE_NAME}</label>
             <!-- BEGIN: text -->
-            <textarea id="editor" class="form-control" name="file_content">{FILE_CONTENT}</textarea>
+            <textarea id="editor" class="form-control {DISABLE_CLASS}" name="file_content" {DISABLE_ATTR}>{FILE_CONTENT}</textarea>
             <!-- END: text -->
             <!-- BEGIN: pdf -->
             <div id="pdfContainer">
@@ -69,10 +82,10 @@
             </div>
             <!-- END: pdf -->
             <!-- BEGIN: docx -->
-            <textarea id="editor" class="form-control" name="file_content">{FILE_CONTENT}</textarea>
+            <textarea id="editor" class="form-control {DISABLE_CLASS}" name="file_content" {DISABLE_ATTR}>{FILE_CONTENT}</textarea>
             <!-- END: docx -->
             <!-- BEGIN: excel -->
-            <textarea id="editor" class="form-control" name="file_content">{FILE_CONTENT}</textarea>
+            <textarea id="editor" class="form-control {DISABLE_CLASS}" name="file_content" {DISABLE_ATTR}>{FILE_CONTENT}</textarea>
             <!-- END: excel -->
             <input type="hidden" name="file_id" value="{FILE_ID}">
         </div>
@@ -99,17 +112,18 @@
     });
     const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
         lineNumbers: true,
-        mode: 'css', // Default mode
-        theme: 'monokai' // Change to any theme you prefer
+        mode: 'css',
+        theme: 'monokai',
+        readOnly: {READONLY},
+        lineWrapping: true,
+        viewportMargin: Infinity
     });
 
-    // Function to change syntax highlighting mode
     function changeMode() {
         const language = document.getElementById('language').value;
         editor.setOption('mode', language);
     }
 
-    // Function to save content
     function saveContent() {
         const content = editor.getValue();
         console.log("Content to save:", content);
