@@ -626,28 +626,12 @@ if ($download == 1) {
             $zipFilePath = $tmp_dir . $zipFileName;
             $zipFullPath = NV_ROOTDIR . $zipFilePath;
 
-            $sql = 'WITH RECURSIVE folder_tree AS (
-                SELECT f.file_id, f.file_name, f.file_path, f.lev, f.is_folder, p.p_group, p.p_other
-                FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
-                LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id
-                WHERE f.file_id = ' . $file_id . ' AND f.status = 1
-                
-                UNION ALL
-                
-                SELECT f.file_id, f.file_name, f.file_path, f.lev, f.is_folder, p.p_group, p.p_other
-                FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
-                LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id
-                INNER JOIN folder_tree ft ON f.lev = ft.file_id
-                WHERE f.status = 1
-            )
-            SELECT * FROM folder_tree';
-
-            $result = $db->query($sql);
+            $all_items = getAllFilesAndFolders($file_id, $file_path);
             $allowed_files = [];
 
-            while ($row = $result->fetch()) {
+            foreach ($all_items as $item) {
                 if (defined('NV_IS_SPADMIN')) {
-                    $allowed_files[] = $row;
+                    $allowed_files[] = $item;
                 } else {
                     $is_group_user = false;
                     if (defined('NV_IS_USER') && isset($user_info['in_groups']) && !empty($module_config[$module_name]['group_admin_fileserver'])) {
@@ -655,9 +639,9 @@ if ($download == 1) {
                         $is_group_user = !empty(array_intersect($user_info['in_groups'], $admin_groups));
                     }
 
-                    $current_permission = $is_group_user ? $row['p_group'] : $row['p_other'];
+                    $current_permission = $is_group_user ? $item['p_group'] : $item['p_other'];
                     if ($current_permission >= 2) {
-                        $allowed_files[] = $row;
+                        $allowed_files[] = $item;
                     }
                 }
             }

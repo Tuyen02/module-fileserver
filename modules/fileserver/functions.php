@@ -612,6 +612,29 @@ function normalizePath($path)
     return '/' . implode('/', $absolutes);
 }
 
+function getAllFilesAndFolders($folder_id, $base_path) {
+    global $db, $module_data, $user_info, $module_config, $module_name;
+    
+    $items = [];
+    
+    $sql = 'SELECT f.*, p.p_group, p.p_other 
+            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+            LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id
+            WHERE f.lev = ' . $folder_id . ' AND f.status = 1';
+    $result = $db->query($sql);
+    
+    while ($row = $result->fetch()) {
+        $items[] = $row;
+        
+        if ($row['is_folder'] == 1) {
+            $children = getAllFilesAndFolders($row['file_id'], $base_path);
+            $items = array_merge($items, $children);
+        }
+    }
+    
+    return $items;
+}
+
 function checkChildrenPermissions($folder_id)
 {
     global $db, $module_data, $lang_module, $user_info, $module_config, $module_name;
