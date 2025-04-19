@@ -56,7 +56,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
         $xtpl->parse('main.can_create');
     }
 
-    if (empty($result)) {
+    if (empty($result) && $lev == 0) {
         $xtpl->parse('main.no_data');
     } else {
         foreach ($result as $row) {
