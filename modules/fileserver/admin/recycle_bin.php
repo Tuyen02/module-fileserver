@@ -286,22 +286,23 @@ $xtpl->assign('LEV', $lev);
 
 if (!empty($filtered_result)) {
     $xtpl->parse('main.has_items');
-}
-
-foreach ($filtered_result as $row) {
-    $row['deleted_at'] = date('d/m/Y H:i:s', $row['created_at']);
-    $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
-    $row['icon_class'] = getFileIconClass($row);
-    $row['url_delete'] = $base_url . '&file_id=' . $row['file_id'] . '&action=delete&checksess=' . $row['checksess'];
-    $row['url_restore'] = $base_url . '&file_id=' . $row['file_id'] . '&action=restore';
-    $row['file_size'] = nv_convertfromBytes($row['file_size']);
-    if ($row['is_folder']) {
-        $row['url_view'] = $base_url . '&lev=' . $row['file_id'];
-    } else {
-        $row['url_view'] = '';
+    foreach ($filtered_result as $row) {
+        $row['deleted_at'] = date('d/m/Y H:i:s', $row['created_at']);
+        $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
+        $row['icon_class'] = getFileIconClass($row);
+        $row['url_delete'] = $base_url . '&file_id=' . $row['file_id'] . '&action=delete&checksess=' . $row['checksess'];
+        $row['url_restore'] = $base_url . '&file_id=' . $row['file_id'] . '&action=restore';
+        $row['file_size'] = nv_convertfromBytes($row['file_size']);
+        if ($row['is_folder']) {
+            $row['url_view'] = $base_url . '&lev=' . $row['file_id'];
+        } else {
+            $row['url_view'] = '';
+        }
+        $xtpl->assign('ROW', $row);
+        $xtpl->parse('main.file_row');
     }
-    $xtpl->assign('ROW', $row);
-    $xtpl->parse('main.file_row');
+} else {
+    $xtpl->parse('main.no_data');
 }
 
 if ($total > $perpage) {
@@ -318,11 +319,6 @@ if ($error) {
 if ($success) {
     $xtpl->assign('SUCCESS', $success);
     $xtpl->parse('main.success');
-}
-
-if ($_SERVER['REQUEST_URI'] != $base_url) {
-    $xtpl->assign('BACK', '');
-    $xtpl->parse('main.back');
 }
 
 $xtpl->parse('main');

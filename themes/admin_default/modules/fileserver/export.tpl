@@ -5,7 +5,7 @@
     {ERROR}
 </div>
 <!-- END: error -->
-<h2>{LANG.export_title}</h2>
+<h2>{LANG.list_items_root}</h2>
 <table class="table table-bordered">
     <thead class="thead-dark">
         <tr>

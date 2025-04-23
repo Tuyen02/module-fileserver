@@ -425,9 +425,12 @@ if (!empty($action)) {
         $oldFilePath = $row['file_path'];
         $oldFullPath = NV_ROOTDIR . '/' . $oldFilePath;
 
-        $fileInfo = pathinfo($newName);
-        $baseName = $fileInfo['filename'];
-        $extension = isset($fileInfo['extension']) ? '.' . $fileInfo['extension'] : '';
+        $originalExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+        $newExtension = pathinfo($newName, PATHINFO_EXTENSION);
+        
+        if (!empty($originalExtension) && $originalExtension !== $newExtension) {
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_change_extension']]);
+        }
 
         $directory = dirname($oldFilePath);
         $newFilePath = $directory . '/' . $newName;
@@ -435,12 +438,14 @@ if (!empty($action)) {
 
         if (file_exists($newFullPath)) {
             $counter = 1;
-            $suggestedName = $baseName . '_' . $counter . $extension;
+            $baseName = pathinfo($newName, PATHINFO_FILENAME);
+            $extension = pathinfo($newName, PATHINFO_EXTENSION);
+            $suggestedName = $baseName . '_' . $counter . '.' . $extension;
             $suggestedFullPath = NV_ROOTDIR . '/' . $directory . '/' . $suggestedName;
 
             while (file_exists($suggestedFullPath)) {
                 $counter++;
-                $suggestedName = $baseName . '_' . $counter . $extension;
+                $suggestedName = $baseName . '_' . $counter . '.' . $extension;
                 $suggestedFullPath = NV_ROOTDIR . '/' . $directory . '/' . $suggestedName;
             }
 

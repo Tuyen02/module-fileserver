@@ -173,14 +173,19 @@
                     -->data-recaptcha3="1"<!-- END: recaptcha3 -->>
                     <div class="form-group">
                         <label for="type">{LANG.type}:</label>
-                        <select class="form-control" id="type" name="type">
-                            <option value="0">{LANG.file}</option>
+                        <select class="form-control" id="type" name="type" onchange="toggleFileNote()">
                             <option value="1">{LANG.folder}</option>
+                            <option value="0">{LANG.file}</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="name">{LANG.f_name}:</label>
                         <input type="text" class="form-control" id="name_f" name="name_f" required>
+                        <div id="fileNote" style="display: none;">
+                            <small class="form-text text-danger">
+                                {LANG.allowed_extensions}
+                            </small>
+                        </div>
                     </div>
                     <input type="hidden" name="action" value="create">
                     <!-- BEGIN: captcha -->
@@ -607,6 +612,21 @@
                 alert(xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Đã có lỗi xảy ra');
             }
         });
+    });
+
+    function toggleFileNote() {
+        const typeSelect = document.getElementById('type');
+        const fileNote = document.getElementById('fileNote');
+
+        if (typeSelect.value === '0') {
+            fileNote.style.display = 'block';
+        } else {
+            fileNote.style.display = 'none';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        toggleFileNote();
     });
 </script>
 <!-- END: main -->

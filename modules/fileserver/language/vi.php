@@ -139,3 +139,5 @@ $lang_module['no_changes'] = 'Không có thay đổi';
 $lang_module['folder_has_restricted_items'] = 'Không thể thực hiện thao tác này vì thư mục chứa các file/folder mà bạn không có quyền thao tác.';
 $lang_module['not_permission_to_rename'] = 'Bạn không có quyền đổi tên file/folder này.';
 $lang_module['download_success'] = 'Tải xuống thành công';
+$lang_module['cannot_change_extension'] = 'Không thể thay đổi phần mở rộng của file';
+$lang_module['allowed_extensions'] = 'Lưu ý: Các định dạng file được phép tạo doc, txt, docx, pdf, xlsx, xls, html, css, ...';

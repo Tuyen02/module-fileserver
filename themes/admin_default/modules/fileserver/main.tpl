@@ -1,5 +1,5 @@
 <!-- BEGIN: main -->
-<div class="container">
+<div class="card" style="width: 500px;">
     <!-- BEGIN: message -->
     <div class="alert alert-success">
         {MESSAGE}
@@ -21,7 +21,7 @@
                 <!-- END: loop -->
             </select>
         </div>
-        <div class="text-center">
+        <div>
             <button type="submit" class="btn btn-primary" value="1" name="submit">{LANG.submit}</button>
         </div>
     </form>

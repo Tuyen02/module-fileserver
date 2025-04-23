@@ -1,7 +1,5 @@
 <!-- BEGIN: main -->
-<div class="container mt-4 mb-5 pb-5">
-    <h1 class="text-center">{LANG.recycle_bin}</h1>
-    <br>
+<div>
     <!-- BEGIN: error -->
     <div class="alert alert-warning">{ERROR}</div>
     <!-- END: error -->
@@ -9,31 +7,27 @@
     <div class="alert alert-success">{SUCCESS}</div>
     <!-- END: success -->
 
-    <form action="" method="get" id="searchForm" class="form-inline my-2 my-lg-0">
-        <!-- BEGIN: back -->
-        <button type="button" class="btn btn-warning" id="backButton">
-            <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
-        </button>
-        <!-- END: back -->
-        <input type="hidden" name="{NV_LANG_VARIABLE}" value="{NV_LANG_DATA}">
-        <input type="hidden" name="{NV_NAME_VARIABLE}" value="{MODULE_NAME}">
-        <input type="hidden" name="{NV_OP_VARIABLE}" value="recycle_bin">
-        <input type="hidden" name="lev" value="{LEV}">
-        <input type="text" class="form-control" placeholder="Tìm kiếm" id="searchInput" name="search"
-            value="{SEARCH_TERM}">
-        <select class="form-control ml-2" name="search_type">
-            <option value="all" {SELECTED_ALL}>{LANG.all}</option>
-            <option value="file" {SELECTED_FILE}>{LANG.file}</option>
-            <option value="folder" {SELECTED_FOLDER}>{LANG.folder}</option>
-        </select>
-        <button type="submit" class="btn btn-primary ml-2">{LANG.search}</button>
-    </form>
-
-    <br>
+    <div class="row">
+        <h1 class="col-xs-16">{LANG.list_item_delete}</h1>
+        <form action="" method="get" id="searchForm" class="col-xs-8  form-inline my-2 my-lg-0">
+            <input type="hidden" name="{NV_LANG_VARIABLE}" value="{NV_LANG_DATA}">
+            <input type="hidden" name="{NV_NAME_VARIABLE}" value="{MODULE_NAME}">
+            <input type="hidden" name="{NV_OP_VARIABLE}" value="recycle_bin">
+            <input type="hidden" name="lev" value="{LEV}">
+            <input type="text" class="form-control" placeholder="Tìm kiếm" id="searchInput" name="search"
+                value="{SEARCH_TERM}">
+            <select class="form-control ml-2" name="search_type">
+                <option value="all" {SELECTED_ALL}>{LANG.all}</option>
+                <option value="file" {SELECTED_FILE}>{LANG.file}</option>
+                <option value="folder" {SELECTED_FOLDER}>{LANG.folder}</option>
+            </select>
+            <button type="submit" class="btn btn-primary ml-2">{LANG.search}</button>
+        </form>
+    </div>
     <hr>
 
     <table class="table table-hover">
-        <thead class="thead-dark">
+        <thead>
             <tr>
                 <th scope="col"><input class="form-check-input" type="checkbox" id="selectAll"></th>
                 <th scope="col">{LANG.file_name}</th>
@@ -43,6 +37,11 @@
             </tr>
         </thead>
         <tbody>
+            <!-- BEGIN: no_data -->
+            <tr>
+                <td colspan="5" class="text-center">{LANG.no_data}</td>
+            </tr>
+            <!-- END: no_data -->
             <!-- BEGIN: file_row -->
             <tr>
                 <td><input type="checkbox" name="files[]" value="{ROW.file_id}" data-checksess="{ROW.checksess}"></td>
