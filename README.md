@@ -2,4 +2,4 @@ Module fileserver - module cho phép người dùng quản lý dữ liệu như 
 
 ![Giao diện module file-server](https://github.com/Tuyen02/Wiki_imgs/blob/main/trangchu.png)
 
-Tài liệu hướng dẫn cài đặt và sử dụng module Fileserver tại đây [https://github.com/Tuyen02/module-fileserver/wiki](wiki)
+Tài liệu hướng dẫn cài đặt và sử dụng module Fileserver tại đây https://github.com/Tuyen02/module-fileserver/wiki
