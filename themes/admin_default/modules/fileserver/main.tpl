@@ -1,5 +1,5 @@
 <!-- BEGIN: main -->
-<div class="card" style="width: 500px;">
+<div class="row">
     <!-- BEGIN: message -->
     <div class="alert alert-success">
         {MESSAGE}
@@ -11,11 +11,11 @@
     </div>
     <!-- END: error -->
     <form action="{NV_BASE_ADMINURL}index.php?{NV_LANG_VARIABLE}={NV_LANG_DATA}&amp;{NV_NAME_VARIABLE}={MODULE_NAME}&amp;{NV_OP_VARIABLE}={OP}"
-        method="post" class="confirm-reload">
+        method="post" class="col-md-12 confirm-reload">
         <h2>{LANG.main_title}</h2>
         <div class="form-group">
             <label for="group_ids">{LANG.group_user}</label>
-            <select name="group_ids[]" id="group_ids" class="form-control select2" multiple>
+            <select name="group_ids[]" id="group_ids" class="form-control" multiple style="width: 100%;">
                 <!-- BEGIN: loop -->
                 <option value="{ROW.group_id}" {CHECKED}>{ROW.title}</option>
                 <!-- END: loop -->
@@ -31,11 +31,11 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
 <script>
     $(document).ready(function () {
-        var selectedGroups = $('#group_ids').val();
-        var placeholderText = selectedGroups.length > 0 ? '' : "{LANG.choose_group}";
+        var $select = $('#group_ids');
+        var optionCount = $select.find('option').length;
 
-        $('.select2').select2({
-            placeholder: placeholderText,
+        $select.select2({
+            placeholder: "{LANG.choose_group}",
             allowClear: true
         });
     });

@@ -2,6 +2,7 @@
 if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 $page_title = $lang_module['edit_img'];
 
@@ -43,7 +44,12 @@ $file_path = $row['file_path'];
 $full_path = NV_ROOTDIR . $file_path;
 $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
 
-$contents = nv_fileserver_edit_img($row, $file_id, $file_extension);
+$is_image = in_array($file_extension, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
+$is_video = in_array($file_extension, ['mp4', 'webm', 'ogg']);
+$is_audio = in_array($file_extension, ['mp3', 'wav', 'ogg']);
+$is_powerpoint = in_array($file_extension, ['ppt', 'pptx']);
+
+$contents = nv_fileserver_edit_img($row, $file_id, $file_extension, $is_image, $is_video, $is_audio, $is_powerpoint);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

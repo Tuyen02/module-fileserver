@@ -72,7 +72,7 @@
 <div class="editor-container">
     <form action="" method="post">
         <div class="form-group">
-            <label>{FILE_NAME}</label>
+            <label>{LANG.f_name}: {FILE_NAME}</label>
             <!-- BEGIN: text -->
             <textarea id="editor" class="form-control {DISABLE_CLASS}" name="file_content" {DISABLE_ATTR}>{FILE_CONTENT}</textarea>
             <!-- END: text -->

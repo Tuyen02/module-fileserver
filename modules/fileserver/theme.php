@@ -114,7 +114,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
                     if ($fileInfo == 'txt' || $fileInfo == 'php' || $fileInfo == 'html' || $fileInfo == 'css' || $fileInfo == 'js' || $fileInfo == 'json' || $fileInfo == 'xml' || $fileInfo == 'sql' || $fileInfo == 'doc' || $fileInfo == 'docx' || $fileInfo == 'xls' || $fileInfo == 'xlsx') {
                         $xtpl->assign('EDIT', $row['url_edit']);
                         $xtpl->parse('main.file_row.edit');
-                    } else if ($fileInfo == 'png' || $fileInfo == 'jpg' || $fileInfo == 'jpeg' || $fileInfo == 'gif' || $fileInfo == 'mp3' || $fileInfo == 'mp4') {
+                    } else if ($fileInfo == 'png' || $fileInfo == 'jpg' || $fileInfo == 'jpeg' || $fileInfo == 'gif' || $fileInfo == 'mp3' || $fileInfo == 'mp4' || $fileInfo == 'ppt' || $fileInfo == 'pptx' ) {
                         $xtpl->assign('VIEW', $row['url_edit_img']);
                         $xtpl->parse('main.file_row.view');
                     }
@@ -284,7 +284,7 @@ function nv_fileserver_compress($file_id, $list, $status, $message, $tree_html, 
     return $xtpl->text('main');
 }
 
-function nv_fileserver_edit_img($row, $file_id, $file_extension)
+function nv_fileserver_edit_img($row, $file_id, $file_extension, $is_image, $is_video, $is_audio, $is_powerpoint)
 {
     global $module_file, $global_config, $lang_module;
 
@@ -295,15 +295,14 @@ function nv_fileserver_edit_img($row, $file_id, $file_extension)
     $xtpl->assign('FILE_NAME', $row['file_name']);
     $xtpl->assign('FILE_PATH', $row['file_path']);
 
-    if ($file_extension == 'mp3') {
-        $xtpl->assign('audio', '');
+    if ($is_audio) {
         $xtpl->parse('main.audio');
-    } else if ($file_extension == 'mp4') {
-        $xtpl->assign('video', '');
+    } else if ($is_video) {
         $xtpl->parse('main.video');
-    } else if ($file_extension == 'jpg' || $file_extension == 'jpeg' || $file_extension == 'png' || $file_extension == 'gif') {
-        $xtpl->assign('IMG', '');
+    } else if ($is_image) {
         $xtpl->parse('main.img');
+    } else if ($is_powerpoint) {
+        $xtpl->parse('main.powerpoint');
     }
 
     $xtpl->parse('main');

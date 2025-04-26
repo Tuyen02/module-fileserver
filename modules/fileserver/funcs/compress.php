@@ -112,7 +112,7 @@ if (!$row) {
             $zipArchive->extractTo($extractTo);
             $zipArchive->close();
 
-            $file_size_zip = file_exists($zipFilePath) ? filesize($zipFilePath) : 0;
+            $file_size_zip = filesize($zipFilePath);
 
             $status = $lang_module['success'];
             $message = $lang_module['unzip_ok'];

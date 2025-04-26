@@ -214,40 +214,41 @@ if (!empty($action)) {
         $type = $nv_Request->get_int('type', 'post', 0);
 
         if ($name_f == '') {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty']]);
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty'], 'refresh_captcha' => true]);
         }
 
         $fcaptcha = '';
         if ($module_config[$module_name]['captcha_type'] == 'recaptcha' && $reCaptchaPass) {
             $fcaptcha = $nv_Request->get_title('g-recaptcha-response', 'post', '');
             if (empty($fcaptcha) || !nv_capcha_txt($fcaptcha, 'recaptcha')) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_global['securitycodeincorrect1']]);
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_global['securitycodeincorrect1'], 'refresh_captcha' => true]);
             }
         } elseif ($module_config[$module_name]['captcha_type'] == 'captcha') {
             $fcaptcha = $nv_Request->get_title('fcode', 'post', '');
             if (empty($fcaptcha) || !nv_capcha_txt($fcaptcha, 'captcha')) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_global['securitycodeincorrect']]);
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_global['securitycodeincorrect'], 'refresh_captcha' => true]);
             }
         }
 
         $extension = pathinfo($name_f, PATHINFO_EXTENSION);
         if ($type == 0 && ($extension == '' || !in_array($extension, $allowed_extensions))) {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_extension_not_allowed']]);
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_extension_not_allowed'], 'refresh_captcha' => true]);
         }
 
         if ($lev > 0) {
             $parentFileType = checkIfParentIsFolder($db, $lev);
             if ($type == 0 && $parentFileType == 0) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_create_file_in_file']]);
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_create_file_in_file'], 'refresh_captcha' => true]);
             }
 
             if ($type == 1 && $parentFileType == 0) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_create_file_in_file']]);
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_create_file_in_file'], 'refresh_captcha' => true]);
             }
         }
 
-        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_name = :file_name AND lev = :lev AND status = 1';
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND is_folder = :is_folder AND file_name = :file_name AND lev = :lev';
         $stmtCheck = $db->prepare($sqlCheck);
+        $stmtCheck->bindParam(':is_folder', $type, PDO::PARAM_INT);
         $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
         $stmtCheck->bindParam(':lev', $lev, PDO::PARAM_INT);
         $stmtCheck->execute();
@@ -258,13 +259,16 @@ if (!empty($action)) {
             $originalName = pathinfo($name_f, PATHINFO_FILENAME);
             $extension = pathinfo($name_f, PATHINFO_EXTENSION);
             do {
-                $name_f = $originalName . '_' . $i . '.' . $extension;
-                $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
+                $suggestedName = $originalName . '_' . $i;
+                if ($extension) {
+                    $suggestedName .= '.' . $extension;
+                }
+                $stmtCheck->bindParam(':file_name', $suggestedName, PDO::PARAM_STR);
                 $stmtCheck->execute();
                 $count = $stmtCheck->fetchColumn();
                 $i++;
             } while ($count > 0);
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_exist'] . $name_f]);
+            nv_jsonOutput(['status' => 'error', 'message' => sprintf($lang_module['file_name_exists_suggest'], $name_f, $suggestedName), 'refresh_captcha' => true]);
         }
         $file_path = $base_dir . '/' . $name_f;
 
@@ -310,7 +314,8 @@ if (!empty($action)) {
             nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['create_btn'], 'File id: ' . $file_id, $user_info['userid']);
             updateParentFolderSize($lev);
 
-            nv_jsonOutput(['status' => 'success', 'message' => $lang_module['create_ok'], 'redirect' => $page_url]);
+            $type_text = $type == 1 ? $lang_module['folder'] : $lang_module['file'];
+            nv_jsonOutput(['status' => 'success', 'message' => sprintf($lang_module['create_ok_detail'], $type_text, $name_f), 'redirect' => $page_url]);
         }
         nv_jsonOutput(['status' => $status, 'message' => $mess]);
     }
@@ -425,6 +430,10 @@ if (!empty($action)) {
         $oldFilePath = $row['file_path'];
         $oldFullPath = NV_ROOTDIR . '/' . $oldFilePath;
 
+        if ($newName === $fileName) {
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['no_changes_made']]);
+        }
+
         $originalExtension = pathinfo($fileName, PATHINFO_EXTENSION);
         $newExtension = pathinfo($newName, PATHINFO_EXTENSION);
         
@@ -436,7 +445,15 @@ if (!empty($action)) {
         $newFilePath = $directory . '/' . $newName;
         $newFullPath = NV_ROOTDIR . '/' . $newFilePath;
 
-        if (file_exists($newFullPath)) {
+        $sql_check = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                     WHERE status = 1 AND file_path = :new_path AND file_id != :file_id';
+        $stmt_check = $db->prepare($sql_check);
+        $stmt_check->bindParam(':new_path', $newFilePath, PDO::PARAM_STR);
+        $stmt_check->bindParam(':file_id', $fileId, PDO::PARAM_INT);
+        $stmt_check->execute();
+        $exists = $stmt_check->fetchColumn();
+
+        if ($exists) {
             $counter = 1;
             $baseName = pathinfo($newName, PATHINFO_FILENAME);
             $extension = pathinfo($newName, PATHINFO_EXTENSION);
@@ -493,7 +510,7 @@ if (!empty($action)) {
             $name_with_zip = $name_f . '.zip';
         }
 
-        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE (file_name = :file_name OR file_name = :file_name_zip) AND lev = :lev AND status = 1';
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND (file_name = :file_name OR file_name = :file_name_zip) AND lev = :lev';
         $stmtCheck = $db->prepare($sqlCheck);
         $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
         $stmtCheck->bindParam(':file_name_zip', $name_with_zip, PDO::PARAM_STR);
@@ -514,7 +531,7 @@ if (!empty($action)) {
                 $count = $stmtCheck->fetchColumn();
                 $i++;
             } while ($count > 0);
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_exist'] . $name_f]);
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_exists'] . '. ' . $lang_module['suggest_name'] . ': ' . $name_f]);
         } else {
             nv_jsonOutput(['status' => 'success', 'message' => $lang_module['file_name_valid']]);
         }
@@ -654,6 +671,7 @@ if ($download == 1) {
             $zipArchive = new ZipArchive();
             if ($zipArchive->open($zipFullPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
                 $zipArchive->addEmptyDir($file_name);
+                chmod($zipFullPath, 0777);
 
                 foreach ($allowed_files as $allowed_file) {
                     $full_path = NV_ROOTDIR . $allowed_file['file_path'];
@@ -715,12 +733,17 @@ $success = '';
 $admin_info['allow_files_type'][] = 'text';
 
 if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['uploadfile']) && is_uploaded_file($_FILES['uploadfile']['tmp_name'])) {
-    if (!defined('NV_IS_SPADMIN')) {
-        if (empty($arr_full_per)) {
-            $error = $lang_module['not_thing_to_do'];
-        } else {
-            if (!in_array($lev, $arr_full_per)) {
+    $file_extension = strtolower(pathinfo($_FILES['uploadfile']['name'], PATHINFO_EXTENSION));
+    if ($file_extension == 'zip') {
+        $error = $lang_module['not_allow_zip'];
+    } else {
+        if (!defined('NV_IS_SPADMIN')) {
+            if (empty($arr_full_per)) {
                 $error = $lang_module['not_thing_to_do'];
+            } else {
+                if (!in_array($lev, $arr_full_per)) {
+                    $error = $lang_module['not_thing_to_do'];
+                }
             }
         }
     }
@@ -738,6 +761,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
         $upload_info = $upload->save_file($_FILES['uploadfile'], $full_dir, false, $global_config['nv_auto_resize']);
         if ($upload_info['error'] == '') {
             $full_path = $upload_info['name'];
+            chmod($full_path, 0777);
 
             $relative_path = str_replace(NV_ROOTDIR, '', $full_path);
 

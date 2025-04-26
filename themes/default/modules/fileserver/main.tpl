@@ -290,11 +290,30 @@
                     alert(res.message);
                     if (res.status == 'success' && res.redirect) {
                         window.location.reload();
+                    } else if (res.refresh_captcha) {
+                        if ($("#createForm").data('recaptcha3')) {
+                            grecaptcha.ready(function() {
+                                grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', {action: 'create'});
+                            });
+                        } else if ($(".g-recaptcha").length) {
+                            grecaptcha.reset();
+                        } else {
+                            change_captcha('.fcode');
+                        }
                     }
                 },
                 error: function (xhr) {
                     console.log('Create error:', xhr.responseText);
                     alert(xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Đã có lỗi xảy ra.');
+                    if ($("#createForm").data('recaptcha3')) {
+                        grecaptcha.ready(function() {
+                            grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', {action: 'create'});
+                        });
+                    } else if ($(".g-recaptcha").length) {
+                        grecaptcha.reset();
+                    } else {
+                        change_captcha('.fcode');
+                    }
                 }
             });
         }
@@ -488,6 +507,7 @@
                     },
                     dataType: 'json',
                     success: function (res) {
+                        $('#zipFileName').data('lastResponse', res);
                         if (res.status == 'error') {
                             $('#fileNameWarning').text(res.message).show();
                             $('#fileNameSuccess').hide();
@@ -500,7 +520,7 @@
                     },
                     error: function (xhr) {
                         console.log('Error checking filename:', xhr.responseText);
-                        $('#fileNameWarning').text('Lỗi khi kiểm tra tên file.').show();
+                        $('#fileNameWarning').text('Có lỗi xảy ra khi kiểm tra tên file').show();
                         isFileNameValid = false;
                     }
                 });
@@ -519,8 +539,9 @@
                 selectedFiles.push(input.value);
             });
 
-            if (!isFileNameValid) {
-                alert('Tên file không hợp lệ. Vui lòng kiểm tra lại.');
+            var lastResponse = $('#zipFileName').data('lastResponse');
+            if (lastResponse && lastResponse.status == 'error') {
+                alert(lastResponse.message);
                 return false;
             }
 

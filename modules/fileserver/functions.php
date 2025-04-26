@@ -134,7 +134,11 @@ if ($lev > 0 && !defined('NV_IS_SPADMIN')) {
     }
 }
 
-updateLog($lev);
+if(!empty($lev)){
+    updateLog($lev);
+}else{
+    $lang_module['sys_err'] = 'Lỗi hệ thống.';
+}
 
 $arr_per = [];
 
@@ -336,7 +340,7 @@ function compressFiles($fileIds, $zipFilePath)
     foreach ($rows as $row) {
         $realPath = NV_ROOTDIR . $row['file_path'];
         if (file_exists($realPath)) {
-            $fileName = iconv('UTF-8', 'Windows-1252//TRANSLIT', $row['file_name']);
+            $fileName = change_alias($row['file_name']);
             if ($fileName === false) {
                 $fileName = $row['file_name'];
             }
@@ -402,16 +406,21 @@ function addToDatabase($dir, $parent_id = 0)
 function calculateFolderSize($folderId)
 {
     global $db, $module_data;
+    
+    if ($folderId === null) {
+        return 0;
+    }
+    
     $totalSize = 0;
 
-    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 and lev = ' . $folderId;
+    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 and lev = ' . intval($folderId);
     $files = $db->query($sql)->fetchAll();
 
     foreach ($files as $file) {
         if ($file['is_folder'] == 1) {
             $totalSize += calculateFolderSize($file['file_id']);
         } else {
-            $totalSize += $file['file_size'];
+            $totalSize += intval($file['file_size']);
         }
     }
     return $totalSize;
@@ -419,13 +428,24 @@ function calculateFolderSize($folderId)
 
 function calculateFileFolderStats($lev)
 {
-    global $db, $module_data;
+    global $db, $module_data, $lang_module; 
+
+    if ($lev === null) {
+        return [
+            'files' => 0,
+            'folders' => 0,
+            'size' => 0
+        ];
+    }
 
     $total_files = 0;
     $total_folders = 0;
     $total_size = 0;
 
-    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev = ' . $lev;
+    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1';
+    if ($lev !== null) {
+        $sql .= ' AND lev = ' . intval($lev);
+    }
     $files = $db->query($sql)->fetchAll();
 
     foreach ($files as $file) {
@@ -434,7 +454,7 @@ function calculateFileFolderStats($lev)
         } else {
             $total_files++;
         }
-        $total_size += $file['file_size'];
+        $total_size += intval($file['file_size']);
     }
     return [
         'files' => $total_files,
@@ -470,7 +490,12 @@ function updateParentFolderSize($folderId)
 
 function updateLog($lev)
 {
-    global $db, $module_data;
+    global $db, $module_data, $lang_module;
+
+    if ($lev === null) {
+        nv_info_die($lang_module['error'], $lang_module['error'], $lang_module['invalid_parameter'] . ': Level không được để trống');
+        return false;
+    }
 
     $stats = calculateFileFolderStats($lev);
 
@@ -490,7 +515,7 @@ function updateLog($lev)
     $stmtInsert->bindValue(':total_size', $stats['size'], PDO::PARAM_INT);
     $stmtInsert->bindValue(':log_time', NV_CURRENTTIME, PDO::PARAM_INT);
 
-    $stmtInsert->execute();
+    return $stmtInsert->execute();
 }
 
 function getAllChildFileIds($fileId)

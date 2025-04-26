@@ -7,14 +7,13 @@
 <!-- END: img -->
 <!-- BEGIN: video -->
 <div>
-  <video width="320" height="240" controls>
+  <video width="100%" controls>
     <source src="{FILE_PATH}" type="video/mp4" />
     Your browser does not support the video tag.
   </video>
 </div>
 <!-- END: video -->
 <!-- BEGIN: audio -->
-
 <div>
   <audio controls>
     <source src="{FILE_PATH}" type="audio/mpeg" />
@@ -22,4 +21,9 @@
   </audio>
 </div>
 <!-- END: audio -->
+ <!-- BEGIN: powerpoint -->
+<div>
+  <p class="text-center">{LANG.error_reading_ppt}</p>
+</div>
+<!-- END: powerpoint -->
 <!-- END: main -->
