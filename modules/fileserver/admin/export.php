@@ -52,7 +52,6 @@ function createFolderSheet($objPHPExcel, $folderId, $folderName, $user_cache, $a
 
         $folderSheet->setCellValue($table_char_from++ . $j, $folder_stt);
         $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_name']);
-        $folderSheet->setCellValue($table_char_from++ . $j, $folderFile['file_path']);
         $size = ($folderFile['is_folder'] == 1)
             ? number_format(calculateFolderSize($folderFile['file_id']) / 1024, 2) . ' KB'
             : ($folderFile['file_size'] ? nv_convertfromBytes($folderFile['file_size']) : '--');
@@ -70,7 +69,7 @@ function createFolderSheet($objPHPExcel, $folderId, $folderName, $user_cache, $a
     }
 
     $folderSheet->getStyle('A4:H' . $j)->applyFromArray($styleTableArray);
-    foreach (['A' => 5, 'B' => 50, 'C' => 50, 'D' => 15, 'E' => 40, 'F' => 30, 'G' => 15, 'H' => 15] as $col => $width) {
+    foreach (['A' => 5, 'B' => 50, 'C' => 15, 'D' => 40, 'E' => 30, 'F' => 15, 'G' => 15] as $col => $width) {
         $folderSheet->getColumnDimension($col)->setWidth($width);
     }
 }
@@ -114,7 +113,7 @@ function exportExcel()
             return $error = $lang_module['blank_list'];
         }
 
-        $arr_header_row = ['STT', 'Tên File', 'Đường dẫn', 'Kích thước', 'Người tải lên', 'Ngày tải lên', 'Là thư mục', 'Trạng thái'];
+        $arr_header_row = ['STT', 'Tên File', 'Kích thước', 'Người tải lên', 'Ngày tải lên', 'Là thư mục', 'Trạng thái'];
         $title_char_from = 'A';
         $title_number_from = 4;
 
@@ -176,7 +175,6 @@ function exportExcel()
 
             $objWorksheet->setCellValue($table_char_from++ . $i, $stt);
             $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_name']);
-            $objWorksheet->setCellValue($table_char_from++ . $i, $_data2['file_path']);
             $size = ($_data2['is_folder'] == 1)
                 ? number_format(calculateFolderSize($_data2['file_id']) / 1024, 2) . ' KB'
                 : ($_data2['file_size'] ? nv_convertfromBytes($_data2['file_size']) : '--');
@@ -194,7 +192,7 @@ function exportExcel()
         }
 
         $objWorksheet->getStyle('A4:H' . $i)->applyFromArray($styleTableArray);
-        foreach (['A' => 5, 'B' => 50, 'C' => 50, 'D' => 15, 'E' => 40, 'F' => 30, 'G' => 15, 'H' => 15] as $col => $width) {
+        foreach (['A' => 5, 'B' => 50, 'C' => 15, 'D' => 40, 'E' => 30, 'F' => 15, 'G' => 15] as $col => $width) {
             $objWorksheet->getColumnDimension($col)->setWidth($width);
         }
 

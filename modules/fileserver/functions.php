@@ -492,8 +492,7 @@ function updateLog($lev)
 {
     global $db, $module_data, $lang_module;
 
-    if ($lev === null) {
-        nv_info_die($lang_module['error'], $lang_module['error'], $lang_module['invalid_parameter'] . ': Level không được để trống');
+    if ($lev == null) {
         return false;
     }
 

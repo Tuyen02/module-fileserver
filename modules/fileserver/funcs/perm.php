@@ -15,11 +15,10 @@ $back_url = '';
 
 $page = $nv_Request->get_int('page', 'get', 1);
 
-$sql = 'SELECT f.file_name, f.file_path, f.alias, f.lev,
-        (SELECT p.p_group FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p WHERE p.file_id = f.file_id) AS p_group,
-        (SELECT p.p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p WHERE p.file_id = f.file_id) AS p_other
+$sql = 'SELECT f.file_name, f.file_path, f.alias, f.lev, p.p_group, p.p_other
         FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
-        WHERE f.file_id = :file_id';
+        LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON p.file_id = f.file_id
+        WHERE f.file_id = :file_id AND status = 1';
 $stmt = $db->prepare($sql);
 $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
 $stmt->execute();
@@ -56,7 +55,7 @@ while ($current_lev > 0) {
     $breadcrumbs[] = [
         'catid' => $current_lev,
         'title' => $row1['file_name'],
-        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row1['alias'] . '&page=' . $page
+        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row1['alias']
     ];
     $current_lev = $row1['lev'];
 }

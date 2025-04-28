@@ -5,7 +5,6 @@
 
 <div class="container mt-4">
     <h3>{LANG.perm_title}: <strong>{FILE_NAME}</strong></h3>
-    <p>{LANG.f_path}: <code>{FILE_PATH}</code></p>
     <form id="changePermissionsForm" method="post" action="">
         <input type="hidden" name="file_id" value="{FILE_ID}">
         <table class="table table-bordered text-center">

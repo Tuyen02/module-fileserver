@@ -630,14 +630,36 @@ if (!empty($action)) {
 $download = $nv_Request->get_int('download', 'get', 0);
 if ($download == 1) {
     $file_id = $nv_Request->get_int('file_id', 'get', 0);
+    $token = $nv_Request->get_title('token', 'get', '');
+    
+    if (empty($token) || $token != md5($file_id . NV_CHECK_SESSION . $global_config['sitekey'])) {
+        nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&error=' . urlencode($lang_module['invalid_token']));
+    }
 
-    $sql = "SELECT file_path, file_name, is_folder FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = :file_id";
+    $sql = "SELECT file_path, file_name, is_folder FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = :file_id AND status = 1";
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
     $stmt->execute();
     $file = $stmt->fetch();
 
     if ($file) {
+        if (!defined('NV_IS_SPADMIN')) {
+            $sql = 'SELECT p.p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p 
+                    WHERE p.file_id = ' . $file_id;
+            $row = $db->query($sql)->fetch();
+
+            $is_group_user = false;
+            if (defined('NV_IS_USER') && isset($user_info['in_groups']) && !empty($module_config[$module_name]['group_admin_fileserver'])) {
+                $admin_groups = explode(',', $module_config[$module_name]['group_admin_fileserver']);
+                $is_group_user = !empty(array_intersect($user_info['in_groups'], $admin_groups));
+            }
+
+            $current_permission = $is_group_user ? $row['p_group'] : $row['p_other'];
+            if ($current_permission < 2) {
+                nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&error=' . urlencode($lang_module['not_permission_to_download']));
+            }
+        }
+
         $file_path = NV_ROOTDIR . $file['file_path'];
         $file_name = $file['file_name'];
         $is_folder = $file['is_folder'];
@@ -693,22 +715,7 @@ if ($download == 1) {
                 }
             }
         } else {
-            if (!defined('NV_IS_SPADMIN')) {
-                $sql = 'SELECT p.p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p 
-                        WHERE p.file_id = ' . $file_id;
-                $row = $db->query($sql)->fetch();
-
-                $is_group_user = false;
-                if (defined('NV_IS_USER') && isset($user_info['in_groups']) && !empty($module_config[$module_name]['group_admin_fileserver'])) {
-                    $admin_groups = explode(',', $module_config[$module_name]['group_admin_fileserver']);
-                    $is_group_user = !empty(array_intersect($user_info['in_groups'], $admin_groups));
-                }
-
-                $current_permission = $is_group_user ? $row['p_group'] : $row['p_other'];
-                if ($current_permission >= 2 && file_exists($file_path)) {
-                    $zip = $file_path;
-                }
-            } else if (file_exists($file_path)) {
+            if (file_exists($file_path)) {
                 $zip = $file_path;
             }
         }

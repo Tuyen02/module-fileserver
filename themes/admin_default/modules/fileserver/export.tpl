@@ -9,25 +9,23 @@
 <table class="table table-bordered">
     <thead class="thead-dark">
         <tr>
-            <th scope="col">{LANG.stt}</th>
-            <th scope="col">{LANG.file_name}</th>
-            <th scope="col">{LANG.file_size}</th>
-            <th scope="col">{LANG.file_path}</th>
-            <th scope="col">{LANG.created_at}</th>
+            <th class="text-center">{LANG.stt}</th>
+            <th class="text-center">{LANG.file_name}</th>
+            <th class="text-center">{LANG.file_size}</th>
+            <th class="text-center">{LANG.created_at}</th>
         </tr>
     </thead>
     <tbody>
         <!-- BEGIN: file_row -->
         <tr>
-            <td>
+            <td class="text-center">
                 {ROW.stt}
             </td>
-            <td>
-                {ROW.file_name}
+            <td class="text-center">
+                <a href="{ROW.url_download}">{ROW.file_name}</a>
             </td>
-            <td>{ROW.file_size}</td>
-            <td><a href="{ROW.url_download}">{ROW.file_path}</a></td>
-            <td>{ROW.created_at}</td>
+            <td class="text-center">{ROW.file_size}</td>
+            <td class="text-center">{ROW.created_at}</td>
             </td>
         </tr>
         <!-- END: file_row -->

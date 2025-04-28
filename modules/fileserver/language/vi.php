@@ -39,6 +39,7 @@ $lang_module['share-false'] = 'Chia sẻ thất bại.';
 $lang_module['choose_file_0'] = 'Không file nào được chọn.';
 $lang_module['copy_false'] = 'Sao chép thất bại.';
 $lang_module['copy_ok'] = 'Sao chép thành công.';
+$lang_module['please_select_folder'] = 'Vui lòng chọn thư mục đích trước khi sao chép';
 $lang_module['move_ok'] = 'Di chuyển thành công.';
 $lang_module['move_false'] = 'Di chuyển thất bại.';
 $lang_module['unzip_ok'] = 'Giải nén thành công.';

@@ -4,7 +4,6 @@
 <!-- END: message -->
 
 <h3>{LANG.f_name}: {FILE_NAME}</h3>
-<p>{LANG.f_path}: {FILE_PATH}</p>
 
 <form method="post">
     <input type="hidden" name="file_id" value="{FILE_ID}">
@@ -19,7 +18,7 @@
     </a>
 </form>
 <p>{LANG.choose_folder}:</p>
-<p id="selected-folder-path">Đường dẫn thư mục đích: <span class="text-success"><u>{SELECTED_FOLDER_PATH}</u></span></p>
+<p id="selected-folder-path">Thư mục đích: <span class="text-success"><u>{SELECTED_FOLDER_PATH}</u></span></p>
 <!-- BEGIN: back -->
 <div>
     <button type="button" class="btn btn-info" id="backButton">

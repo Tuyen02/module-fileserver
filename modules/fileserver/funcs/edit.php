@@ -10,12 +10,12 @@ $use_elastic = $module_config['fileserver']['use_elastic'];
 $page = $nv_Request->get_int('page', 'get', 1);
 $back_url = '';
 $current_permission = get_user_permission($file_id, $row);
-$sql = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status =1 and file_id = ' . $file_id;
+$sql = 'SELECT file_name, file_path, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 and file_id = ' . $file_id;
 $result = $db->query($sql);
 $row = $result->fetch();
 
-if (empty($row)) {
-    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA);
+if (empty($row) || $row['is_folder'] == 1) {
+    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
 }
 
 if ($row['lev'] > 0) {
@@ -47,7 +47,7 @@ while ($current_lev > 0) {
     $breadcrumbs[] = [
         'catid' => $current_lev,
         'title' => $row1['file_name'],
-        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row1['alias'] . '&page=' . $page
+        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row1['alias'] 
     ];
     $current_lev = $row1['lev'];
 }
