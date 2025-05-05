@@ -118,6 +118,8 @@ if (!empty($array_op)) {
     $lev = $nv_Request->get_int('lev', 'get,post', 0);
 }
 
+updateLog(isset($lev) ? $lev : 0);
+
 $config_value = isset($module_config[$module_name]['group_admin_fileserver']) ? $module_config[$module_name]['group_admin_fileserver'] : '';
 $config_value_array = !empty($config_value) ? explode(',', $config_value) : [];
 
@@ -134,11 +136,6 @@ if ($lev > 0 && !defined('NV_IS_SPADMIN')) {
     }
 }
 
-if(!empty($lev)){
-    updateLog($lev);
-}else{
-    $lang_module['sys_err'] = 'Lỗi hệ thống.';
-}
 
 $arr_per = [];
 
@@ -288,13 +285,17 @@ function deleteFileOrFolder($fileId)
     $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
                   SET status = 0, 
                       file_path = :new_path,
-                      deleted_at = :deleted_at
+                      deleted_at = :deleted_at,
+                      elastic = 0
                   WHERE file_id = :file_id';
     $stmt = $db->prepare($sqlUpdate);
     $stmt->bindValue(':new_path', $newPath, PDO::PARAM_STR);
     $stmt->bindValue(':file_id', $fileId, PDO::PARAM_INT);
     $stmt->bindValue(':deleted_at', NV_CURRENTTIME, PDO::PARAM_INT);
     $stmt->execute();
+    
+    updateLog($row['lev']);
+    updateParentFolderSize($row['lev']);
 
     return true;
 }
@@ -403,13 +404,9 @@ function calculateFolderSize($folderId)
 {
     global $db, $module_data;
     
-    if ($folderId === null) {
-        return 0;
-    }
-    
     $totalSize = 0;
 
-    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 and lev = ' . intval($folderId);
+    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 and lev = ' . $folderId;
     $files = $db->query($sql)->fetchAll();
 
     foreach ($files as $file) {
@@ -426,21 +423,13 @@ function calculateFileFolderStats($lev)
 {
     global $db, $module_data, $lang_module; 
 
-    if ($lev === null) {
-        return [
-            'files' => 0,
-            'folders' => 0,
-            'size' => 0
-        ];
-    }
-
     $total_files = 0;
     $total_folders = 0;
     $total_size = 0;
 
     $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1';
     if ($lev !== null) {
-        $sql .= ' AND lev = ' . intval($lev);
+        $sql .= ' AND lev = ' . $lev;
     }
     $files = $db->query($sql)->fetchAll();
 
@@ -487,10 +476,6 @@ function updateParentFolderSize($folderId)
 function updateLog($lev)
 {
     global $db, $module_data, $lang_module;
-
-    if ($lev == null) {
-        return false;
-    }
 
     $stats = calculateFileFolderStats($lev);
 

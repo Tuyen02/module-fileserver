@@ -3,6 +3,12 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
+use PhpOffice\PhpWord\IOFactory;
+
+if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpword')) {
+    trigger_error('No phpword lib. Run command "composer require phpoffice/phpword" to install', 256);
+}
+
 $page_title = $lang_module['edit'];
 
 $use_elastic = $module_config['fileserver']['use_elastic'];
@@ -64,9 +70,6 @@ $file_name = $row['file_name'];
 $file_path = $row['file_path'];
 $full_path = NV_ROOTDIR . $file_path;
 $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
-
-require_once NV_ROOTDIR . '/vendor/autoload.php';
-use PhpOffice\PhpWord\IOFactory;
 
 $file_content = '';
 if (file_exists($full_path)) {
