@@ -148,3 +148,4 @@ $lang_module['create_ok_detail'] = '%s "%s" được tạo mới thành công.';
 $lang_module['file_name_exists_suggest'] = 'Tên "%s" đã tồn tại. Bạn có thể sử dụng tên "%s"';
 $lang_module['error_reading_ppt'] = 'Hiện tại module chưa phát triển tính năng xem nội dung file PowerPoint.';
 $lang_module['not_allow_zip'] = 'Không cho phép tải lên file zip.';
+$lang_module['cannot_open_word_file'] = 'Không thể đọc file Word: ';

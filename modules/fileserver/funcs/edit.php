@@ -65,19 +65,30 @@ $file_path = $row['file_path'];
 $full_path = NV_ROOTDIR . $file_path;
 $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
 
+require_once NV_ROOTDIR . '/vendor/autoload.php';
+use PhpOffice\PhpWord\IOFactory;
+
 $file_content = '';
 if (file_exists($full_path)) {
     if ($file_extension == 'pdf') {
         $file_content = $file_path;
     } elseif (in_array($file_extension, ['doc', 'docx'])) {
-        $zip = new ZipArchive;
-        if ($zip->open($full_path) == true) {
-            if (($index = $zip->locateName('word/document.xml')) != false) {
-                $data = $zip->getFromIndex($index);
-                $xml = new SimpleXMLElement($data);
-                $file_content = strip_tags($xml->asXML());
+        try {
+            $phpWord = IOFactory::load($full_path);
+            $text = '';
+            foreach ($phpWord->getSections() as $section) {
+                $elements = $section->getElements();
+                foreach ($elements as $element) {
+                    if (method_exists($element, 'getText')) {
+                        $text .= $element->getText() . "\n";
+                    }
+                }
             }
-            $zip->close();
+            $file_content = $text;
+        } catch (Exception $e) {
+            $file_content = '';
+            $status = $lang_module['error'];
+            $message = 'Không thể đọc file Word: ' . $e->getMessage();
         }
     } else {
         $file_content = file_get_contents($full_path);
@@ -113,39 +124,38 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
     $has_changes = false;
 
     if (in_array($file_extension, ['doc', 'docx'])) {
-        $zip = new ZipArchive;
-        if ($zip->open($full_path) == true) {
-            if (($index = $zip->locateName('word/document.xml')) != false) {
-                $data = $zip->getFromIndex($index);
-                $xml = new SimpleXMLElement($data);
-                $old_content = strip_tags($xml->asXML());
-            }
-            $zip->close();
+        // Đọc nội dung file Word như file text
+        $old_content = file_get_contents($full_path);
+        if ($old_content === false) {
+            $old_content = file_get_contents($full_path, FILE_BINARY);
         }
     } else if ($file_extension != 'pdf') {
         $old_content = file_get_contents($full_path);
     }
 
-    if (in_array($file_extension, ['doc', 'docx'])) {
+    if (empty($status) && in_array($file_extension, ['doc', 'docx'])) {
         $file_content = $nv_Request->get_string('file_content', 'post');
         $has_changes = ($file_content != $old_content);
         if ($has_changes) {
-            $zip = new ZipArchive;
-            if ($zip->open($full_path) == true) {
-                if (($index = $zip->locateName('word/document.xml')) != false) {
-                    $xml = new SimpleXMLElement('<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>');
-                    $body = $xml->addChild('w:body');
-                    $body->addChild('w:p', htmlspecialchars($file_content));
-                    $zip->addFromString('word/document.xml', $xml->asXML());
-                }
-                $zip->close();
+            try {
+                $phpWord = new \PhpOffice\PhpWord\PhpWord();
+                $section = $phpWord->addSection();
+                $section->addText($file_content);
+                $writer = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
+                $writer->save($full_path);
+            } catch (Exception $e) {
+                $status = $lang_module['error'];
+                $message = 'Không thể lưu file Word: ' . $e->getMessage();
             }
         }
-    } else if ($file_extension != 'pdf') {
+    } else if (empty($status) && $file_extension != 'pdf') {
         $file_content = $nv_Request->get_string('file_content', 'post');
         $has_changes = ($file_content != $old_content);
         if ($has_changes) {
-            file_put_contents($full_path, $file_content);
+            if (file_put_contents($full_path, $file_content) === false) {
+                $status = $lang_module['error'];
+                $message = 'Không thể lưu file';
+            }
         }
     }
 

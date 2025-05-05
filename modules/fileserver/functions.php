@@ -340,11 +340,7 @@ function compressFiles($fileIds, $zipFilePath)
     foreach ($rows as $row) {
         $realPath = NV_ROOTDIR . $row['file_path'];
         if (file_exists($realPath)) {
-            $fileName = change_alias($row['file_name']);
-            if ($fileName === false) {
-                $fileName = $row['file_name'];
-            }
-
+            $fileName = nv_EncString($row['file_name']);
             $filePaths[] = [
                 PCLZIP_ATT_FILE_NAME => $realPath,
                 PCLZIP_ATT_FILE_NEW_FULL_NAME => $fileName

@@ -338,7 +338,8 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
         $xtpl->assign('READONLY', 'false');
     }
 
-    if (($current_permission >= 3 || defined('NV_IS_SPADMIN')) && $file_extension != 'pdf') {
+    $text_extensions = ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'];
+    if (($current_permission >= 3 || defined('NV_IS_SPADMIN')) && in_array($file_extension, $text_extensions)) {
         $xtpl->parse('main.can_save');
     }
 

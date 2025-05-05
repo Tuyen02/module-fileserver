@@ -43,14 +43,19 @@
         opacity: 0.7;
         pointer-events: none;
     }
+    .word-content {
+        width: 100%;
+        height: 800px;
+        border: 1px solid #ccc;
+        padding: 20px;
+        overflow-y: auto;
+        background: #fff;
+    }
     @media (max-width: 768px) {
         .editor-container {
             width: 90%;
         }
-        iframe {
-            height: 500px;
-        }
-        textarea {
+        iframe, textarea, .word-content {
             height: 500px;
         }
         .CodeMirror {
@@ -82,7 +87,9 @@
             </div>
             <!-- END: pdf -->
             <!-- BEGIN: docx -->
-            <textarea id="editor" class="form-control {DISABLE_CLASS}" name="file_content" {DISABLE_ATTR}>{FILE_CONTENT}</textarea>
+            <div class="word-content {DISABLE_CLASS}" {DISABLE_ATTR}>
+                {FILE_CONTENT}
+            </div>
             <!-- END: docx -->
             <!-- BEGIN: excel -->
             <textarea id="editor" class="form-control {DISABLE_CLASS}" name="file_content" {DISABLE_ATTR}>{FILE_CONTENT}</textarea>
