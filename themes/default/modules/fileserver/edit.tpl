@@ -101,6 +101,9 @@
             <button type="submit" class="btn btn-primary">{LANG.save_btn}</button>
         </div>
         <!-- END: can_save -->
+        <!-- BEGIN: cannt_save -->
+        <div class="alert alert-warning text-center">{LANG.download_to_view}</div>
+        <!-- END: cannt_save -->
     </form>
 </div>
 <hr>

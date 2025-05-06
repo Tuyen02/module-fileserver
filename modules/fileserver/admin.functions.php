@@ -326,7 +326,6 @@ function deleteFileOrFolder($fileId)
 
     if ($db->query($sql)) {
         updateLog($row['lev']);
-        updateParentFolderSize($row['lev']);
         nv_insert_logs(NV_LANG_DATA, $module_name, 'Delete', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
         return true;
     }

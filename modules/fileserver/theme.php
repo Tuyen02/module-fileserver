@@ -341,6 +341,8 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
     $text_extensions = ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'];
     if (($current_permission >= 3 || defined('NV_IS_SPADMIN')) && in_array($file_extension, $text_extensions)) {
         $xtpl->parse('main.can_save');
+    }else{
+        $xtpl->parse('main.cannt_save');
     }
 
     if (!empty($message)) {
@@ -350,7 +352,7 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
         $xtpl->parse('main.message');
     }
 
-    if (in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
+    if (in_array($file_extension, ['txt', 'html', 'css'])) {
         $xtpl->assign('text', '');
         $xtpl->parse('main.text');
     } elseif ($file_extension == 'pdf') {

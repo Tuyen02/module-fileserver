@@ -108,7 +108,7 @@ if ($use_elastic == 1) {
     }
 }
 
-$allowed_extensions = ['doc', 'txt', 'docx', 'pdf', 'xlsx', 'xls', 'jpg', 'png', 'gif', 'jpeg', 'zip', 'rar', 'html', 'css', 'js', 'php', 'sql', 'mp3', 'mp4', 'ppt', 'pptx'];
+$allowed_extensions = ['txt', 'docx', 'xlsx', 'xls', 'html', 'css'];
 
 if (!empty($array_op)) {
     preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m);

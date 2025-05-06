@@ -25,5 +25,6 @@
 <div>
   <p class="text-center">{LANG.error_reading_ppt}</p>
 </div>
+<div class="alert alert-warning text-center">{LANG.download_to_view}</div>
 <!-- END: powerpoint -->
 <!-- END: main -->

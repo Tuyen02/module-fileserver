@@ -510,7 +510,7 @@ if (!empty($action)) {
             $name_with_zip = $name_f . '.zip';
         }
 
-        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND (file_name = :file_name OR file_name = :file_name_zip) AND lev = :lev';
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND is_folder = 0 AND (file_name = :file_name OR file_name = :file_name_zip) AND lev = :lev';
         $stmtCheck = $db->prepare($sqlCheck);
         $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
         $stmtCheck->bindParam(':file_name_zip', $name_with_zip, PDO::PARAM_STR);

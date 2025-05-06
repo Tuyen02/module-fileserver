@@ -4,9 +4,14 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 }
 
 use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
 
 if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpword')) {
     trigger_error('No phpword lib. Run command "composer require phpoffice/phpword" to install', 256);
+}
+
+if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpspreadsheet')) {
+    trigger_error('No phpspreadsheet lib. Run command "composer require phpoffice/phpspreadsheet" to install', 256);
 }
 
 $page_title = $lang_module['edit'];
@@ -91,7 +96,29 @@ if (file_exists($full_path)) {
         } catch (Exception $e) {
             $file_content = '';
             $status = $lang_module['error'];
-            $message = 'Không thể đọc file Word: ' . $e->getMessage();
+            $message = $lang_module['cannot_open_word_file'] . $e->getMessage();
+        }
+    } elseif (in_array($file_extension, ['xls', 'xlsx'])) {
+        try {
+            $spreadsheet = SpreadsheetIOFactory::load($full_path);
+            $worksheet = $spreadsheet->getActiveSheet();
+            $text = '';
+            
+            foreach ($worksheet->getRowIterator() as $row) {
+                $cellIterator = $row->getCellIterator();
+                $cellIterator->setIterateOnlyExistingCells(false);
+                
+                $rowData = [];
+                foreach ($cellIterator as $cell) {
+                    $rowData[] = $cell->getValue();
+                }
+                $text .= implode("\t", $rowData) . "\n";
+            }
+            $file_content = $text;
+        } catch (Exception $e) {
+            $file_content = '';
+            $status = $lang_module['error'];
+            $message = $lang_module['cannot_open_excel_file'] . $e->getMessage();
         }
     } else {
         $file_content = file_get_contents($full_path);
@@ -127,11 +154,16 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
     $has_changes = false;
 
     if (in_array($file_extension, ['doc', 'docx'])) {
-        // Đọc nội dung file Word như file text
         $old_content = file_get_contents($full_path);
         if ($old_content === false) {
             $old_content = file_get_contents($full_path, FILE_BINARY);
         }
+    } elseif (in_array($file_extension, ['xls', 'xlsx'])) {
+        $status = $lang_module['error'];
+        $message = 'Không hỗ trợ chỉnh sửa file Excel, chỉ cho phép xem nội dung.';
+        $has_changes = false;
+    } elseif (in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
+        $old_content = file_get_contents($full_path);
     } else if ($file_extension != 'pdf') {
         $old_content = file_get_contents($full_path);
     }
@@ -148,7 +180,16 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
                 $writer->save($full_path);
             } catch (Exception $e) {
                 $status = $lang_module['error'];
-                $message = 'Không thể lưu file Word: ' . $e->getMessage();
+                $message = $lang_module['cannot_save_file'] . $e->getMessage();
+            }
+        }
+    } elseif (empty($status) && in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
+        $file_content = $nv_Request->get_string('file_content', 'post');
+        $has_changes = ($file_content != $old_content);
+        if ($has_changes) {
+            if (file_put_contents($full_path, $file_content) === false) {
+                $status = $lang_module['error'];
+                $message = $lang_module['cannot_save_file'];
             }
         }
     } else if (empty($status) && $file_extension != 'pdf') {
@@ -157,7 +198,7 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
         if ($has_changes) {
             if (file_put_contents($full_path, $file_content) === false) {
                 $status = $lang_module['error'];
-                $message = 'Không thể lưu file';
+                $message = $lang_module['cannot_save_file'];
             }
         }
     }
@@ -183,7 +224,7 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
             $status = $lang_module['success'];
             $message = $lang_module['update_ok'];
         }
-    } else {
+    } else if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
         $status = $lang_module['error'];
         $message = $lang_module['no_changes'];
     }
