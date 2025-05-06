@@ -210,7 +210,7 @@ if (!empty($action)) {
     $mess = $lang_module['sys_err'];
 
     if ($action == 'create') {
-        $name_f = $nv_Request->get_title('name_f', 'post', '');
+        $name_f = nv_EncString($nv_Request->get_title('name_f', 'post', ''));
         $type = $nv_Request->get_int('type', 'post', 0);
 
         if ($name_f == '') {
@@ -290,7 +290,7 @@ if (!empty($action)) {
             $status = 'success';
             $mess = $lang_module['create_ok'];
         } else {
-            $status = file_put_contents($full_dir, '') !== false ? 'success' : 'error';
+            $status = file_put_contents($full_dir, '') != false ? 'success' : 'error';
             $mess = $status == 'success' ? $lang_module['create_ok'] : $lang_module['cannot_create_file'];
         }
 
@@ -430,14 +430,14 @@ if (!empty($action)) {
         $oldFilePath = $row['file_path'];
         $oldFullPath = NV_ROOTDIR . '/' . $oldFilePath;
 
-        if ($newName === $fileName) {
+        if ($newName == $fileName) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['no_changes_made']]);
         }
 
         $originalExtension = pathinfo($fileName, PATHINFO_EXTENSION);
         $newExtension = pathinfo($newName, PATHINFO_EXTENSION);
         
-        if (!empty($originalExtension) && $originalExtension !== $newExtension) {
+        if (!empty($originalExtension) && $originalExtension != $newExtension) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_change_extension']]);
         }
 
@@ -500,7 +500,7 @@ if (!empty($action)) {
     }
 
     if ($action == 'check_filename') {
-        $name_f = $nv_Request->get_title('zipFileName', 'post', '');
+        $name_f = nv_EncString($nv_Request->get_title('zipFileName', 'post', ''));
         if ($name_f == '') {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['zip_file_name_empty']]);
         }
@@ -565,7 +565,7 @@ if (!empty($action)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
         }
 
-        $zipFileName = $nv_Request->get_title('zipFileName', 'post', '');
+        $zipFileName = nv_EncString($nv_Request->get_title('zipFileName', 'post', ''));
         if ($zipFileName == '') {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['zip_file_name_empty']]);
         }
@@ -691,7 +691,7 @@ if ($download == 1) {
             }
 
             $zipArchive = new ZipArchive();
-            if ($zipArchive->open($zipFullPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+            if ($zipArchive->open($zipFullPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) == TRUE) {
                 $zipArchive->addEmptyDir($file_name);
                 chmod($zipFullPath, 0777);
 
