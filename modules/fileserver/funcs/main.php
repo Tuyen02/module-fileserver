@@ -290,7 +290,7 @@ if (!empty($action)) {
             $status = 'success';
             $mess = $lang_module['create_ok'];
         } else {
-            $status = file_put_contents($full_dir, '') != false ? 'success' : 'error';
+            $status = file_put_contents($full_dir, '') !== false ? 'success' : 'error';
             $mess = $status == 'success' ? $lang_module['create_ok'] : $lang_module['cannot_create_file'];
         }
 
@@ -395,7 +395,7 @@ if (!empty($action)) {
 
     if ($action == 'rename') {
         $fileId = intval($nv_Request->get_int('file_id', 'post', 0));
-        $newName = trim($nv_Request->get_title('new_name', 'post', ''));
+        $newName = nv_EncString(trim($nv_Request->get_title('new_name', 'post', '')));
 
         $sql = 'SELECT f.*, p.p_group, p.p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
                LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id 
@@ -430,7 +430,7 @@ if (!empty($action)) {
         $oldFilePath = $row['file_path'];
         $oldFullPath = NV_ROOTDIR . '/' . $oldFilePath;
 
-        if ($newName == $fileName) {
+        if ($newName === $fileName) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['no_changes_made']]);
         }
 

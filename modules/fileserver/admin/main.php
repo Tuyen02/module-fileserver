@@ -30,20 +30,21 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $count = $db->query($sql_check)->fetchColumn();
 
         if ($count > 0) {
-            $nv_Cache->delMod($module_name, $lang);
-            $sql_update = ' UPDATE ' . NV_CONFIG_GLOBALTABLE . '
+            $sql_update = 'UPDATE ' . NV_CONFIG_GLOBALTABLE . '
                            SET config_value = :config_value 
                            WHERE config_name = ' . $db->quote($config_name);
             $stmt_update = $db->prepare($sql_update);
             $stmt_update->bindParam(':config_value', $group_ids_str, PDO::PARAM_STR);
             if ($stmt_update->execute()) {
+                $nv_Cache->delAll();
+                $db->query('UPDATE ' . NV_CONFIG_GLOBALTABLE . " SET config_value = '" . NV_CURRENTTIME . "' WHERE lang = 'sys' AND module = 'global' AND config_name = 'timestamp'");
+                nv_save_file_config_global();
                 $mess = $lang_module['update_success'];
-                nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['choose_group'], $lang_module['main_title'], $admin_info['userid']);
             } else {
                 $err = $lang_module['update_error'];
             }
         } else {
-            $sql_insert = ' INSERT INTO ' . NV_CONFIG_GLOBALTABLE . ' (lang, module, config_name, config_value) 
+            $sql_insert = 'INSERT INTO ' . NV_CONFIG_GLOBALTABLE . ' (lang, module, config_name, config_value) 
                            VALUES (:lang, :module, :config_name, :config_value)';
             $stmt_insert = $db->prepare($sql_insert);
             $stmt_insert->bindParam(':lang', $lang, PDO::PARAM_STR);
@@ -51,8 +52,10 @@ if ($nv_Request->isset_request('submit', 'post')) {
             $stmt_insert->bindParam(':config_name', $config_name, PDO::PARAM_STR);
             $stmt_insert->bindParam(':config_value', $group_ids_str, PDO::PARAM_STR);
             if ($stmt_insert->execute()) {
+                $nv_Cache->delAll();
+                $db->query('UPDATE ' . NV_CONFIG_GLOBALTABLE . " SET config_value = '" . NV_CURRENTTIME . "' WHERE lang = 'sys' AND module = 'global' AND config_name = 'timestamp'");
+                nv_save_file_config_global();
                 $mess = $lang_module['update_success'];
-                nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['choose_group'], $lang_module['main_title'], $admin_info['userid']);
             } else {
                 $err = $lang_module['update_error'];
             }
@@ -62,6 +65,10 @@ if ($nv_Request->isset_request('submit', 'post')) {
     $sql_get = 'SELECT config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE config_name = ' . $db->quote($config_name);
     $group_ids_str = $db->query($sql_get)->fetchColumn();
     $post['group_ids'] = !empty($group_ids_str) ? explode(',', $group_ids_str) : [];
+}
+
+if ($mess == $lang_module['update_success']) {
+    nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['choose_group'], $lang_module['main_title'], $admin_info['userid']);
 }
 
 $group_titles = [];
