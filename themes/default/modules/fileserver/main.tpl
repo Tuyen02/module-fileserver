@@ -116,9 +116,9 @@
                 <td class="gray" colspan="7">
                     <strong>{LANG.full_size}</strong>
                     <span class="badge text-bg-light border-radius-0">{ROW.total_size}</span>
-                    <strong>{LANG.file}</strong>
+                    <strong>- {LANG.file}:</strong>
                     <span class="badge badge-secondary">{ROW.total_files}</span>
-                    <strong>{LANG.folder}</strong>
+                    <strong>- {LANG.folder}:</strong>
                     <span class="badge badge-secondary">{ROW.total_folders}</span>
                 </td>
             </tr>

@@ -5,24 +5,12 @@
 
 <h3>{LANG.f_name}: {FILE_NAME}</h3>
 
-<form method="post">
-    <input type="hidden" name="file_id" value="{FILE_ID}">
-    <a href="{url_copy}" class="btn btn-info">
-        <i class="fa fa-files-o"></i> {LANG.copy}
-    </a>
-    <a href="{url_move}" class="btn btn-warning">
-        <i class="fa fa-location-arrow"></i> {LANG.move}
-    </a>
-    <a href="{url_view}" class="btn btn-danger">
-        <i class="fa fa-times-circle"></i> {LANG.cancel}
-    </a>
-</form>
-<p>{LANG.choose_folder}:</p>
-<p id="selected-folder-path">Thư mục đích: <span class="text-success"><u>{SELECTED_FOLDER_PATH}</u></span></p>
+<p>{LANG.choose_folder}</p>
+<p id="selected-folder-path">{LANG.target_folder} <span class="text-success"><u><strong>{SELECTED_FOLDER_PATH}</strong></u></span></p>
 <!-- BEGIN: back -->
 <div>
-    <button type="button" class="btn btn-info" id="backButton">
-        <i class="fa fa-chevron-circle-left" aria-hidden="true"></i>{BACK}
+    <button id="backButton">
+        <i class="fa fa-chevron-circle-left text-primary" aria-hidden="true"></i>{BACK}
     </button>
 </div>
 <!-- END: back -->
@@ -37,6 +25,19 @@
 </a><br>
 <!-- END: directory_option -->
 <p>
+
+<form method="post">
+    <input type="hidden" name="file_id" value="{FILE_ID}">
+    <a href="{url_copy}" class="btn btn-info">
+        <i class="fa fa-files-o"></i> {LANG.copy}
+    </a>
+    <a href="{url_move}" class="btn btn-warning">
+        <i class="fa fa-location-arrow"></i> {LANG.move}
+    </a>
+    <a href="{url_view}" class="btn btn-danger">
+        <i class="fa fa-times-circle"></i> {LANG.cancel}
+    </a>
+</form>
 <script>
     function selectFolder(directory) {
         document.getElementsByName("target_folder")[0].value = directory;
