@@ -108,7 +108,7 @@ if ($use_elastic == 1) {
     }
 }
 
-$allowed_extensions = ['txt', 'docx', 'xlsx', 'xls', 'html', 'css'];
+$allowed_extensions = ['txt', 'xlsx', 'xls', 'html', 'css'];
 
 if (!empty($array_op)) {
     preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m);
@@ -207,6 +207,33 @@ function updateAlias($file_id, $file_name)
     $stmtUpdate->bindValue(':alias', $alias, PDO::PARAM_STR);
     $stmtUpdate->execute();
     return true;
+}
+
+function suggestNewName($db, $table, $lev, $baseName, $extension, $is_folder = null) {
+    $i = 1;
+    do {
+        $suggestedName = $baseName . '_' . $i;
+        if ($extension) {
+            $suggestedName .= '.' . $extension;
+        }
+        $params = [
+            ':file_name' => $suggestedName,
+            ':lev' => $lev
+        ];
+        $sql = "SELECT COUNT(*) FROM $table WHERE status = 1 AND file_name = :file_name AND lev = :lev";
+        if ($is_folder !== null) {
+            $sql .= " AND is_folder = :is_folder";
+            $params[':is_folder'] = $is_folder;
+        }
+        $stmt = $db->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->execute();
+        $count = $stmt->fetchColumn();
+        $i++;
+    } while ($count > 0);
+    return $suggestedName;
 }
 
 function deleteFileOrFolder($fileId)

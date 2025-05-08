@@ -17,7 +17,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
     $use_elastic = $nv_Request->get_int('use_elastic', 'post', 0);
     $array_config['use_elastic'] = $use_elastic;
     $use_captcha = $nv_Request->get_int('use_captcha', 'post', 0);
-    $array_config['captcha_type'] = $use_captcha ? 'captcha' : '';
+    $array_config['use_captcha'] = $use_captcha;
 
     if ($use_elastic) {
         $array_config['elas_host'] = $nv_Request->get_title('elas_host', 'post', '');
@@ -51,8 +51,6 @@ if ($nv_Request->isset_request('submit', 'post')) {
         $message_type = 'success';
         nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['config'], $lang_module['config_elastic'], $admin_info['userid']);
         $nv_Cache->delAll();
-        $db->query('UPDATE ' . NV_CONFIG_GLOBALTABLE . " SET config_value = '" . NV_CURRENTTIME . "' WHERE lang = 'sys' AND module = 'global' AND config_name = 'timestamp'");
-        nv_save_file_config_global();
     } else {
         $message = $lang_module['config_failed'];
         $message_type = 'danger';
@@ -150,8 +148,6 @@ if ($nv_Request->isset_request('sync_elastic', 'post')) {
             nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['config'], $lang_module['sync_elastic'], $admin_info['userid']);
             
             $nv_Cache->delAll();
-            $db->query('UPDATE ' . NV_CONFIG_GLOBALTABLE . " SET config_value = '" . NV_CURRENTTIME . "' WHERE lang = 'sys' AND module = 'global' AND config_name = 'timestamp'");
-            nv_save_file_config_global();
         }
     } catch (Exception $e) {
         $message = $lang_module['sync_elastic_failed'] . ': ' . $e->getMessage();
@@ -174,7 +170,7 @@ $xtpl->assign('NV_OP_VARIABLE', NV_OP_VARIABLE);
 $xtpl->assign('MODULE_NAME', $module_name);
 $xtpl->assign('OP', $op);
 $xtpl->assign('CONFIG', $array_config);
-$xtpl->assign('USE_CAPTCHA_CHECKED', $array_config['captcha_type'] == 'captcha' ? ' checked="checked"' : '');
+$xtpl->assign('USE_CAPTCHA_CHECKED', $array_config['use_captcha'] == 1 ? ' checked="checked"' : '');
 
 if ($message != '') {
     $xtpl->assign('MESSAGE', $message);

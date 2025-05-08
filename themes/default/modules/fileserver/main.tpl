@@ -137,29 +137,31 @@
         <i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}
     </button>
     <!-- END: can_delete_all -->
+</div>
+<div class="text-center">{GENERATE_PAGE}</div>
 
-    <div class="modal fade" id="compressModal" tabindex="-1" role="dialog" aria-labelledby="compressModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title" id="compressModalLabel">{LANG.compress_modal}</h3>
-                </div>
-                <div class="modal-body">
-                    <form action="" id="compressForm" onsubmit="submitCompressForm(event);">
-                        <div class="form-group">
-                            <label for="zipFileName">{LANG.zip_file_name}</label>
-                            <input type="text" class="form-control" id="zipFileName" name="zipFileName" required>
-                        </div>
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">{LANG.close_btn}</button>
-                        <button type="submit" class="btn btn-primary">{LANG.zip_btn}</button>
-                    </form>
-                </div>
+<div class="modal fade" id="compressModal" tabindex="-1" role="dialog" aria-labelledby="compressModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="compressModalLabel">{LANG.compress_modal}</h3>
+            </div>
+            <div class="modal-body">
+                <form action="" id="compressForm" onsubmit="submitCompressForm(event);">
+                    <div class="form-group">
+                        <label for="zipFileName">{LANG.zip_file_name}</label>
+                        <input type="text" class="form-control" id="zipFileName" name="zipFileName" required>
+                        <div id="zipWarning" class="text-danger mt-1" style="display: none;"></div>
+                        <div id="zipSuccess" class="text-success mt-1" style="display: none;"></div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{LANG.close_btn}</button>
+                    <button type="submit" class="btn btn-primary">{LANG.zip_btn}</button>
+                </form>
             </div>
         </div>
     </div>
 </div>
-<div class="text-center">{GENERATE_PAGE}</div>
 
 <div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="createModalLabel"
     aria-hidden="true">
@@ -173,19 +175,22 @@
                     -->data-recaptcha3="1"<!-- END: recaptcha3 -->>
                     <div class="form-group">
                         <label for="type">{LANG.type}:</label>
-                        <select class="form-control" id="type" name="type" onchange="toggleFileNote()">
-                            <option value="1">{LANG.folder}</option>
+                        <select class="form-control" id="type" name="type"">
+                            <option value=" 1">{LANG.folder}</option>
                             <option value="0">{LANG.file}</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="name">{LANG.f_name}:</label>
                         <input type="text" class="form-control" id="name_f" name="name_f" required>
-                        <div id="fileNote" style="display: none;">
-                            <small class="form-text text-danger">
+                        <div id="fileNameWarning" class="text-danger mt-1" style="display: none;"></div>
+                        <div id="fileNameSuccess" class="text-success mt-1" style="display: none;"></div>
+                    </div>
+                    <div class="alert alert-info mt-2">
+                        <strong>{LANG.cautions}</strong>
+                        <p><small class="form-text">
                                 {LANG.allowed_extensions}
-                            </small>
-                        </div>
+                            </small></p>
                     </div>
                     <input type="hidden" name="action" value="create">
                     <!-- BEGIN: captcha -->
@@ -239,6 +244,8 @@
                     <div class="form-group">
                         <label for="new_name">{LANG.new_name}:</label>
                         <input type="text" class="form-control" id="new_name" name="new_name" required>
+                        <div id="renameWarning" class="text-danger mt-1" style="display: none;"></div>
+                        <div id="renameSuccess" class="text-success mt-1" style="display: none;"></div>
                     </div>
                     <input type="hidden" name="file_id" id="file_id" value="">
                     <input type="hidden" name="rename_action" value="rename">
@@ -292,8 +299,8 @@
                         window.location.reload();
                     } else if (res.refresh_captcha) {
                         if ($("#createForm").data('recaptcha3')) {
-                            grecaptcha.ready(function() {
-                                grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', {action: 'create'});
+                            grecaptcha.ready(function () {
+                                grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', { action: 'create' });
                             });
                         } else if ($(".g-recaptcha").length) {
                             grecaptcha.reset();
@@ -306,8 +313,8 @@
                     console.log('Create error:', xhr.responseText);
                     alert(xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Đã có lỗi xảy ra.');
                     if ($("#createForm").data('recaptcha3')) {
-                        grecaptcha.ready(function() {
-                            grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', {action: 'create'});
+                        grecaptcha.ready(function () {
+                            grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', { action: 'create' });
                         });
                     } else if ($(".g-recaptcha").length) {
                         grecaptcha.reset();
@@ -339,6 +346,42 @@
             sendRequest('');
         }
     }
+
+    $('#name_f').on('input', function () {
+        var name_f = $(this).val();
+        var type = $('#type').val();
+
+        if (name_f) {
+            $.ajax({
+                type: 'POST',
+                url: window.location.href,
+                data: {
+                    action: 'check_filename',
+                    name_f: name_f,
+                    type: type,
+                    lev: $('#lev').val()
+                },
+                dataType: 'json',
+                success: function (res) {
+                    if (res.status == 'error') {
+                        $('#fileNameWarning').html(res.message).show();
+                        $('#fileNameSuccess').hide();
+                    } else {
+                        $('#fileNameSuccess').html(res.message).show();
+                        $('#fileNameWarning').hide();
+                    }
+                },
+                error: function (xhr) {
+                    console.log('Error checking filename:', xhr.responseText);
+                    $('#fileNameWarning').text('Có lỗi xảy ra khi kiểm tra tên file').show();
+                    $('#fileNameSuccess').hide();
+                }
+            });
+        } else {
+            $('#fileNameWarning').hide();
+            $('#fileNameSuccess').hide();
+        }
+    });
 
     $(document).on('click', '.delete', function () {
         const fileId = $(this).data('file-id');
@@ -487,7 +530,7 @@
             console.log(selectedFiles);
         });
 
-        let isFileNameValid = false;
+        let isZipNameValid = false;
 
         $('#zipFileName').on('input', function () {
             var zipFileName = $(this).val();
@@ -495,44 +538,48 @@
             document.querySelectorAll('input[name="files[]"]:checked').forEach(input => {
                 selectedFiles.push(input.value);
             });
+
             if (zipFileName) {
                 $.ajax({
                     type: 'POST',
                     url: window.location.href,
                     data: {
-                        action: 'check_filename',
+                        action: 'check_zip_name',
                         zipFileName: zipFileName,
                         files: selectedFiles,
                         lev: $('#lev').val()
                     },
                     dataType: 'json',
                     success: function (res) {
-                        $('#zipFileName').data('lastResponse', res);
                         if (res.status == 'error') {
-                            $('#fileNameWarning').text(res.message).show();
-                            $('#fileNameSuccess').hide();
-                            isFileNameValid = false;
+                            $('#zipWarning').html(res.message).show();
+                            $('#zipSuccess').hide();
+                            isZipNameValid = false;
                         } else {
-                            $('#fileNameSuccess').text(res.message).show();
-                            $('#fileNameWarning').hide();
-                            isFileNameValid = true;
+                            $('#zipSuccess').html(res.message).show();
+                            $('#zipWarning').hide();
+                            isZipNameValid = true;
                         }
                     },
                     error: function (xhr) {
-                        console.log('Error checking filename:', xhr.responseText);
-                        $('#fileNameWarning').text('Có lỗi xảy ra khi kiểm tra tên file').show();
-                        isFileNameValid = false;
+                        $('#zipWarning').text('Có lỗi xảy ra khi kiểm tra tên file zip').show();
+                        $('#zipSuccess').hide();
+                        isZipNameValid = false;
                     }
                 });
             } else {
-                $('#fileNameWarning').hide();
-                $('#fileNameSuccess').hide();
-                isFileNameValid = false;
+                $('#zipWarning').hide();
+                $('#zipSuccess').hide();
+                isZipNameValid = false;
             }
         });
 
         $('#compressForm').on('submit', function (e) {
-            e.preventDefault();
+            if (!isZipNameValid) {
+                e.preventDefault();
+                alert('Tên file zip không hợp lệ hoặc đã tồn tại. Vui lòng kiểm tra lại!');
+                return false;
+            }
             var zipFileName = $('#zipFileName').val();
             const selectedFiles = [];
             document.querySelectorAll('input[name="files[]"]:checked').forEach(input => {
@@ -635,19 +682,40 @@
         });
     });
 
-    function toggleFileNote() {
-        const typeSelect = document.getElementById('type');
-        const fileNote = document.getElementById('fileNote');
+    $('#new_name').on('input', function () {
+        var new_name = $(this).val();
+        var file_id = $('#file_id').val();
 
-        if (typeSelect.value === '0') {
-            fileNote.style.display = 'block';
+        if (new_name) {
+            $.ajax({
+                type: 'POST',
+                url: window.location.href,
+                data: {
+                    action: 'check_rename',
+                    new_name: new_name,
+                    file_id: file_id
+                },
+                dataType: 'json',
+                success: function (res) {
+                    if (res.status == 'error') {
+                        $('#renameWarning').html(res.message).show();
+                        $('#renameSuccess').hide();
+                    } else {
+                        $('#renameSuccess').html(res.message).show();
+                        $('#renameWarning').hide();
+                    }
+                },
+                error: function (xhr) {
+                    console.log('Error checking rename:', xhr.responseText);
+                    $('#renameWarning').text('Có lỗi xảy ra khi kiểm tra tên mới').show();
+                    $('#renameSuccess').hide();
+                }
+            });
         } else {
-            fileNote.style.display = 'none';
+            $('#renameWarning').hide();
+            $('#renameSuccess').hide();
         }
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        toggleFileNote();
     });
+
 </script>
 <!-- END: main -->

@@ -111,7 +111,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
                         $xtpl->parse('main.file_row.view');
                     }
 
-                    if ($fileInfo == 'txt' || $fileInfo == 'php' || $fileInfo == 'html' || $fileInfo == 'css' || $fileInfo == 'js' || $fileInfo == 'json' || $fileInfo == 'xml' || $fileInfo == 'sql' || $fileInfo == 'doc' || $fileInfo == 'docx' || $fileInfo == 'xls' || $fileInfo == 'xlsx') {
+                    if ($fileInfo == 'txt' || $fileInfo == 'html' || $fileInfo == 'css') {
                         $xtpl->assign('EDIT', $row['url_edit']);
                         $xtpl->parse('main.file_row.edit');
                     } else if ($fileInfo == 'png' || $fileInfo == 'jpg' || $fileInfo == 'jpeg' || $fileInfo == 'gif' || $fileInfo == 'mp3' || $fileInfo == 'mp4' || $fileInfo == 'ppt' || $fileInfo == 'pptx' ) {
@@ -189,13 +189,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
         }
     }
 
-    if ($module_config[$module_name]['captcha_type'] == 'recaptcha' and $reCaptchaPass and $global_config['recaptcha_ver'] == 3) {
-        $xtpl->parse('main.recaptcha3');
-    } elseif ($module_config[$module_name]['captcha_type'] == 'recaptcha' and $reCaptchaPass and $global_config['recaptcha_ver'] == 2) {
-        $xtpl->assign('RECAPTCHA_ELEMENT', 'recaptcha' . nv_genpass(8));
-        $xtpl->assign('N_CAPTCHA', $lang_global['securitycode1']);
-        $xtpl->parse('main.recaptcha');
-    } elseif ($module_config[$module_name]['captcha_type'] == 'captcha') {
+    if ($module_config[$module_name]['use_captcha'] == 1) {
         $xtpl->assign('GFX_WIDTH', NV_GFX_WIDTH);
         $xtpl->assign('GFX_HEIGHT', NV_GFX_HEIGHT);
         $xtpl->assign('NV_BASE_SITEURL', NV_BASE_SITEURL);

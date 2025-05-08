@@ -37,8 +37,6 @@ if ($nv_Request->isset_request('submit', 'post')) {
             $stmt_update->bindParam(':config_value', $group_ids_str, PDO::PARAM_STR);
             if ($stmt_update->execute()) {
                 $nv_Cache->delAll();
-                $db->query('UPDATE ' . NV_CONFIG_GLOBALTABLE . " SET config_value = '" . NV_CURRENTTIME . "' WHERE lang = 'sys' AND module = 'global' AND config_name = 'timestamp'");
-                nv_save_file_config_global();
                 $mess = $lang_module['update_success'];
             } else {
                 $err = $lang_module['update_error'];
@@ -53,8 +51,6 @@ if ($nv_Request->isset_request('submit', 'post')) {
             $stmt_insert->bindParam(':config_value', $group_ids_str, PDO::PARAM_STR);
             if ($stmt_insert->execute()) {
                 $nv_Cache->delAll();
-                $db->query('UPDATE ' . NV_CONFIG_GLOBALTABLE . " SET config_value = '" . NV_CURRENTTIME . "' WHERE lang = 'sys' AND module = 'global' AND config_name = 'timestamp'");
-                nv_save_file_config_global();
                 $mess = $lang_module['update_success'];
             } else {
                 $err = $lang_module['update_error'];

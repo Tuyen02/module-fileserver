@@ -217,13 +217,7 @@ if (!empty($action)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty'], 'refresh_captcha' => true]);
         }
 
-        $fcaptcha = '';
-        if ($module_config[$module_name]['captcha_type'] == 'recaptcha' && $reCaptchaPass) {
-            $fcaptcha = $nv_Request->get_title('g-recaptcha-response', 'post', '');
-            if (empty($fcaptcha) || !nv_capcha_txt($fcaptcha, 'recaptcha')) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_global['securitycodeincorrect1'], 'refresh_captcha' => true]);
-            }
-        } elseif ($module_config[$module_name]['captcha_type'] == 'captcha') {
+        if ($module_config[$module_name]['use_captcha'] == 1) {
             $fcaptcha = $nv_Request->get_title('fcode', 'post', '');
             if (empty($fcaptcha) || !nv_capcha_txt($fcaptcha, 'captcha')) {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_global['securitycodeincorrect'], 'refresh_captcha' => true]);
@@ -500,40 +494,35 @@ if (!empty($action)) {
     }
 
     if ($action == 'check_filename') {
-        $name_f = nv_EncString($nv_Request->get_title('zipFileName', 'post', ''));
+        $name_f = nv_EncString($nv_Request->get_title('name_f', 'post', ''));
+        $type = $nv_Request->get_int('type', 'post', 0);
+        
         if ($name_f == '') {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['zip_file_name_empty']]);
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty']]);
         }
 
-        $name_with_zip = $name_f;
-        if (pathinfo($name_f, PATHINFO_EXTENSION) != 'zip') {
-            $name_with_zip = $name_f . '.zip';
+        if ($type == 0) {
+            $extension = pathinfo($name_f, PATHINFO_EXTENSION);
+            if ($extension == '' || !in_array($extension, $allowed_extensions)) {
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_extension_not_allowed']]);
+            }
         }
 
-        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND is_folder = 0 AND (file_name = :file_name OR file_name = :file_name_zip) AND lev = :lev';
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND is_folder = :is_folder AND file_name = :file_name AND lev = :lev';
         $stmtCheck = $db->prepare($sqlCheck);
+        $stmtCheck->bindParam(':is_folder', $type, PDO::PARAM_INT);
         $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
-        $stmtCheck->bindParam(':file_name_zip', $name_with_zip, PDO::PARAM_STR);
         $stmtCheck->bindParam(':lev', $lev, PDO::PARAM_INT);
         $stmtCheck->execute();
         $count = $stmtCheck->fetchColumn();
 
         if ($count > 0) {
-            $i = 1;
-            $originalName = pathinfo($name_f, PATHINFO_FILENAME);
+            $baseName = pathinfo($name_f, PATHINFO_FILENAME);
             $extension = pathinfo($name_f, PATHINFO_EXTENSION);
-            do {
-                $name_f = $originalName . '_' . $i . '.' . $extension;
-                $name_with_zip = $name_f . '.zip';
-                $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
-                $stmtCheck->bindParam(':file_name_zip', $name_with_zip, PDO::PARAM_STR);
-                $stmtCheck->execute();
-                $count = $stmtCheck->fetchColumn();
-                $i++;
-            } while ($count > 0);
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_exists'] . '. ' . $lang_module['suggest_name'] . ': ' . $name_f]);
+            $suggestedName = suggestNewName($db, NV_PREFIXLANG . '_' . $module_data . '_files', $lev, $baseName, $extension, $type);
+            nv_jsonOutput(['status' => 'error', 'message' => 'Tên ' . ($type == 0 ? 'file' : 'thư mục') . ' đã tồn tại. Gợi ý tên mới: ' . $suggestedName]);
         } else {
-            nv_jsonOutput(['status' => 'success', 'message' => $lang_module['file_name_valid']]);
+            nv_jsonOutput(['status' => 'success', 'message' => 'Tên ' . ($type == 0 ? 'file' : 'thư mục') . ' hợp lệ']);
         }
     }
 
@@ -621,6 +610,75 @@ if (!empty($action)) {
             }
         } else {
             nv_jsonOutput(['status' => 'error', 'message' => $compressResult['message']]);
+        }
+    }
+
+    if ($action == 'check_rename') {
+        $new_name = nv_EncString($nv_Request->get_title('new_name', 'post', ''));
+        $file_id = $nv_Request->get_int('file_id', 'post', 0);
+        
+        if ($new_name == '') {
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty']]);
+        }
+
+        $sql = 'SELECT f.*, p.p_group, p.p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+               LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id 
+               WHERE f.file_id = ' . $file_id;
+        $row = $db->query($sql)->fetch();
+
+        if (!$row) {
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_not_found']]);
+        }
+
+        $fileName = $row['file_name'];
+        $oldFilePath = $row['file_path'];
+        $directory = dirname($oldFilePath);
+        $newFilePath = $directory . '/' . $new_name;
+
+        $sql_check = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                     WHERE status = 1 AND file_path = :new_path AND file_id != :file_id';
+        $stmt_check = $db->prepare($sql_check);
+        $stmt_check->bindParam(':new_path', $newFilePath, PDO::PARAM_STR);
+        $stmt_check->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+        $stmt_check->execute();
+        $exists = $stmt_check->fetchColumn();
+
+        if ($exists) {
+            $baseName = pathinfo($new_name, PATHINFO_FILENAME);
+            $extension = pathinfo($new_name, PATHINFO_EXTENSION);
+            $suggestedName = suggestNewName($db, NV_PREFIXLANG . '_' . $module_data . '_files', $row['lev'], $baseName, $extension, $row['is_folder']);
+            nv_jsonOutput(['status' => 'error', 'message' => 'Tên ' . ($row['is_folder'] == 1 ? 'thư mục' : 'file') . ' đã tồn tại. Gợi ý tên mới: ' . $suggestedName]);
+        } else {
+            nv_jsonOutput(['status' => 'success', 'message' => 'Tên ' . ($row['is_folder'] == 1 ? 'thư mục' : 'file') . ' hợp lệ']);
+        }
+    }
+
+    if ($action == 'check_zip_name') {
+        $zipFileName = nv_EncString($nv_Request->get_title('zipFileName', 'post', ''));
+        if ($zipFileName == '') {
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['zip_file_name_empty']]);
+        }
+
+        $name_with_zip = $zipFileName;
+        if (pathinfo($zipFileName, PATHINFO_EXTENSION) != 'zip') {
+            $name_with_zip = $zipFileName . '.zip';
+        }
+
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND is_folder = 0 AND (file_name = :file_name OR file_name = :file_name_zip) AND lev = :lev';
+        $stmtCheck = $db->prepare($sqlCheck);
+        $stmtCheck->bindParam(':file_name', $zipFileName, PDO::PARAM_STR);
+        $stmtCheck->bindParam(':file_name_zip', $name_with_zip, PDO::PARAM_STR);
+        $stmtCheck->bindParam(':lev', $lev, PDO::PARAM_INT);
+        $stmtCheck->execute();
+        $count = $stmtCheck->fetchColumn();
+
+        if ($count > 0) {
+            $baseName = pathinfo($zipFileName, PATHINFO_FILENAME);
+            $extension = pathinfo($zipFileName, PATHINFO_EXTENSION);
+            $suggestedName = suggestNewName($db, NV_PREFIXLANG . '_' . $module_data . '_files', $lev, $baseName, $extension, 0);
+            nv_jsonOutput(['status' => 'error', 'message' => 'Tên file zip đã tồn tại. Gợi ý tên mới: ' . $suggestedName]);
+        } else {
+            nv_jsonOutput(['status' => 'success', 'message' => 'Tên file zip hợp lệ']);
         }
     }
 
