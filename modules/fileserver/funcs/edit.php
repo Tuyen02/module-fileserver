@@ -6,14 +6,6 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
 
-if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpword')) {
-    trigger_error('No phpword lib. Run command "composer require phpoffice/phpword" to install', 256);
-}
-
-if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpspreadsheet')) {
-    trigger_error('No phpspreadsheet lib. Run command "composer require phpoffice/phpspreadsheet" to install', 256);
-}
-
 $page_title = $lang_module['edit'];
 
 $use_elastic = $module_config['fileserver']['use_elastic'];
@@ -58,7 +50,7 @@ while ($current_lev > 0) {
     $breadcrumbs[] = [
         'catid' => $current_lev,
         'title' => $row1['file_name'],
-        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row1['alias'] 
+        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row1['alias']
     ];
     $current_lev = $row1['lev'];
 }
@@ -79,8 +71,11 @@ $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
 $file_content = '';
 if (file_exists($full_path)) {
     if ($file_extension == 'pdf') {
-        $file_content = $file_path;
+        $file_content = NV_BASE_SITEURL . ltrim($file_path, '/');
     } elseif (in_array($file_extension, ['doc', 'docx'])) {
+        if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpword')) {
+            trigger_error('No phpword lib. Run command "composer require phpoffice/phpword" to install', 256);
+        }
         try {
             $phpWord = IOFactory::load($full_path);
             $text = '';
@@ -99,15 +94,18 @@ if (file_exists($full_path)) {
             $message = $lang_module['cannot_open_word_file'] . $e->getMessage();
         }
     } elseif (in_array($file_extension, ['xls', 'xlsx'])) {
+        if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpspreadsheet')) {
+            trigger_error('No phpspreadsheet lib. Run command "composer require phpoffice/phpspreadsheet" to install', 256);
+        }
         try {
             $spreadsheet = SpreadsheetIOFactory::load($full_path);
             $worksheet = $spreadsheet->getActiveSheet();
             $text = '';
-            
+
             foreach ($worksheet->getRowIterator() as $row) {
                 $cellIterator = $row->getCellIterator();
                 $cellIterator->setIterateOnlyExistingCells(false);
-                
+
                 $rowData = [];
                 foreach ($cellIterator as $cell) {
                     $rowData[] = $cell->getValue();

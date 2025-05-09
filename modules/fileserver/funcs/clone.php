@@ -355,7 +355,7 @@ if ($rank > 0) {
         $selected_folder_path = $target_folder['file_name'];
     }
 } elseif ($root == 1) {
-    $selected_folder_path = './';
+    $selected_folder_path = $lang_module['root'];
 }
 
 $contents = nv_fileserver_clone($row, $file_id, $file_name, $file_path, $status, $message, $selected_folder_path, $view_url, $directories, $page_url, $base_url, $has_root_level);
