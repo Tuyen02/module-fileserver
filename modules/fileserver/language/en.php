@@ -102,15 +102,25 @@ $lang_module['choose_folder'] = 'Choose folder';
 $lang_module['file_extension_not_allowed'] = 'File extension not allowed. List of allowed extensions: docx, pdf, png, mp3, mp4, ...';
 $lang_module['copy_or_move'] = 'Copy or move';
 $lang_module['target_folder_not_found'] = 'Please select a destination folder below before proceeding.';
+
 $lang_module['compress'] = 'Compress';
+
 $lang_module['edit_img'] = 'Edit image';
+
 $lang_module['edit'] = 'Edit';
+
 $lang_module['perm'] = 'Permissions';
+
 $lang_module['rss'] = 'RSS';
+
 $lang_module['share'] = 'Share';
+
 $lang_module['full_size'] = 'Size:';
+
 $lang_module['total_file'] = 'Number of files:';
+
 $lang_module['total_folder'] = 'Number of folders:';
+
 $lang_module['compress_modal'] = 'Compress file';
 $lang_module['zip_file_name'] = 'Zip file name';
 $lang_module['name_exists_suggest'] = 'Name already exists. Do you want to continue? ';
@@ -138,17 +148,3 @@ $lang_module['no_data'] = 'No data';
 $lang_module['no_changes'] = 'No changes';
 $lang_module['folder_has_restricted_items'] = 'This operation cannot be performed because the directory contains files/folders for which you do not have permission.';
 $lang_module['not_permission_to_rename'] = 'You do not have permission to rename this file/folder.';
-$lang_module['download_success'] = 'Download successful';
-$lang_module['cannot_change_extension'] = 'Cannot change file extension';
-$lang_module['allowed_extensions'] = 'Note: Allowed file formats: txt, xlsx, xls, html, css';
-$lang_module['cautions'] = 'Accented file/folder names will be automatically converted to unaccented ones to ensure system compatibility.';
-$lang_module['no_changes_made'] = 'No changes made';
-$lang_module['file_name_exists'] = 'File name already exists';
-$lang_module['suggest_name'] = 'Suggested name'; $lang_module['create_ok_detail'] = '%s "%s" was successfully created.';
-$lang_module['file_name_exists_suggest'] = 'The name "%s" already exists. You can use the name "%s"';
-$lang_module['error_reading_ppt'] = 'The module currently does not have the feature to view PowerPoint file content.';
-$lang_module['not_allow_zip'] = 'Do not allow uploading zip files.';
-$lang_module['cannot_open_word_file'] = 'Cannot read Word file: ';
-$lang_module['cannot_open_excel_file'] = 'Cannot read Excel file: ';
-$lang_module['cannot_save_file'] = 'Cannot save file';
-$lang_module['download_to_view'] = 'Please download to view the files details.';

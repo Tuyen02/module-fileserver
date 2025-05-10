@@ -27,6 +27,7 @@ $lang_module['cannot_create_file_in_file.'] = 'Không thể tạo file con trong
 $lang_module['f_has_exit'] = 'File đã tồn tại.';
 $lang_module['cannot_create_file'] = 'Không thể tạo file.';
 $lang_module['file_name_empty'] = 'Tên file không được để trống.';
+$lang_module['file_name_invalid'] = 'Tên file không hợp lệ.';
 $lang_module['create_ok'] = 'Tạo thành công.';
 $lang_module['delete_ok'] = 'Xóa thành công.';
 $lang_module['delete_false'] = 'Xóa thất bại.';

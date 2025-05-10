@@ -224,9 +224,16 @@ if (!empty($action)) {
             }
         }
 
-        $extension = pathinfo($name_f, PATHINFO_EXTENSION);
-        if ($type == 0 && ($extension == '' || !in_array($extension, $allowed_extensions))) {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_extension_not_allowed'], 'refresh_captcha' => true]);
+        if ($type == 0) {
+            $extension = pathinfo($name_f, PATHINFO_EXTENSION);
+            $filename = pathinfo($name_f, PATHINFO_FILENAME);
+            if ($extension == '' || !in_array($extension, $allowed_extensions)) {
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_extension_not_allowed'], 'refresh_captcha' => true]);
+            }
+            
+            if ($filename == '') {
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_invalid'], 'refresh_captcha' => true]);
+            }
         }
 
         if ($lev > 0) {
@@ -493,39 +500,6 @@ if (!empty($action)) {
         nv_jsonOutput(['status' => $status, 'message' => $mess]);
     }
 
-    if ($action == 'check_filename') {
-        $name_f = nv_EncString($nv_Request->get_title('name_f', 'post', ''));
-        $type = $nv_Request->get_int('type', 'post', 0);
-        
-        if ($name_f == '') {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty']]);
-        }
-
-        if ($type == 0) {
-            $extension = pathinfo($name_f, PATHINFO_EXTENSION);
-            if ($extension == '' || !in_array($extension, $allowed_extensions)) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_extension_not_allowed']]);
-            }
-        }
-
-        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND is_folder = :is_folder AND file_name = :file_name AND lev = :lev';
-        $stmtCheck = $db->prepare($sqlCheck);
-        $stmtCheck->bindParam(':is_folder', $type, PDO::PARAM_INT);
-        $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
-        $stmtCheck->bindParam(':lev', $lev, PDO::PARAM_INT);
-        $stmtCheck->execute();
-        $count = $stmtCheck->fetchColumn();
-
-        if ($count > 0) {
-            $baseName = pathinfo($name_f, PATHINFO_FILENAME);
-            $extension = pathinfo($name_f, PATHINFO_EXTENSION);
-            $suggestedName = suggestNewName($db, NV_PREFIXLANG . '_' . $module_data . '_files', $lev, $baseName, $extension, $type);
-            nv_jsonOutput(['status' => 'error', 'message' => 'Tên ' . ($type == 0 ? 'file' : 'thư mục') . ' đã tồn tại. Gợi ý tên mới: ' . $suggestedName]);
-        } else {
-            nv_jsonOutput(['status' => 'success', 'message' => 'Tên ' . ($type == 0 ? 'file' : 'thư mục') . ' hợp lệ']);
-        }
-    }
-
     if ($action == 'compress') {
         if (!defined('NV_IS_SPADMIN')) {
             $is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
@@ -610,6 +584,45 @@ if (!empty($action)) {
             }
         } else {
             nv_jsonOutput(['status' => 'error', 'message' => $compressResult['message']]);
+        }
+    }
+
+    if ($action == 'check_filename') {
+        $name_f = nv_EncString($nv_Request->get_title('name_f', 'post', ''));
+        $type = $nv_Request->get_int('type', 'post', 0);
+        
+        if ($name_f == '') {
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty']]);
+        }
+
+        if ($type == 0) {
+            $extension = pathinfo($name_f, PATHINFO_EXTENSION);
+            $filename = pathinfo($name_f, PATHINFO_FILENAME);
+            
+            if ($extension == '' || !in_array($extension, $allowed_extensions)) {
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_extension_not_allowed']]);
+            }
+            
+            if ($filename == '') {
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_invalid']]);
+            }
+        }
+
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND is_folder = :is_folder AND file_name = :file_name AND lev = :lev';
+        $stmtCheck = $db->prepare($sqlCheck);
+        $stmtCheck->bindParam(':is_folder', $type, PDO::PARAM_INT);
+        $stmtCheck->bindParam(':file_name', $name_f, PDO::PARAM_STR);
+        $stmtCheck->bindParam(':lev', $lev, PDO::PARAM_INT);
+        $stmtCheck->execute();
+        $count = $stmtCheck->fetchColumn();
+
+        if ($count > 0) {
+            $baseName = pathinfo($name_f, PATHINFO_FILENAME);
+            $extension = pathinfo($name_f, PATHINFO_EXTENSION);
+            $suggestedName = suggestNewName($db, NV_PREFIXLANG . '_' . $module_data . '_files', $lev, $baseName, $extension, $type);
+            nv_jsonOutput(['status' => 'error', 'message' => 'Tên ' . ($type == 0 ? 'file' : 'thư mục') . ' đã tồn tại. Gợi ý tên mới: ' . $suggestedName]);
+        } else {
+            nv_jsonOutput(['status' => 'success', 'message' => 'Tên ' . ($type == 0 ? 'file' : 'thư mục') . ' hợp lệ']);
         }
     }
 
