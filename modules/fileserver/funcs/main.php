@@ -431,6 +431,10 @@ if (!empty($action)) {
         $oldFilePath = $row['file_path'];
         $oldFullPath = NV_ROOTDIR . '/' . $oldFilePath;
 
+        if($newName == ''){
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty']]);
+        }
+
         if ($newName === $fileName) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['no_changes_made']]);
         }
@@ -440,6 +444,10 @@ if (!empty($action)) {
         
         if (!empty($originalExtension) && $originalExtension != $newExtension) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_change_extension']]);
+        }
+
+        if(pathinfo($newName, PATHINFO_FILENAME) == '') {
+            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_invalid']]);
         }
 
         $directory = dirname($oldFilePath);
@@ -641,6 +649,19 @@ if (!empty($action)) {
 
         if (!$row) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_not_found']]);
+        }
+
+        if ($row['is_folder'] == 0) {
+            $extension = pathinfo($new_name, PATHINFO_EXTENSION);
+            $filename = pathinfo($new_name, PATHINFO_FILENAME);
+            
+            if ($extension == '' || !in_array($extension, $allowed_extensions)) {
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_extension_not_allowed']]);
+            }
+            
+            if ($filename == '') {
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_invalid']]);
+            }
         }
 
         $fileName = $row['file_name'];
