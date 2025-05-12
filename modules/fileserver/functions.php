@@ -783,3 +783,69 @@ function updatePermissions($parent_id, $p_group, $p_other)
         $stmt->execute();
     }
 }
+
+function buildFolderTree($user_info, $page_url, $is_admin = false, $parent_id = 0) {
+    global $db, $module_data, $lang_module;
+    $tree = [];
+    
+    if ($parent_id == 0) {
+        $root_node = [
+            'file_id' => 0,
+            'file_name' => $lang_module['root'], 
+            'url' => $page_url . '&root=1',
+            'path' => $lang_module['root'],
+            'children' => []
+        ];
+        $tree[] = $root_node;
+    }
+
+    $sql = 'SELECT f.*, p.p_group, p.p_other 
+            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+            LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p 
+            ON f.file_id = p.file_id
+            WHERE f.lev = ' . $parent_id . ' 
+            AND f.is_folder = 1 
+            AND f.status = 1 
+            ORDER BY f.file_id ASC';
+    $result = $db->query($sql);
+    $dirs = $result->fetchAll();
+
+    foreach ($dirs as $dir) {
+        if (checkPermission($dir, $user_info, $is_admin)) {
+            $dir['url'] = $page_url . '&rank=' . $dir['file_id'];
+            $dir['path'] = $dir['file_name'];
+            $dir['children'] = buildFolderTree( $user_info, $page_url, $is_admin, $dir['file_id']);
+            $tree[] = $dir;
+        }
+    }
+    return $tree;
+}
+
+function checkPermission($directory, $user_info, $is_admin = false) {
+    if ($is_admin) {
+        return true;
+    }
+    if (isset($directory['userid']) && $directory['userid'] == $user_info['userid']) {
+        return true;
+    }
+    if (isset($user_info['in_groups']) && is_array($user_info['in_groups'])) {
+        if (isset($directory['p_group']) && $directory['p_group'] >= 2) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function renderFolderTree($tree) {
+    $html = '<ul>';
+    foreach ($tree as $node) {
+        $html .= '<li data-file-id="' . $node['file_id'] . '" data-path="' . htmlspecialchars($node['path']) . '" data-url="' . $node['url'] . '">';
+        $html .= '<span class="folder-name"><i class="fa fa-folder-o" aria-hidden="true"></i> ' . htmlspecialchars($node['file_name']) . '</span>';
+        if (!empty($node['children'])) {
+            $html .= renderFolderTree($node['children']);
+        }
+        $html .= '</li>';
+    }
+    $html .= '</ul>';
+    return $html;
+}

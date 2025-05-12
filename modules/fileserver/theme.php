@@ -202,8 +202,7 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
     return $xtpl->text('main');
 }
 
-function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $status, $message, $selected_folder_path, $view_url, $directories, $page_url, $base_url, $has_root_level)
-{
+function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $status, $message, $selected_folder_path, $view_url, $folder_tree, $page_url, $base_url, $has_root_level) {
     global $module_file, $global_config, $lang_module;
 
     $xtpl = new XTemplate('clone.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
@@ -213,24 +212,10 @@ function nv_fileserver_clone($row, $file_id, $file_name, $file_path, $status, $m
     $xtpl->assign('FILE_PATH', $file_path);
     $xtpl->assign('MESSAGE', $message);
     $xtpl->assign('SELECTED_FOLDER_PATH', $selected_folder_path);
-
     $xtpl->assign('url_view', $view_url);
 
-    if (!empty($selected_folder_path)) {
-        $xtpl->assign('BACK', '');
-        $xtpl->parse('main.back');
-    }
-
-    foreach ($directories as $directory) {
-        $directory['url'] = $page_url . '&rank=' . $directory['file_id'];
-        $xtpl->assign('DIRECTORY', $directory);
-        $xtpl->parse('main.directory_option');
-    }
-
-    if ($has_root_level) {
-        $xtpl->assign('ROOT_URL', $page_url . '&root=1');
-        $xtpl->parse('main.root_option');
-    }
+    $tree_html = renderFolderTree($folder_tree);
+    $xtpl->assign('TREE_HTML', $tree_html);
 
     if (!empty($message)) {
         $message_class = ($status == 'success') ? 'alert-success' : 'alert-danger';
@@ -337,6 +322,9 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
         $xtpl->parse('main.can_save');
     }else{
         $xtpl->parse('main.cannt_save');
+        $xtpl->assign('DISABLE_CLASS', 'readonly-editor');
+        $xtpl->assign('DISABLE_ATTR', 'readonly');
+        $xtpl->assign('READONLY', 'true');
     }
 
     if (!empty($message)) {
@@ -393,27 +381,5 @@ function nv_fileserver_perm($row, $file_id, $group_level, $other_level, $status,
     }
 
     $xtpl->parse('main');
-    return $xtpl->text('main');
-}
-
-function nv_fileserver_share($row, $file_content, $file_id, $file_name, $view, $view_url, $message)
-{
-    global $module_file, $global_config, $lang_module, $module_name;
-
-    $xtpl = new XTemplate('share.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
-    $xtpl->assign('LANG', $lang_module);
-    $xtpl->assign('FILE_CONTENT', htmlspecialchars($file_content));
-    $xtpl->assign('FILE_ID', $file_id);
-    $xtpl->assign('FILE_NAME', $file_name);
-    $xtpl->assign('VIEW', $view);
-    $xtpl->assign('url_view', $view_url);
-
-    if ($message != '') {
-        $xtpl->assign('MESSAGE', $message);
-        $xtpl->parse('main.message');
-    }
-
-    $xtpl->parse('main');
-
     return $xtpl->text('main');
 }

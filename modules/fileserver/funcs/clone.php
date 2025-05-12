@@ -22,10 +22,18 @@ $copy = $nv_Request->get_int('copy', 'get', 0);
 $move = $nv_Request->get_int('move', 'get', 0);
 $root = $nv_Request->get_int('root', 'get', 0);
 $page = $nv_Request->get_int('page', 'get', 1);
+$current_permission = get_user_permission($lev, $row);
 
 $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $file_id;
 $result = $db->query($sql);
 $row = $result->fetch();
+
+$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
+$array_mod_title[] = [
+    'catid' => 0,
+    'title' => $row['file_name'],
+    'link' => $base_url
+];
 
 if (!$row || $row['is_folder'] == 1) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
@@ -40,7 +48,7 @@ $page_url = $base_url;
 $view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '/' . $row['alias'] . '-' . 'lev=' . $row['lev'];
 
 $breadcrumbs = [];
-$current_lev = $lev;
+$current_lev = $row['lev'];
 
 while ($current_lev > 0) {
     $sql1 = 'SELECT file_name, file_path, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
@@ -77,68 +85,8 @@ if ($rank > 0) {
     $base_url .= '&root=1';
 }
 
-$sql = 'SELECT f.*, p.p_group, p.p_other 
-        FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
-        LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p 
-        ON f.file_id = p.file_id
-        WHERE f.lev = ' . $lev . ' 
-        AND f.is_folder = 1 
-        AND f.status = 1 
-        ORDER BY f.file_id ASC';
-$result = $db->query($sql);
-$all_directories = $result->fetchAll();
-
-function checkPermission($directory, $user_info, $is_admin = false)
-{
-    if ($is_admin) {
-        return true;
-    }
-
-    if (isset($directory['userid']) && $directory['userid'] == $user_info['userid']) {
-        return true;
-    }
-
-    if (isset($user_info['in_groups']) && is_array($user_info['in_groups'])) {
-        if (isset($directory['p_group']) && $directory['p_group'] >= 2) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-$directories = [];
-$has_root_level = false;
-
-foreach ($all_directories as $dir) {
-    if (checkPermission($dir, $user_info, defined('NV_IS_SPADMIN'))) {
-        $directories[] = $dir;
-        if ($dir['lev'] == 0) {
-            $has_root_level = true;
-        }
-    }
-}
-
-if (empty($directories)) {
-    $sql = 'SELECT f.*, p.p_group, p.p_other 
-            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
-            LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p 
-            ON f.file_id = p.file_id
-            WHERE f.lev = 0 
-            AND f.is_folder = 1 
-            AND f.status = 1 
-            ORDER BY f.file_id ASC';
-    $result = $db->query($sql);
-    $all_root_directories = $result->fetchAll();
-
-    $directories = [];
-    foreach ($all_root_directories as $dir) {
-        if (checkPermission($dir, $user_info, defined('NV_IS_SPADMIN'))) {
-            $directories[] = $dir;
-            $has_root_level = true;
-        }
-    }
-}
+$folder_tree = buildFolderTree( $user_info, $page_url, defined('NV_IS_SPADMIN'), 0);
+$has_root_level = !empty($folder_tree);
 
 if ($copy == 1) {
     $status = 'error';
@@ -350,7 +298,7 @@ if ($move == 1) {
 
 $selected_folder_path = '';
 if ($rank > 0) {
-    $target_folder = $db->query('SELECT file_name,file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $rank)->fetch();
+    $target_folder = $db->query('SELECT file_name, file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $rank)->fetch();
     if ($target_folder) {
         $selected_folder_path = $target_folder['file_name'];
     }
@@ -358,7 +306,7 @@ if ($rank > 0) {
     $selected_folder_path = $lang_module['root'];
 }
 
-$contents = nv_fileserver_clone($row, $file_id, $file_name, $file_path, $status, $message, $selected_folder_path, $view_url, $directories, $page_url, $base_url, $has_root_level);
+$contents = nv_fileserver_clone($row, $file_id, $file_name, $file_path, $status, $message, $selected_folder_path, $view_url, $folder_tree, $page_url, $base_url, $has_root_level);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

@@ -654,13 +654,15 @@ if (!empty($action)) {
         if ($row['is_folder'] == 0) {
             $extension = pathinfo($new_name, PATHINFO_EXTENSION);
             $filename = pathinfo($new_name, PATHINFO_FILENAME);
-            
+            $originalExtension = pathinfo($row['file_name'], PATHINFO_EXTENSION);
             if ($extension == '' || !in_array($extension, $allowed_extensions)) {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_extension_not_allowed']]);
             }
-            
             if ($filename == '') {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_invalid']]);
+            }
+            if (!empty($originalExtension) && $originalExtension != $extension) {
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_change_extension']]);
             }
         }
 
