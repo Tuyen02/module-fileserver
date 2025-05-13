@@ -252,25 +252,23 @@ function deleteFileOrFolder($fileId)
     $filePath = $row['file_path'];
     $isFolder = $row['is_folder'];
     $fullPath = NV_ROOTDIR . $filePath;
+    $deleted_at = NV_CURRENTTIME;
 
     $fileName = basename($filePath);
-    $newPath = $trash_dir . '/' . $fileName;
-    $newFullPath = NV_ROOTDIR . $newPath;
+    $fileInfo = pathinfo($fileName);
+    $lev = $row['lev'];
 
-    if (file_exists($newFullPath)) {
-        $fileInfo = pathinfo($fileName);
-        $i = 1;
-        do {
-            $newFileName = $fileInfo['filename'] . '(' . $i . ')';
-            if (isset($fileInfo['extension'])) {
-                $newFileName .= '.' . $fileInfo['extension'];
-            }
-            $newPath = $trash_dir . '/' . $newFileName;
-            $newFullPath = NV_ROOTDIR . $newPath;
-            $i++;
-        } while (file_exists($newFullPath));
+    $baseName = $fileInfo['filename'];
+    $extension = isset($fileInfo['extension']) ? '.' . $fileInfo['extension'] : '';
+    $counter = 1;
+    $newFileName = $baseName . $extension;
+    
+    while (file_exists(NV_ROOTDIR . $trash_dir . '/' . $newFileName)) {
+        $newFileName = $baseName . ' (' . $counter . ')' . $extension;
+        $counter++;
     }
 
+    $newFullPath = NV_ROOTDIR . $trash_dir . '/' . $newFileName;
     $newDir = dirname($newFullPath);
     if (!file_exists($newDir)) {
         mkdir($newDir, 0777, true);
@@ -282,18 +280,43 @@ function deleteFileOrFolder($fileId)
         }
     }
 
+    $oldParentPath = $fileName;
+    $newParentPath = $newFileName;
+
     if ($isFolder) {
-        $sqlChildren = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                       WHERE lev = ' . $fileId . ' AND status = 1';
+        $sqlChildren = 'WITH RECURSIVE file_tree AS (
+            SELECT file_id, file_path, lev, is_folder, file_name, 1 as level
+            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files
+            WHERE lev = ' . $fileId . ' AND status = 1
+            
+            UNION ALL
+            
+            SELECT f.file_id, f.file_path, f.lev, f.is_folder, f.file_name, ft.level + 1
+            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+            INNER JOIN file_tree ft ON f.lev = ft.file_id
+            WHERE f.status = 1
+        )
+        SELECT * FROM file_tree ORDER BY level DESC';
+        
         $children = $db->query($sqlChildren)->fetchAll();
         
         foreach ($children as $child) {
             $childPath = $child['file_path'];
             $childFullPath = NV_ROOTDIR . $childPath;
             $childName = basename($childPath);
-            $childNewPath = $newPath . '/' . $childName;
-            $childNewFullPath = NV_ROOTDIR . $childNewPath;
-
+            $childInfo = pathinfo($childName);
+            
+            $childBaseName = $childInfo['filename'];
+            $childExtension = isset($childInfo['extension']) ? '.' . $childInfo['extension'] : '';
+            $childCounter = 1;
+            $childNewName = $childBaseName . $childExtension;
+            
+            while (file_exists(NV_ROOTDIR . $trash_dir . '/' . $childNewName)) {
+                $childNewName = $childBaseName . ' (' . $childCounter . ')' . $childExtension;
+                $childCounter++;
+            }
+            
+            $childNewFullPath = NV_ROOTDIR . $trash_dir . '/' . $childNewName;
             $childNewDir = dirname($childNewFullPath);
             if (!file_exists($childNewDir)) {
                 mkdir($childNewDir, 0777, true);
@@ -303,28 +326,36 @@ function deleteFileOrFolder($fileId)
                 rename($childFullPath, $childNewFullPath);
             }
 
+            $childNewPath = str_replace('/' . $oldParentPath . '/', '/' . $newParentPath . '/', $childPath);
+            
             $sqlUpdateChild = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                             SET file_path = :file_path
+                             SET status = 0,
+                                 deleted_at = :deleted_at,
+                                 file_path = :file_path,
+                                 file_name = :file_name
                              WHERE file_id = :file_id';
             $stmtChild = $db->prepare($sqlUpdateChild);
+            $stmtChild->bindValue(':deleted_at', $deleted_at, PDO::PARAM_INT);
             $stmtChild->bindValue(':file_path', $childNewPath, PDO::PARAM_STR);
+            $stmtChild->bindValue(':file_name', $childNewName, PDO::PARAM_STR);
             $stmtChild->bindValue(':file_id', $child['file_id'], PDO::PARAM_INT);
             $stmtChild->execute();
         }
     }
 
+    $newPath = str_replace('/' . $oldParentPath, '/' . $newParentPath, $filePath);
     $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
                   SET status = 0, 
                       deleted_at = :deleted_at,
                       elastic = 0,
-                      file_name = :file_name,
-                      file_path = :file_path
+                      file_path = :file_path,
+                      file_name = :file_name
                   WHERE file_id = :file_id';
     $stmt = $db->prepare($sqlUpdate);
     $stmt->bindValue(':file_id', $fileId, PDO::PARAM_INT);
-    $stmt->bindValue(':deleted_at', NV_CURRENTTIME, PDO::PARAM_INT);
-    $stmt->bindValue(':file_name', basename($newPath), PDO::PARAM_STR);
+    $stmt->bindValue(':deleted_at', $deleted_at, PDO::PARAM_INT);
     $stmt->bindValue(':file_path', $newPath, PDO::PARAM_STR);
+    $stmt->bindValue(':file_name', $newFileName, PDO::PARAM_STR);
     $stmt->execute();
     
     updateLog($row['lev']);

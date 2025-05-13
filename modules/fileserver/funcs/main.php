@@ -439,11 +439,13 @@ if (!empty($action)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['no_changes_made']]);
         }
 
-        $originalExtension = pathinfo($fileName, PATHINFO_EXTENSION);
-        $newExtension = pathinfo($newName, PATHINFO_EXTENSION);
-        
-        if (!empty($originalExtension) && $originalExtension != $newExtension) {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_change_extension']]);
+        if ($row['is_folder'] == 0) {
+            $originalExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+            $newExtension = pathinfo($newName, PATHINFO_EXTENSION);
+
+            if (!empty($originalExtension) && $originalExtension != $newExtension) {
+                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_change_extension']]);
+            }
         }
 
         if(pathinfo($newName, PATHINFO_FILENAME) == '') {

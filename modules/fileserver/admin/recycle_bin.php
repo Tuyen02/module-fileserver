@@ -62,7 +62,8 @@ if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
 
 $stmt = $db->prepare($sql);
 if (!empty($search_term)) {
-    $stmt->bindValue(':search_term', '%' . $search_term . '%', PDO::PARAM_STR);
+    $quoted_search = $db->quote('%' . $search_term . '%');
+    $stmt->bindValue(':search_term', trim($quoted_search, "'"), PDO::PARAM_STR);
 }
 if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
     $stmt->bindValue(':is_folder', $is_folder, PDO::PARAM_INT);
@@ -70,96 +71,56 @@ if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
 $stmt->execute();
 $all_items = $stmt->fetchAll();
 
-$filtered_result = [];
-if ($lev == 0) {
-    $all_file_ids = array_column($all_items, 'file_id');
-
-    foreach ($all_items as $item) {
-        if ($item['is_folder'] == 1) {
-            $has_children = false;
-            foreach ($all_items as $potential_child) {
-                if ($potential_child['lev'] == $item['file_id']) {
-                    $has_children = true;
-                    break;
-                }
-            }
-
-            $has_parent = false;
-            foreach ($all_items as $potential_parent) {
-                if ($potential_parent['file_id'] == $item['lev']) {
-                    $has_parent = true;
-                    break;
-                }
-            }
-
-            if (!$has_children && !$has_parent) {
-                $filtered_result[] = $item;
-                continue;
-            }
-        }
-
-        if ($item['is_folder'] == 0) {
-            $has_parent = false;
-            foreach ($all_items as $potential_parent) {
-                if ($potential_parent['file_id'] == $item['lev']) {
-                    $has_parent = true;
-                    break;
-                }
-            }
-            if (!$has_parent) {
-                $filtered_result[] = $item;
-                continue;
-            }
-        }
-
-        if ($item['is_folder'] == 1) {
-            $is_root_folder = true;
-            $current_item = $item;
-
-            while ($current_item['lev'] > 0) {
-                $parent_exists = false;
-                foreach ($all_items as $potential_parent) {
-                    if ($potential_parent['file_id'] == $current_item['lev']) {
-                        $parent_exists = true;
-                        $current_item = $potential_parent;
-                        break;
-                    }
-                }
-                if ($parent_exists) {
-                    $is_root_folder = false;
-                    break;
-                } else {
-                    break;
-                }
-            }
-
-            if ($is_root_folder) {
-                $has_deleted_children = false;
-                foreach ($all_items as $potential_child) {
-                    if ($potential_child['lev'] == $item['file_id']) {
-                        $has_deleted_children = true;
-                        break;
-                    }
-                }
-                if ($has_deleted_children || $item['lev'] == 0) {
-                    $filtered_result[] = $item;
-                }
-            }
-        }
-    }
-} else {
-    $filtered_result = $all_items;
-}
-
-usort($filtered_result, function ($a, $b) {
-    if ($a['is_folder'] != $b['is_folder']) {
-        return $b['is_folder'] - $a['is_folder'];
-    }
-    return strcasecmp($a['file_name'], $b['file_name']);
+$root_items = array_filter($all_items, function($item) {
+    return $item['lev'] == 0;
 });
 
-$total = count($filtered_result);
-$filtered_result = array_slice($filtered_result, ($page - 1) * $perpage, $perpage);
+$root_by_deleted_at = [];
+foreach ($root_items as $item) {
+    $root_by_deleted_at[$item['deleted_at']][] = $item['file_id'];
+}
+
+$other_items = array_filter($all_items, function($item) {
+    return $item['lev'] > 0;
+});
+
+$display_items = $root_items;
+foreach ($other_items as $item) {
+    $show = true;
+    $current = $item;
+    while ($current['lev'] > 0) {
+        $parent = null;
+        foreach ($all_items as $potential_parent) {
+            if ($potential_parent['file_id'] == $current['lev']) {
+                $parent = $potential_parent;
+                break;
+            }
+        }
+        if ($parent) {
+            if ($parent['lev'] == 0 && $parent['deleted_at'] == $item['deleted_at']) {
+                $show = false;
+                break;
+            }
+            if ($parent['deleted_at'] == $item['deleted_at']) {
+                $show = false;
+                break;
+            }
+            $current = $parent;
+        } else {
+            break;
+        }
+    }
+    if ($show) {
+        $display_items[] = $item;
+    }
+}
+
+usort($display_items, function ($a, $b) {
+    return $b['deleted_at'] - $a['deleted_at'];
+});
+
+$total = count($display_items);
+$display_items = array_slice($display_items, ($page - 1) * $perpage, $perpage);
 
 if ($lev > 0) {
     $base_dir = $db->query('SELECT file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 0 AND file_id = ' . $lev)->fetchColumn();
@@ -284,9 +245,10 @@ $xtpl->assign('SELECTED_FILE', $selected_file);
 $xtpl->assign('SELECTED_FOLDER', $selected_folder);
 $xtpl->assign('LEV', $lev);
 
-if (!empty($filtered_result)) {
+
+if (!empty($display_items)) {
     $xtpl->parse('main.has_items');
-    foreach ($filtered_result as $row) {
+    foreach ($display_items as $row) {
         $row['deleted_at'] = date('d/m/Y H:i:s', $row['created_at']);
         $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
         $row['icon_class'] = getFileIconClass($row);
