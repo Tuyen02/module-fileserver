@@ -45,6 +45,7 @@ $lang_module['file_name'] = 'Tên file';
 $lang_module['file_size'] = 'Kích thước';
 $lang_module['file_type'] = 'Loại file';
 $lang_module['file_path'] = 'Đường dẫn';
+$lang_module['file_path_original'] = 'Đường dẫn ban đầu';
 $lang_module['deleted_at'] = 'Ngày xóa';
 $lang_module['created_at'] = 'Ngày tạo';
 $lang_module['option'] = 'Tùy chọn';

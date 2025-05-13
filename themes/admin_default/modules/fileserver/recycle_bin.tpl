@@ -31,6 +31,7 @@
             <tr>
                 <th scope="col"><input class="form-check-input" type="checkbox" id="selectAll"></th>
                 <th scope="col">{LANG.file_name}</th>
+                <th scope="col">{LANG.file_path_original}</th>
                 <th scope="col">{LANG.file_size}</th>
                 <th scope="col">{LANG.deleted_at}</th>
                 <th scope="col">{LANG.option}</th>
@@ -49,6 +50,7 @@
                     <i class="fa {ROW.icon_class}" aria-hidden="true"></i>
                     {ROW.file_name}
                 </td>
+                <td>{ROW.file_path}</td>
                 <td>{ROW.file_size}</td>
                 <td>{ROW.deleted_at}</td>
                 <td>
