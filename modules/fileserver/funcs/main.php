@@ -13,10 +13,7 @@ $page = $nv_Request->get_int('page', 'get', 1);
 $search_term = $nv_Request->get_title('search', 'get', '');
 $search_type = $nv_Request->get_title('search_type', 'get', 'all');
 
-$base_dir = '/uploads/fileserver';
-$tmp_dir = '/data/tmp/';
 $back_url = '';
-$full_dir = NV_ROOTDIR . $base_dir;
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name;
 
 $page_url = $base_url;
@@ -128,37 +125,40 @@ if ($use_elastic == 1) {
 } else {
     try {
         $sql = 'SELECT f.* FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f';
-        $count_sql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f';
-
+        
         if (!defined('NV_IS_SPADMIN')) {
             $sql .= ' LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id';
-            $count_sql .= ' LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id';
         }
-
-        $where = ' WHERE f.status = 1 AND f.lev = ' . $lev;
-
+    
+        $where_conditions = [
+            'f.status = 1',
+            'f.lev = ' . $lev
+        ];
+    
         if (!defined('NV_IS_SPADMIN')) {
             if (isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array))) {
-                $where .= ' AND p.p_group >= 2';
+                $where_conditions[] = 'p.p_group >= 2';
             } else {
-                $where .= ' AND p.p_other = 2';
+                $where_conditions[] = 'p.p_other = 2';
             }
         }
-
+    
         if (!empty($search_term)) {
-            $where .= ' AND f.file_name LIKE ' . $db->quote('%' . $search_term . '%');
+            $where_conditions[] = 'f.file_name LIKE ' . $db->quote('%' . $search_term . '%');
         }
-
+    
         if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
             $is_folder = ($search_type == 'file') ? 0 : 1;
-            $where .= ' AND f.is_folder = ' . $is_folder;
+            $where_conditions[] = 'f.is_folder = ' . $is_folder;
         }
-
+    
+        $where = ' WHERE ' . implode(' AND ', $where_conditions);
+    
+        $stmt = $db->query($sql . $where);
+        $total = $stmt->rowCount();
+    
         $sql .= $where . ' ORDER BY f.file_id ASC LIMIT ' . (($page - 1) * $perpage) . ', ' . $perpage;
-        $count_sql .= $where;
-
         $result = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-        $total = $db->query($count_sql)->fetchColumn();
     } catch (PDOException $e) {
         error_log("Lỗi truy vấn Database: " . $e->getMessage());
     }
@@ -170,7 +170,7 @@ if ($lev > 0) {
            WHERE f.file_id = ' . $lev . ' AND f.status = 1';
     $row = $db->query($sql)->fetch();
 
-    if (!$row) {
+    if (empty($row)) {
         nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
     }
 
@@ -199,28 +199,36 @@ if ($lev > 0) {
             }
         }
     }
+
+    $parentFileType = checkIfParentIsFolder( $lev);
+    if ($parentFileType == 0) {
+        nv_jsonOutput([
+            'status' => $status, 
+            'message' => $lang_module['cannot_create_file_in_file'], 
+            'refresh_captcha' => true
+        ]);
+    }
 }
 
 $action = $nv_Request->get_title('action', 'post', '');
 $fileIds = $nv_Request->get_array('files', 'post', []);
-$reCaptchaPass = (!empty($global_config['recaptcha_sitekey']) and !empty($global_config['recaptcha_secretkey']) and ($global_config['recaptcha_ver'] == 2 or $global_config['recaptcha_ver'] == 3));
+
+$status = 'error';
+$mess = $lang_module['sys_err'];
 
 if (!empty($action)) {
-    $status = $lang_module['error'];
-    $mess = $lang_module['sys_err'];
-
     if ($action == 'create') {
         $name_f = nv_EncString($nv_Request->get_title('name_f', 'post', ''));
         $type = $nv_Request->get_int('type', 'post', 0);
 
         if ($name_f == '') {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty'], 'refresh_captcha' => true]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_empty'], 'refresh_captcha' => true]);
         }
 
         if ($module_config[$module_name]['use_captcha'] == 1) {
             $fcaptcha = $nv_Request->get_title('fcode', 'post', '');
             if (empty($fcaptcha) || !nv_capcha_txt($fcaptcha, 'captcha')) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_global['securitycodeincorrect'], 'refresh_captcha' => true]);
+                nv_jsonOutput(['status' => $status, 'message' => $lang_global['securitycodeincorrect'], 'refresh_captcha' => true]);
             }
         }
 
@@ -228,22 +236,22 @@ if (!empty($action)) {
             $extension = pathinfo($name_f, PATHINFO_EXTENSION);
             $filename = pathinfo($name_f, PATHINFO_FILENAME);
             if ($extension == '' || !in_array($extension, $allowed_extensions)) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_extension_not_allowed'], 'refresh_captcha' => true]);
+                nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_extension_not_allowed'], 'refresh_captcha' => true]);
             }
             
             if ($filename == '') {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_invalid'], 'refresh_captcha' => true]);
+                nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_invalid'], 'refresh_captcha' => true]);
             }
         }
 
         if ($lev > 0) {
-            $parentFileType = checkIfParentIsFolder($db, $lev);
-            if ($type == 0 && $parentFileType == 0) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_create_file_in_file'], 'refresh_captcha' => true]);
-            }
-
-            if ($type == 1 && $parentFileType == 0) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_create_file_in_file'], 'refresh_captcha' => true]);
+            $parentFileType = checkIfParentIsFolder( $lev);
+            if ($parentFileType == 0) {
+                nv_jsonOutput([
+                    'status' => $status, 
+                    'message' => $lang_module['cannot_create_file_in_file'], 
+                    'refresh_captcha' => true
+                ]);
             }
         }
 
@@ -269,7 +277,7 @@ if (!empty($action)) {
                 $count = $stmtCheck->fetchColumn();
                 $i++;
             } while ($count > 0);
-            nv_jsonOutput(['status' => 'error', 'message' => sprintf($lang_module['file_name_exists_suggest'], $name_f, $suggestedName), 'refresh_captcha' => true]);
+            nv_jsonOutput(['status' => $status, 'message' => sprintf($lang_module['file_name_exists_suggest'], $name_f, $suggestedName), 'refresh_captcha' => true]);
         }
         $file_path = $base_dir . '/' . $name_f;
 
@@ -283,15 +291,15 @@ if (!empty($action)) {
         $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
         $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
 
-        $full_dir = NV_ROOTDIR . $file_path;
+        $file_dir = NV_ROOTDIR . $file_path;
         if ($type == 1) {
-            if (!file_exists($full_dir)) {
-                mkdir($full_dir);
+            if (!file_exists($file_dir)) {
+                mkdir($file_dir);
             }
             $status = 'success';
             $mess = $lang_module['create_ok'];
         } else {
-            $status = file_put_contents($full_dir, '') !== false ? 'success' : 'error';
+            $status = file_put_contents($file_dir, '') !== false ? 'success' : 'error';
             $mess = $status == 'success' ? $lang_module['create_ok'] : $lang_module['cannot_create_file'];
         }
 
@@ -316,7 +324,9 @@ if (!empty($action)) {
             updateParentFolderSize($lev);
 
             $type_text = $type == 1 ? $lang_module['folder'] : $lang_module['file'];
-            nv_jsonOutput(['status' => 'success', 'message' => sprintf($lang_module['create_ok_detail'], $type_text, $name_f), 'redirect' => $page_url]);
+            $status = 'success';
+            $mess = sprintf($lang_module['create_ok_detail'], $type_text, $name_f);
+            nv_jsonOutput(['status' => $status, 'message' => $mess, 'redirect' => $page_url]);
         }
         nv_jsonOutput(['status' => $status, 'message' => $mess]);
     }
@@ -325,50 +335,33 @@ if (!empty($action)) {
         $fileId = $nv_Request->get_int('file_id', 'post', 0);
         $checksess = $nv_Request->get_title('checksess', 'get', '');
         if ($fileId > 0 && $checksess == md5($fileId . NV_CHECK_SESSION)) {
-            if (!defined('NV_IS_SPADMIN')) {
-                $is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
-
-                $sql = 'SELECT p_group, p_other, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p 
-                        LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_files f ON p.file_id = f.file_id 
-                        WHERE p.file_id = ' . $fileId;
-                $row = $db->query($sql)->fetch();
-
-                if ($row) {
-                    $current_permission = $is_group_user ? $row['p_group'] : $row['p_other'];
-
-                    if (!$is_group_user && $row['p_group'] == 3) {
-                        nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_permission_group_only']]);
-                    }
-
-                    if ($current_permission < 3) {
-                        nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_permission_to_delete']]);
-                    }
-
-                    if ($row['is_folder'] == 1) {
-                        $check_result = checkChildrenPermissions($fileId);
-                        if ($check_result == true) {
-                            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['folder_has_restricted_items']]);
-                        }
-                    }
-                } else {
-                    nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_not_found']]);
-                }
+            $sql = 'SELECT f.*, p.p_group, p.p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+                   LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id 
+                   WHERE f.file_id = ' . $fileId;
+            $row = $db->query($sql)->fetch();
+            
+            if (!checkPermission($row, $user_info, defined('NV_IS_SPADMIN'))) {
+                nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_permission_to_delete']]);
             }
-
+    
             $deleted = deleteFileOrFolder($fileId);
             if ($deleted) {
                 updateLog($lev);
                 nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['delete_btn'], 'File id: ' . $fileId, $user_info['userid']);
-                nv_jsonOutput(['status' => 'success', 'message' => $lang_module['delete_ok'], 'redirect' => $page_url]);
+                $status = 'success';
+                $mess = $lang_module['delete_ok'];
+                nv_jsonOutput(['status' => $status, 'message' => $mess, 'redirect' => $page_url]);
             } else {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['delete_false']]);
+                $mess = $lang_module['delete_false'];
+                nv_jsonOutput(['status' => $status, 'message' => $mess]);
             }
         }
     }
 
     if ($action == 'deleteAll') {
         if (empty($fileIds)) {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
+            $mess = $lang_module['choose_file_0'];
+            nv_jsonOutput(['status' => $status, 'message' => $mess]);
         }
 
         $deletedFileIds = [];
@@ -384,13 +377,14 @@ if (!empty($action)) {
         }
 
         if (!empty($deletedFileIds)) {
-            $status = 'success';
             updateLog($lev);
             nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['deleteAll_btn'], 'File id: ' . implode(',', $deletedFileIds), $admin_info['userid']);
+            $status = 'success';
             $mess = $lang_module['delete_ok'];
-            nv_jsonOutput(['status' => 'success', 'message' => $mess, 'redirect' => $page_url]);
+            nv_jsonOutput(['status' => $status, 'message' => $mess, 'redirect' => $page_url]);
         } else {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['delete_false']]);
+            $mess = $lang_module['delete_false'];
+            nv_jsonOutput(['status' => $status, 'message' => $mess]);
         }
     }
 
@@ -398,13 +392,31 @@ if (!empty($action)) {
         $fileId = intval($nv_Request->get_int('file_id', 'post', 0));
         $newName = nv_EncString(trim($nv_Request->get_title('new_name', 'post', '')));
 
-        $sql = 'SELECT f.*, p.p_group, p.p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
-               LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id 
-               WHERE f.file_id = ' . $fileId;
+        if($newName == ''){
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_empty']]);
+        }
+
+        $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
         $row = $db->query($sql)->fetch();
 
+        if ($row) {
+            $sql_perm = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $fileId;
+            $perm = $db->query($sql_perm)->fetch();
+            
+            $row['p_group'] = $perm ? $perm['p_group'] : 1;
+            $row['p_other'] = $perm ? $perm['p_other'] : 1;
+        }
+
         if (!$row) {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_not_found']]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_not_found']]);
+        }
+
+        $fileName = $row['file_name'];
+        $oldFilePath = $row['file_path'];
+        $oldFullPath = NV_ROOTDIR . '/' . $oldFilePath;
+
+        if ($newName === $fileName) {
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['no_changes_made']]);
         }
 
         if (!defined('NV_IS_SPADMIN')) {
@@ -412,31 +424,19 @@ if (!empty($action)) {
             $current_permission = $is_group_user ? $row['p_group'] : $row['p_other'];
 
             if (!$is_group_user && $row['p_group'] == 3) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_permission_group_only']]);
+                nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_permission_group_only']]);
             }
 
             if ($current_permission < 3) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_permission_to_rename']]);
+                nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_permission_to_rename']]);
             }
 
             if ($row['is_folder'] == 1) {
                 $check_result = checkChildrenPermissions($fileId);
                 if ($check_result == true) {
-                    nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_permission_to_rename']]);
+                    nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_permission_to_rename']]);
                 }
             }
-        }
-
-        $fileName = $row['file_name'];
-        $oldFilePath = $row['file_path'];
-        $oldFullPath = NV_ROOTDIR . '/' . $oldFilePath;
-
-        if($newName == ''){
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty']]);
-        }
-
-        if ($newName === $fileName) {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['no_changes_made']]);
         }
 
         if ($row['is_folder'] == 0) {
@@ -444,12 +444,12 @@ if (!empty($action)) {
             $newExtension = pathinfo($newName, PATHINFO_EXTENSION);
 
             if (!empty($originalExtension) && $originalExtension != $newExtension) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_change_extension']]);
+                nv_jsonOutput(['status' => $status, 'message' => $lang_module['cannot_change_extension']]);
             }
         }
 
         if(pathinfo($newName, PATHINFO_FILENAME) == '') {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_invalid']]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_invalid']]);
         }
 
         $directory = dirname($oldFilePath);
@@ -477,7 +477,7 @@ if (!empty($action)) {
                 $suggestedFullPath = NV_ROOTDIR . '/' . $directory . '/' . $suggestedName;
             }
 
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['name_exists_suggest'] . $suggestedName]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['name_exists_suggest'] . $suggestedName]);
         }
 
         if (rename($oldFullPath, $newFullPath)) {
@@ -504,7 +504,7 @@ if (!empty($action)) {
                 }
                 updateLog($lev);
                 nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['rename_btn'], 'File id: ' . $fileId . '. Đổi tên : ' . $fileName . '=>' . $newName, $user_info['userid']);
-                nv_jsonOutput(['status' => 'success', 'message' => $lang_module['rename_ok'], 'redirect' => $page_url]);
+                nv_jsonOutput(['status' => $status, 'message' => $mess, 'redirect' => $page_url]);
             }
         }
         nv_jsonOutput(['status' => $status, 'message' => $mess]);
@@ -522,25 +522,25 @@ if (!empty($action)) {
                     $current_permission = $is_group_user ? $permissions['p_group'] : $permissions['p_other'];
 
                     if (!$is_group_user && $permissions['p_group'] == 3) {
-                        nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_permission_group_only']]);
+                        nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_permission_group_only']]);
                     }
 
                     if ($current_permission < 3) {
-                        nv_jsonOutput(['status' => 'error', 'message' => $lang_module['not_permission_to_compress']]);
+                        nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_permission_to_compress']]);
                     }
                 } else {
-                    nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_not_found']]);
+                    nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_not_found']]);
                 }
             }
         }
 
         if (empty($fileIds)) {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['choose_file_0']]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['choose_file_0']]);
         }
 
         $zipFileName = nv_EncString($nv_Request->get_title('zipFileName', 'post', ''));
         if ($zipFileName == '') {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['zip_file_name_empty']]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['zip_file_name_empty']]);
         }
 
         if (pathinfo($zipFileName, PATHINFO_EXTENSION) != 'zip') {
@@ -588,12 +588,16 @@ if (!empty($action)) {
                 nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['zip_btn'], 'File id: ' . $compressed, $user_info['userid']);
                 updateParentFolderSize($lev);
 
-                nv_jsonOutput(['status' => 'success', 'message' => $compressResult['message'], 'redirect' => $page_url]);
+                $status = 'success';
+                $mess = $compressResult['message'];
+                nv_jsonOutput(['status' => $status, 'message' => $mess, 'redirect' => $page_url]);
             } else {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_update_db']]);
+                $mess = $lang_module['cannot_update_db'];
+                nv_jsonOutput(['status' => $status, 'message' => $mess]);
             }
         } else {
-            nv_jsonOutput(['status' => 'error', 'message' => $compressResult['message']]);
+            $mess = $compressResult['message'];
+            nv_jsonOutput(['status' => $status, 'message' => $mess]);
         }
     }
 
@@ -602,7 +606,7 @@ if (!empty($action)) {
         $type = $nv_Request->get_int('type', 'post', 0);
         
         if ($name_f == '') {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty']]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_empty']]);
         }
 
         if ($type == 0) {
@@ -610,11 +614,11 @@ if (!empty($action)) {
             $filename = pathinfo($name_f, PATHINFO_FILENAME);
             
             if ($extension == '' || !in_array($extension, $allowed_extensions)) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_extension_not_allowed']]);
+                nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_extension_not_allowed']]);
             }
             
             if ($filename == '') {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_invalid']]);
+                nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_invalid']]);
             }
         }
 
@@ -630,9 +634,10 @@ if (!empty($action)) {
             $baseName = pathinfo($name_f, PATHINFO_FILENAME);
             $extension = pathinfo($name_f, PATHINFO_EXTENSION);
             $suggestedName = suggestNewName($db, NV_PREFIXLANG . '_' . $module_data . '_files', $lev, $baseName, $extension, $type);
-            nv_jsonOutput(['status' => 'error', 'message' => 'Tên ' . ($type == 0 ? 'file' : 'thư mục') . ' đã tồn tại. Gợi ý tên mới: ' . $suggestedName]);
+            nv_jsonOutput(['status' => $status, 'message' => 'Tên ' . ($type == 0 ? 'file' : 'thư mục') . ' đã tồn tại. Gợi ý tên mới: ' . $suggestedName]);
         } else {
-            nv_jsonOutput(['status' => 'success', 'message' => 'Tên ' . ($type == 0 ? 'file' : 'thư mục') . ' hợp lệ']);
+            $status = 'success';
+            nv_jsonOutput(['status' => $status, 'message' => 'Tên ' . ($type == 0 ? 'file' : 'thư mục') . ' hợp lệ']);
         }
     }
 
@@ -641,7 +646,7 @@ if (!empty($action)) {
         $file_id = $nv_Request->get_int('file_id', 'post', 0);
         
         if ($new_name == '') {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_empty']]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_empty']]);
         }
 
         $sql = 'SELECT f.*, p.p_group, p.p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
@@ -650,7 +655,7 @@ if (!empty($action)) {
         $row = $db->query($sql)->fetch();
 
         if (!$row) {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_not_found']]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_not_found']]);
         }
 
         if ($row['is_folder'] == 0) {
@@ -658,13 +663,13 @@ if (!empty($action)) {
             $filename = pathinfo($new_name, PATHINFO_FILENAME);
             $originalExtension = pathinfo($row['file_name'], PATHINFO_EXTENSION);
             if ($extension == '' || !in_array($extension, $allowed_extensions)) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_extension_not_allowed']]);
+                nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_extension_not_allowed']]);
             }
             if ($filename == '') {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_invalid']]);
+                nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_invalid']]);
             }
             if (!empty($originalExtension) && $originalExtension != $extension) {
-                nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_change_extension']]);
+                nv_jsonOutput(['status' => $status, 'message' => $lang_module['cannot_change_extension']]);
             }
         }
 
@@ -685,16 +690,17 @@ if (!empty($action)) {
             $baseName = pathinfo($new_name, PATHINFO_FILENAME);
             $extension = pathinfo($new_name, PATHINFO_EXTENSION);
             $suggestedName = suggestNewName($db, NV_PREFIXLANG . '_' . $module_data . '_files', $row['lev'], $baseName, $extension, $row['is_folder']);
-            nv_jsonOutput(['status' => 'error', 'message' => 'Tên ' . ($row['is_folder'] == 1 ? 'thư mục' : 'file') . ' đã tồn tại. Gợi ý tên mới: ' . $suggestedName]);
+            nv_jsonOutput(['status' => $status, 'message' => 'Tên ' . ($row['is_folder'] == 1 ? 'thư mục' : 'file') . ' đã tồn tại. Gợi ý tên mới: ' . $suggestedName]);
         } else {
-            nv_jsonOutput(['status' => 'success', 'message' => 'Tên ' . ($row['is_folder'] == 1 ? 'thư mục' : 'file') . ' hợp lệ']);
+            $status = 'success';
+            nv_jsonOutput(['status' => $status, 'message' => 'Tên ' . ($row['is_folder'] == 1 ? 'thư mục' : 'file') . ' hợp lệ']);
         }
     }
 
     if ($action == 'check_zip_name') {
         $zipFileName = nv_EncString($nv_Request->get_title('zipFileName', 'post', ''));
         if ($zipFileName == '') {
-            nv_jsonOutput(['status' => 'error', 'message' => $lang_module['zip_file_name_empty']]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['zip_file_name_empty']]);
         }
 
         $name_with_zip = $zipFileName;
@@ -714,9 +720,10 @@ if (!empty($action)) {
             $baseName = pathinfo($zipFileName, PATHINFO_FILENAME);
             $extension = pathinfo($zipFileName, PATHINFO_EXTENSION);
             $suggestedName = suggestNewName($db, NV_PREFIXLANG . '_' . $module_data . '_files', $lev, $baseName, $extension, 0);
-            nv_jsonOutput(['status' => 'error', 'message' => 'Tên file zip đã tồn tại. Gợi ý tên mới: ' . $suggestedName]);
+            nv_jsonOutput(['status' => $status, 'message' => 'Tên file zip đã tồn tại. Gợi ý tên mới: ' . $suggestedName]);
         } else {
-            nv_jsonOutput(['status' => 'success', 'message' => 'Tên file zip hợp lệ']);
+            $status = 'success';
+            nv_jsonOutput(['status' => $status, 'message' => 'Tên file zip hợp lệ']);
         }
     }
 
@@ -925,7 +932,7 @@ if (!empty($result)) {
     $permissions = [];
 }
 $nv_BotManager->setFollow()->setNoIndex();
-$contents = nv_fileserver_main($op, $result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs, $reCaptchaPass, $back_url);
+$contents = nv_fileserver_main($op, $result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs, $back_url);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

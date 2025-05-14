@@ -109,6 +109,8 @@ if ($use_elastic == 1) {
 }
 
 $allowed_extensions = ['txt', 'xlsx', 'xls', 'html', 'css'];
+$base_dir = '/uploads/fileserver';
+$tmp_dir = '/data/tmp/';
 
 if (!empty($array_op)) {
     preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m);
@@ -136,31 +138,27 @@ if ($lev > 0 && !defined('NV_IS_SPADMIN')) {
     }
 }
 
-
 $arr_per = [];
+$arr_full_per = [];
 
-if (defined('NV_IS_SPADMIN')) {
-    $arr_per = [];
-} elseif (isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty($config_value_array)) {
-    $arr_per = array_column(
-        $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_group >= 2')->fetchAll(),
-        'file_id'
-    );
-
-    $arr_full_per = array_column(
-        $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_group = 3')->fetchAll(),
-        'file_id'
-    );
-} else {
-    $arr_per = array_column(
-        $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_other >= 2')->fetchAll(),
-        'file_id'
-    );
-
-    $arr_full_per = array_column(
-        $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE p_other = 3')->fetchAll(),
-        'file_id'
-    );
+if (!defined('NV_IS_SPADMIN')) {
+    $sql = 'SELECT file_id, p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions';
+    
+    if (isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty($config_value_array)) {
+        $sql .= ' WHERE p_group >= 2';
+    } else {
+        $sql .= ' WHERE p_other >= 2';
+    }
+    
+    $result = $db->query($sql)->fetchAll();
+    
+    foreach ($result as $row) {
+        $arr_per[] = $row['file_id'];
+        if ((isset($user_info['in_groups']) && $row['p_group'] == 3) || 
+            (!isset($user_info['in_groups']) && $row['p_other'] == 3)) {
+            $arr_full_per[] = $row['file_id'];
+        }
+    }
 }
 
 function get_user_permission($file_id, $row = array())
@@ -200,13 +198,20 @@ function get_user_permission($file_id, $row = array())
 
 function updateAlias($file_id, $file_name)
 {
-    global $db, $module_data;
+    global $db, $module_data, $lang_module;
+
     $alias = change_alias($file_name . '_' . $file_id);
     $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET alias=:alias WHERE file_id = ' . $file_id;
     $stmtUpdate = $db->prepare($sqlUpdate);
     $stmtUpdate->bindValue(':alias', $alias, PDO::PARAM_STR);
-    $stmtUpdate->execute();
+
+    if (!$stmtUpdate->execute()) {
+        error_log($lang_module['error_update_alias'] . ' - File ID: ' . $file_id);
+        return false;
+    }
+
     return true;
+
 }
 
 function suggestNewName($db, $table, $lev, $baseName, $extension, $is_folder = null) {
@@ -239,8 +244,7 @@ function suggestNewName($db, $table, $lev, $baseName, $extension, $is_folder = n
 function deleteFileOrFolder($fileId)
 {
     global $db, $module_data;
-    $base_dir = '/uploads/fileserver';
-    $trash_dir = '/data/tmp/fileserver_trash';
+    $trash_dir = $tmp_dir . 'fileserver_trash';
 
     $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
     $row = $db->query($sql)->fetch();
@@ -364,9 +368,9 @@ function deleteFileOrFolder($fileId)
     return true;
 }
 
-function checkIfParentIsFolder($db, $lev)
+function checkIfParentIsFolder($lev)
 {
-    global $lang_module, $module_data;
+    global $lang_module, $module_data, $db;
     $stmt = $db->query('SELECT is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . intval($lev));
     if ($stmt) {
         return $stmt->fetchColumn();
@@ -761,12 +765,12 @@ function getParentPermissions($parent_id)
             'p_group' => intval($row['p_group']),
             'p_other' => intval($row['p_other'])
         ];
-    } else {
-        return [
-            'p_group' => 1,
-            'p_other' => 1
-        ];
     }
+    return [
+        'p_group' => 1,
+        'p_other' => 1
+    ];
+
 }
 
 function getAllFileIds($parent_id, &$file_ids)

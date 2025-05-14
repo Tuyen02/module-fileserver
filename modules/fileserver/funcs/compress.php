@@ -7,7 +7,6 @@ $page_title = $lang_module['compress'];
 
 $action = $nv_Request->get_title('action', 'post', '');
 $page = $nv_Request->get_int('page', 'get', 1);
-$base_dir = '/uploads/fileserver';
 $current_permission = get_user_permission($lev, $row);
 
 $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $lev;

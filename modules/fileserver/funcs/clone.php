@@ -86,7 +86,7 @@ if ($copy == 1) {
     $message = $lang_module['copy_false'];
 
     if ($root == 1) {
-        $target_url = '/uploads/fileserver';
+        $target_url = $base_dir;
         $target_lev = 0;
     } else {
         $target_folder = $db->query('SELECT file_path, file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $rank)->fetch();
@@ -192,100 +192,95 @@ if ($move == 1) {
     $status = 'error';
     $message = $lang_module['move_false'];
 
-    if ($root == 1) {
-        $target_url = '/uploads/fileserver';
-        $target_lev = 0;
-    } else {
-        $target_folder = $db->query('SELECT file_path, file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $rank)->fetch();
-        if (!$target_folder) {
-            $status = 'error';
-            $message = $lang_module['target_folder_not_found'];
+    try {
+        if ($root == 1) {
+            $target_url = $base_dir;
+            $target_lev = 0;
         } else {
+            $target_folder = $db->query('SELECT file_path, file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $rank)->fetch();
+            if (!$target_folder) {
+                throw new Exception($lang_module['target_folder_not_found']);
+            }
             $target_url = $target_folder['file_path'];
             $target_lev = $target_folder['file_id'];
         }
-    }
 
-    if (!isset($target_lev)) {
-        $status = 'error';
-        $message = $lang_module['please_select_folder'];
-    } else {
-        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_name = :file_name AND lev = :lev AND status = 1';
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                    WHERE file_name = :file_name AND lev = :lev AND status = 1 AND file_id != :file_id';
         $stmtCheck = $db->prepare($sqlCheck);
-        $stmtCheck->bindParam(':file_name', $row['file_name']);
-        $stmtCheck->bindParam(':lev', $target_lev);
+        $stmtCheck->bindParam(':file_name', $row['file_name'], PDO::PARAM_STR);
+        $stmtCheck->bindParam(':lev', $target_lev, PDO::PARAM_INT);
+        $stmtCheck->bindParam(':file_id', $file_id, PDO::PARAM_INT);
         $stmtCheck->execute();
-        $existingFile = $stmtCheck->fetchColumn();
-
-        if ($existingFile > 0) {
-            $status = $lang_module['error'];
-            $message = $lang_module['f_has_exit'];
-        } else {
-            $new_file_path = $target_url . '/' . $row['file_name'];
-            if (rename(NV_ROOTDIR . $row['file_path'], NV_ROOTDIR . $new_file_path)) {
-                $status = 'success';
-                $message = $lang_module['move_ok'];
-
-                $sql_update = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                               SET file_path = :file_path, lev = :lev, elastic = :elastic, updated_at = :updated_at 
-                               WHERE file_id = :file_id';
-                $stmt = $db->prepare($sql_update);
-                $stmt->bindParam(':file_path', $new_file_path, PDO::PARAM_STR);
-                $stmt->bindParam(':lev', $target_lev, PDO::PARAM_INT);
-                $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-                $stmt->bindValue(':elastic', 0, PDO::PARAM_INT);
-                $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-
-                if ($stmt->execute()) {
-                    if ($use_elastic == 1 && !is_null($client)) {
-                        $params = [
-                            'index' => 'fileserver',
-                            'id' => $file_id,
-                            'body' => [
-                                'doc' => [
-                                    'file_path' => $new_file_path,
-                                    'lev' => $target_lev,
-                                    'updated_at' => NV_CURRENTTIME
-                                ]
-                            ]
-                        ];
-                        try {
-                            $response = $client->update($params);
-                            error_log("Elasticsearch update response: " . json_encode($response));
-                            $client->indices()->refresh(['index' => 'fileserver']);
-                        } catch (Exception $e) {
-                            error_log($lang_module['error_update_elastic'] . $e->getMessage());
-                        }
-                    }
-
-                    if ($root == 1) {
-                        $permissions = ['p_group' => 3, 'p_other' => 3];
-                    } else {
-                        $sql_permissions = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = :folder_id';
-                        $stmt_permissions = $db->prepare($sql_permissions);
-                        $stmt_permissions->bindParam(':folder_id', $target_lev);
-                        $stmt_permissions->execute();
-                        $permissions = $stmt_permissions->fetch();
-                    }
-
-                    $sql_insert_permissions = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
-                                              VALUES (:file_id, :p_group, :p_other, :updated_at)';
-                    $stmt_permissions_insert = $db->prepare($sql_insert_permissions);
-                    $stmt_permissions_insert->bindParam(':file_id', $file_id);
-                    $stmt_permissions_insert->bindParam(':p_group', $permissions['p_group']);
-                    $stmt_permissions_insert->bindParam(':p_other', $permissions['p_other']);
-                    $stmt_permissions_insert->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-                    $stmt_permissions_insert->execute();
-
-                    updateLog($target_lev);
-                    nv_insert_logs(NV_LANG_DATA, $module_name, 'move', 'File id: ' . $file_id, $user_info['userid']);
-
-                    if ($target_lev > 0) {
-                        updateParentFolderSize($target_lev);
-                    }
-                }
-            }
+        
+        if ($stmtCheck->fetchColumn() > 0) {
+            throw new Exception($lang_module['f_has_exit']);
         }
+
+        $new_file_path = $target_url . '/' . $row['file_name'];
+        if (!rename(NV_ROOTDIR . $row['file_path'], NV_ROOTDIR . $new_file_path)) {
+            throw new Exception($lang_module['move_false']);
+        }
+
+        $db->beginTransaction();
+        
+        try {
+            $sql_update = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                          SET file_path = :file_path, 
+                              lev = :lev, 
+                              elastic = :elastic, 
+                              updated_at = :updated_at 
+                          WHERE file_id = :file_id';
+            $stmt = $db->prepare($sql_update);
+            $stmt->bindParam(':file_path', $new_file_path, PDO::PARAM_STR);
+            $stmt->bindParam(':lev', $target_lev, PDO::PARAM_INT);
+            $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+            $stmt->bindValue(':elastic', 0, PDO::PARAM_INT);
+            $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+            $stmt->execute();
+
+            if ($use_elastic == 1 && !is_null($client)) {
+                $params = [
+                    'index' => 'fileserver',
+                    'id' => $file_id,
+                    'body' => [
+                        'doc' => [
+                            'file_path' => $new_file_path,
+                            'lev' => $target_lev,
+                            'updated_at' => NV_CURRENTTIME
+                        ]
+                    ]
+                ];
+                $client->update($params);
+                $client->indices()->refresh(['index' => 'fileserver']);
+            }
+
+            updateLog($target_lev);
+            nv_insert_logs(NV_LANG_DATA, $module_name, 'move', 'File id: ' . $file_id, $user_info['userid']);
+            
+            if ($target_lev > 0) {
+                updateParentFolderSize($target_lev);
+            }
+            
+            if ($row['lev'] > 0) {
+                updateParentFolderSize($row['lev']);
+            }
+
+            $db->commit();
+            
+            $status = 'success';
+            $message = $lang_module['move_ok'];
+            
+            nv_redirect_location($view_url);
+            
+        } catch (Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
+        
+    } catch (Exception $e) {
+        $status = 'error';
+        $message = $e->getMessage();
     }
 }
 

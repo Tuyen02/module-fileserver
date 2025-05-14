@@ -348,8 +348,10 @@ function restoreFileOrFolder($fileId)
         $sql_children = 'WITH RECURSIVE file_tree AS (
             SELECT file_id, file_path, lev, is_folder, file_name, deleted_at, 1 as level
             FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files
-            WHERE lev = ' . $fileId . ' AND status = 0 AND deleted_at = ' . $deleted_at . '  
+            WHERE lev = ' . $fileId . ' AND status = 0 AND deleted_at = ' . $deleted_at . '
+            
             UNION ALL
+            
             SELECT f.file_id, f.file_path, f.lev, f.is_folder, f.file_name, f.deleted_at, ft.level + 1
             FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
             INNER JOIN file_tree ft ON f.lev = ft.file_id
