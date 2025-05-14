@@ -52,7 +52,16 @@ if ($lev > 0) {
 }
 
 if (!empty($search_term)) {
-    $sql .= ' AND f.file_name LIKE :search_term';
+    if (!empty($search_type) && $search_type == 'file') {
+        $sql .= ' AND f.file_name LIKE :search_term AND f.is_folder = 0 AND NOT EXISTS (
+            SELECT 1 FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files p 
+            WHERE p.file_id = f.lev 
+            AND p.status = 0 
+            AND p.deleted_at = f.deleted_at
+        )';
+    } else {
+        $sql .= ' AND f.file_name LIKE :search_term';
+    }
 }
 
 if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
@@ -97,6 +106,10 @@ foreach ($other_items as $item) {
             }
         }
         if ($parent) {
+            if ($parent['status'] == 0) {
+                $show = false;
+                break;
+            }
             if ($parent['lev'] == 0 && $parent['deleted_at'] == $item['deleted_at']) {
                 $show = false;
                 break;

@@ -28,13 +28,6 @@ $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE fil
 $result = $db->query($sql);
 $row = $result->fetch();
 
-$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
-$array_mod_title[] = [
-    'catid' => 0,
-    'title' => $row['file_name'],
-    'link' => $base_url
-];
-
 if (!$row || $row['is_folder'] == 1) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
 }
@@ -48,10 +41,10 @@ $page_url = $base_url;
 $view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '/' . $row['alias'] . '-' . 'lev=' . $row['lev'];
 
 $breadcrumbs = [];
-$current_lev = $row['lev'];
+$current_lev = $lev;
 
 while ($current_lev > 0) {
-    $sql1 = 'SELECT file_name, file_path, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
+    $sql1 = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
     $result1 = $db->query($sql1);
     $row1 = $result1->fetch();
     if ($row1['is_folder'] == 1) {
