@@ -396,6 +396,10 @@ if (!empty($action)) {
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_empty']]);
         }
 
+        if (!isValidFileName($newName)) {
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_invalid']]);
+        }
+
         $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
         $row = $db->query($sql)->fetch();
 
@@ -407,7 +411,7 @@ if (!empty($action)) {
             $row['p_other'] = $perm ? $perm['p_other'] : 1;
         }
 
-        if (!$row) {
+        if (empty($row)) {
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_not_found']]);
         }
 
@@ -446,11 +450,12 @@ if (!empty($action)) {
             if (!empty($originalExtension) && $originalExtension != $newExtension) {
                 nv_jsonOutput(['status' => $status, 'message' => $lang_module['cannot_change_extension']]);
             }
+
+            if(pathinfo($newName, PATHINFO_FILENAME) == '') {
+                nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_invalid']]);
+            }
         }
 
-        if(pathinfo($newName, PATHINFO_FILENAME) == '') {
-            nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_invalid']]);
-        }
 
         $directory = dirname($oldFilePath);
         $newFilePath = $directory . '/' . $newName;
@@ -512,24 +517,31 @@ if (!empty($action)) {
 
     if ($action == 'compress') {
         if (!defined('NV_IS_SPADMIN')) {
-            $is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
-
+            $is_group_user = isset($user_info['in_groups']) && 
+                            is_array($user_info['in_groups']) && 
+                            !empty(array_intersect($user_info['in_groups'], $config_value_array));
+        
+            $sql = 'SELECT file_id, p_group, p_other 
+                    FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
+                    WHERE file_id IN (' . implode(',', array_map('intval', $fileIds)) . ')';
+            $permissions = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        
+            $permissions_map = array_column($permissions, null, 'file_id');
+        
             foreach ($fileIds as $fileId) {
-                $sql = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $fileId;
-                $permissions = $db->query($sql)->fetch();
-
-                if ($permissions) {
-                    $current_permission = $is_group_user ? $permissions['p_group'] : $permissions['p_other'];
-
-                    if (!$is_group_user && $permissions['p_group'] == 3) {
-                        nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_permission_group_only']]);
-                    }
-
-                    if ($current_permission < 3) {
-                        nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_permission_to_compress']]);
-                    }
-                } else {
+                if (!isset($permissions_map[$fileId])) {
                     nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_not_found']]);
+                }
+        
+                $perm = $permissions_map[$fileId];
+                $current_permission = $is_group_user ? $perm['p_group'] : $perm['p_other'];
+        
+                if (!$is_group_user && $perm['p_group'] == 3) {
+                    nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_permission_group_only']]);
+                }
+        
+                if ($current_permission < 3) {
+                    nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_permission_to_compress']]);
                 }
             }
         }
@@ -543,12 +555,29 @@ if (!empty($action)) {
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['zip_file_name_empty']]);
         }
 
+        if (!isValidFileName($zipFileName)) {
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_invalid']]);
+        }
+
         if (pathinfo($zipFileName, PATHINFO_EXTENSION) != 'zip') {
             $zipFileName .= '.zip';
         }
 
         $zipFilePath = $base_dir . '/' . $zipFileName;
         $zipFullPath = NV_ROOTDIR . $zipFilePath;
+
+        if (!empty($fileIds)) {
+            $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
+            $sql = 'SELECT f.*, p.p_group, p.p_other 
+                    FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+                    LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id
+                    WHERE f.file_id IN (' . $placeholders . ') 
+                    AND f.status = 1
+                    ORDER BY f.lev ASC, f.file_id ASC';
+            $stmt = $db->prepare($sql);
+            $stmt->execute($fileIds);
+            $list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
 
         $compressResult = compressFiles($fileIds, $zipFullPath);
 
@@ -609,6 +638,10 @@ if (!empty($action)) {
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_empty']]);
         }
 
+        if (!isValidFileName($name_f)) {
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_invalid']]);
+        }
+
         if ($type == 0) {
             $extension = pathinfo($name_f, PATHINFO_EXTENSION);
             $filename = pathinfo($name_f, PATHINFO_FILENAME);
@@ -654,7 +687,7 @@ if (!empty($action)) {
                WHERE f.file_id = ' . $file_id;
         $row = $db->query($sql)->fetch();
 
-        if (!$row) {
+        if (empty($row)) {
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_not_found']]);
         }
 
@@ -937,3 +970,4 @@ $contents = nv_fileserver_main($op, $result, $page_url, $error, $success, $permi
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);
 include NV_ROOTDIR . '/includes/footer.php';
+

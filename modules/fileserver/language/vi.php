@@ -157,3 +157,5 @@ $lang_module['cannot_open_excel_file'] = 'Không thể đọc file Excel: ';
 $lang_module['cannot_save_file'] = 'Không thể lưu file';
 $lang_module['download_to_view'] = 'Vui lòng tải xuống để xem chi tiết nội dung file.';
 $lang_module['error_update_alias'] = 'Lỗi cập nhật alias: ';
+$lang_module['file_name_empty'] = 'Tên file không được để trống';
+

@@ -588,7 +588,7 @@ function buildTree($list)
         $items[$item['file_id']]['children'] = [];
     }
     foreach ($items as $item) {
-        if ($item['lev'] != 0) {
+        if ($item['lev'] != 0 && isset($items[$item['lev']])) {
             $items[$item['lev']]['children'][] = &$items[$item['file_id']];
         } else {
             $tree[] = &$items[$item['file_id']];
@@ -890,3 +890,30 @@ function renderFolderTree($tree) {
     $html .= '</ul>';
     return $html;
 }
+
+function isValidFileName($filename) {
+    $filename = rtrim($filename, " .");
+    
+    if (empty($filename)) {
+        return false;
+    }
+    
+    $pathInfo = pathinfo($filename);
+    $name = $pathInfo['filename'];
+    $extension = isset($pathInfo['extension']) ? $pathInfo['extension'] : '';
+    
+    if (preg_match('/[\\\/:*?"<>|]/', $name)) {
+        return false;
+    }
+    
+    if (substr($name, -1) === ' ' || substr($name, -1) === '.') {
+        return false;
+    }
+    
+    if (!mb_check_encoding($filename, 'UTF-8')) {
+        return false;
+    }
+    
+    return true;
+}
+
