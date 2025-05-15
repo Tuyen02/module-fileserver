@@ -123,24 +123,34 @@ function getFileIconClass($file)
 function updatePerm($file_id)
 {
     global $db, $module_data;
-    $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
-                        VALUES (:file_id, :p_group, :p_other, :updated_at)';
-    $stmt = $db->prepare($sql);
-    $stmt->bindParam(':file_id', $file_id, PDO::PARAM_STR);
-    $stmt->bindValue(':p_group', '1', PDO::PARAM_INT);
-    $stmt->bindValue(':p_other', '1', PDO::PARAM_INT);
-    $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-    $stmt->execute();
-    return true;
+    try {
+        $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
+                            VALUES (:file_id, :p_group, :p_other, :updated_at)';
+        $stmt = $db->prepare($sql);
+        $stmt->bindParam(':file_id', $file_id, PDO::PARAM_STR);
+        $stmt->bindValue(':p_group', '1', PDO::PARAM_INT);
+        $stmt->bindValue(':p_other', '1', PDO::PARAM_INT);
+        $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+        $stmt->execute();
+        return true;
+    } catch (PDOException $e) {
+        error_log('Lỗi updatePerm: ' . $e->getMessage());
+        return false;
+    }
 }
 
 function updateAlias($file_id, $file_name)
 {
     global $db, $module_data;
-    $alias = change_alias($file_name . '_' . $file_id);
-    $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET alias=' . $db->quote($alias) . ' WHERE file_id = ' . $file_id;
-    $db->query($sqlUpdate);
-    return true;
+    try {
+        $alias = change_alias($file_name . '_' . $file_id);
+        $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET alias=' . $db->quote($alias) . ' WHERE file_id = ' . $file_id;
+        $db->query($sqlUpdate);
+        return true;
+    } catch (PDOException $e) {
+        error_log('Lỗi updateAlias: ' . $e->getMessage());
+        return false;
+    }
 }
 
 function calculateFolderSize($folderId)
@@ -208,35 +218,9 @@ function calculateFileFolderStats($lev)
     ];
 }
 
-function checkIfParentIsFolder($db, $lev)
-{
-    global $lang_module, $module_data;
-    $stmt = $db->query('SELECT is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . intval($lev));
-    if ($stmt) {
-        return $stmt->fetchColumn();
-    } else {
-        error_log($lang_module['Lỗi truy vấn trong checkIfParentIsFolder với lev: '] . intval($lev));
-        return 0;
-    }
-}
-
-function getAllChildFileIds($fileId)
-{
-    global $module_data, $db;
-    $childFileIds = [];
-    $sql = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . intval($fileId) . ' and status = 1';
-    $result = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-    foreach ($result as $row) {
-        $childFileIds[] = $row['file_id'];
-        $childFileIds = array_merge($childFileIds, getAllChildFileIds($row['file_id']));
-    }
-    return $childFileIds;
-}
-
 function deleteFileOrFolder($fileId)
 {
     global $db, $module_data, $admin_info, $module_name;
-    $base_dir = '/uploads/fileserver';
     $trash_dir = '/data/tmp/fileserver_trash';
 
     $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId . ' AND status = 0';

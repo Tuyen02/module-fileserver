@@ -30,7 +30,19 @@ if (!$row) {
     $message = $lang_module['f_has_exit'];
 } else {
     $zipFilePath = NV_ROOTDIR . $row['file_path'];
-    $extractTo = NV_ROOTDIR . $base_dir . '/' . pathinfo($row['file_name'], PATHINFO_FILENAME);
+    $parent_dir = dirname($row['file_path']);
+    $original_name = pathinfo($row['file_name'], PATHINFO_FILENAME);
+    $new_name = $original_name;
+    $counter = 1;
+    $new_path = $parent_dir . '/' . $new_name;
+
+    while (file_exists(NV_ROOTDIR . $new_path)) {
+        $new_name = $original_name . '(' . $counter . ')';
+        $new_path = $parent_dir . '/' . $new_name;
+        $counter++;
+    }
+
+    $extractTo = NV_ROOTDIR . $new_path;
 
     if ($action == 'unzip' && $row['compressed'] != 0) {
         if (!defined('NV_IS_SPADMIN')) {
@@ -62,19 +74,6 @@ if (!$row) {
                 ]);
             }
         }
-
-        $original_name = pathinfo($row['file_name'], PATHINFO_FILENAME);
-        $new_name = $original_name;
-        $counter = 1;
-        $new_path = $base_dir . '/' . $new_name;
-
-        while (file_exists(NV_ROOTDIR . $new_path)) {
-            $new_name = $original_name . '(' . $counter . ')';
-            $new_path = $base_dir . '/' . $new_name;
-            $counter++;
-        }
-
-        $extractTo = NV_ROOTDIR . $new_path;
 
         if (!is_dir($extractTo)) {
             mkdir($extractTo, 777, true);
@@ -116,14 +115,24 @@ if (!$row) {
             $status = $lang_module['success'];
             $message = $lang_module['unzip_ok'];
 
-            $insert_sql = 'INSERT INTO ' . NV_PREFIXLANG . '_fileserver_files 
-                           (file_name, file_path, file_size, is_folder, compressed, created_at) 
-                           VALUES (:new_name, :new_path, :file_size, 1, 0, :created_at)';
+            $sql_parent = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_path = :parent_dir AND is_folder = 1 AND status = 1';
+            $stmt_parent = $db->prepare($sql_parent);
+            $stmt_parent->bindParam(':parent_dir', $parent_dir, PDO::PARAM_STR);
+            $stmt_parent->execute();
+            $parent_id = $stmt_parent->fetchColumn();
+            if (!$parent_id) {
+                $parent_id = 0; 
+            }
+
+            $insert_sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                           (file_name, file_path, file_size, is_folder, compressed, created_at, lev) 
+                           VALUES (:new_name, :new_path, :file_size, 1, 0, :created_at, :lev)';
             $insert_stmt = $db->prepare($insert_sql);
             $insert_stmt->bindParam(':new_name', $new_name, PDO::PARAM_STR);
             $insert_stmt->bindParam(':new_path', $new_path, PDO::PARAM_STR);
             $insert_stmt->bindParam(':file_size', $file_size_zip, PDO::PARAM_INT);
             $insert_stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
+            $insert_stmt->bindValue(':lev', $parent_id, PDO::PARAM_INT);
             $insert_stmt->execute();
 
             $new_id = $db->lastInsertId();

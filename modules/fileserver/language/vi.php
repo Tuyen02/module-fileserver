@@ -154,6 +154,7 @@ $lang_module['error_reading_ppt'] = 'Hiện tại module chưa phát triển tí
 $lang_module['not_allow_zip'] = 'Không cho phép tải lên file zip.';
 $lang_module['cannot_open_word_file'] = 'Không thể đọc file Word: ';
 $lang_module['cannot_open_excel_file'] = 'Không thể đọc file Excel: ';
+$lang_module['cannot_edit_excel_file_'] = 'Không hỗ trợ chỉnh sửa file Excel, chỉ cho phép xem nội dung.';
 $lang_module['cannot_save_file'] = 'Không thể lưu file';
 $lang_module['download_to_view'] = 'Vui lòng tải xuống để xem chi tiết nội dung file.';
 $lang_module['error_update_alias'] = 'Lỗi cập nhật alias: ';

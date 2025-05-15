@@ -290,7 +290,7 @@ function nv_fileserver_edit_img($row, $file_id, $file_extension, $is_image, $is_
 
 function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $status, $message, $back_url, $current_permission)
 {
-    global $module_file, $global_config, $lang_module, $module_name, $user_info, $module_data, $db, $module_config;
+    global $module_file, $global_config, $lang_module;
 
     $xtpl = new XTemplate('edit.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
@@ -354,7 +354,7 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
 
 function nv_fileserver_perm($row, $file_id, $group_level, $other_level, $status, $message, $back_url)
 {
-    global $module_file, $global_config, $lang_module, $module_name;
+    global $module_file, $global_config, $lang_module;
 
     $xtpl = new XTemplate('perm.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);

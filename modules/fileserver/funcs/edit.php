@@ -158,7 +158,7 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
         }
     } elseif (in_array($file_extension, ['xls', 'xlsx'])) {
         $status = $lang_module['error'];
-        $message = 'Không hỗ trợ chỉnh sửa file Excel, chỉ cho phép xem nội dung.';
+        $message = $lang_module['cannot_edit_excel_file_'];
         $has_changes = false;
     } elseif (in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
         $old_content = file_get_contents($full_path);
