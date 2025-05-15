@@ -13,9 +13,9 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
-function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissions, $selected_all, $selected_file, $selected_folder, $total, $perpage, $base_url, $lev, $search_term, $search_type, $page, $logs, $back_url)
+function nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page)
 {
-    global $module_file, $global_config, $lang_module, $module_name, $module_config, $lang_global, $back_url;
+    global $module_file, $global_config, $lang_module, $module_name, $module_config, $lang_global, $back_url, $op;
 
     $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
@@ -23,18 +23,16 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
     $xtpl->assign('PAGE_URL', $page_url);
     $xtpl->assign('SEARCH_TERM', $search_term);
 
-    $xtpl->assign('SELECTED_ALL', $selected_all);
-    $xtpl->assign('SELECTED_FILE', $selected_file);
-    $xtpl->assign('SELECTED_FOLDER', $selected_folder);
+    $xtpl->assign('SELECTED_ALL', $selected['all']);
+    $xtpl->assign('SELECTED_FILE', $selected['file']);
+    $xtpl->assign('SELECTED_FOLDER', $selected['folder']);
 
     if (!empty($back_url)) {
         $xtpl->assign('BACK_URL', $back_url);
         $xtpl->parse('main.back');
     }
 
-    if ($total > $perpage) {
-        $page_url = $base_url . '&lev=' . $lev . '&search=' . $search_term . '&search_type=' . $search_type;
-        $generate_page = nv_generate_page($page_url, $total, $perpage, $page);
+    if ($generate_page) {
         $xtpl->assign('GENERATE_PAGE', $generate_page);
     }
 
@@ -61,9 +59,9 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
     } else {
         foreach ($result as $row) {
             if (!empty($logs)) {
-                $row['total_size'] = nv_convertfromBytes($logs['total_size']);
-                $row['total_files'] = $logs['total_files'];
-                $row['total_folders'] = $logs['total_folders'];
+                $row['total_size'] = isset($logs[$row['lev']]['total_size']) ? nv_convertfromBytes($logs[$row['lev']]['total_size']) : '0 B';
+                $row['total_files'] = isset($logs[$row['lev']]['total_files']) ? $logs[$row['lev']]['total_files'] : 0;
+                $row['total_folders'] = isset($logs[$row['lev']]['total_folders']) ? $logs[$row['lev']]['total_folders'] : 0;
             }
 
             $row['created_at'] = date('d/m/Y H:i:s', $row['created_at']);
@@ -71,8 +69,8 @@ function nv_fileserver_main($op, $result, $page_url, $error, $success, $permissi
             $row['icon_class'] = getFileIconClass($row);
 
             if ($permissions) {
-                $row['p_group'] = $permissions['p_group'];
-                $row['p_other'] = $permissions['p_other'];
+                $row['p_group'] = isset($permissions[$row['file_id']]['p_group']) ? $permissions[$row['file_id']]['p_group'] : 1;
+                $row['p_other'] = isset($permissions[$row['file_id']]['p_other']) ? $permissions[$row['file_id']]['p_other'] : 1;
             }
 
             $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'] ;

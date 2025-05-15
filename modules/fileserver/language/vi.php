@@ -159,4 +159,9 @@ $lang_module['cannot_save_file'] = 'Không thể lưu file';
 $lang_module['download_to_view'] = 'Vui lòng tải xuống để xem chi tiết nội dung file.';
 $lang_module['error_update_alias'] = 'Lỗi cập nhật alias: ';
 $lang_module['file_name_empty'] = 'Tên file không được để trống';
+$lang_module['file_name_valid'] = 'Tên file hợp lệ';
+$lang_module['folder_name_exists'] = 'Tên thư mục đã tồn tại';
+$lang_module['folder_name_valid'] = 'Tên thư mục hợp lệ';
+$lang_module['zip_name_exists'] = 'Tên file zip đã tồn tại';
+$lang_module['zip_name_valid'] = 'Tên file zip hợp lệ';
 

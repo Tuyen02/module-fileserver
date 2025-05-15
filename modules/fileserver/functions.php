@@ -214,7 +214,8 @@ function updateAlias($file_id, $file_name)
 
 }
 
-function suggestNewName($db, $table, $lev, $baseName, $extension, $is_folder = null) {
+function suggestNewName($lev, $baseName, $extension, $is_folder = null) {
+    global $db, $module_data;
     $i = 1;
     do {
         $suggestedName = $baseName . '_' . $i;
@@ -225,9 +226,9 @@ function suggestNewName($db, $table, $lev, $baseName, $extension, $is_folder = n
             ':file_name' => $suggestedName,
             ':lev' => $lev
         ];
-        $sql = "SELECT COUNT(*) FROM $table WHERE status = 1 AND file_name = :file_name AND lev = :lev";
+        $sql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND file_name = :file_name AND lev = :lev';
         if ($is_folder !== null) {
-            $sql .= " AND is_folder = :is_folder";
+            $sql .= ' AND is_folder = :is_folder';
             $params[':is_folder'] = $is_folder;
         }
         $stmt = $db->prepare($sql);
@@ -385,48 +386,59 @@ function compressFiles($fileIds, $zipFilePath)
     global $db, $lang_module, $module_data;
 
     if (empty($fileIds) || !is_array($fileIds)) {
-        return ['status' => $lang_module['error'], 'message' => $lang_module['list_invalid']];
+        return ['status' => 'error', 'message' => $lang_module['list_invalid']];
     }
 
     if (file_exists($zipFilePath)) {
         unlink($zipFilePath);
     }
 
+    if (!class_exists('PclZip')) {
+        require_once NV_ROOTDIR . '/includes/class/pclzip/pclzip.lib.php';
+    }
+
     $zip = new PclZip($zipFilePath);
     $filePaths = [];
 
     $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
-    $sql = "SELECT file_path, file_name FROM " . NV_PREFIXLANG . "_{$module_data}_files 
-            WHERE file_id IN ({$placeholders}) AND status = 1";
+    $sql = 'SELECT file_path, file_name, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+            WHERE file_id IN (' . $placeholders . ') AND status = 1';
     $stmt = $db->prepare($sql);
     $stmt->execute($fileIds);
     $rows = $stmt->fetchAll();
 
     if (empty($rows)) {
-        return ['status' => $lang_module['error'], 'message' => $lang_module['cannot_find_file']];
+        return ['status' => 'error', 'message' => $lang_module['cannot_find_file']];
     }
 
     foreach ($rows as $row) {
         $realPath = NV_ROOTDIR . $row['file_path'];
         if (file_exists($realPath)) {
-            $fileName = nv_EncString($row['file_name']);
-            $filePaths[] = [
-                PCLZIP_ATT_FILE_NAME => $realPath,
-                PCLZIP_ATT_FILE_NEW_FULL_NAME => $fileName
-            ];
+            if ($row['is_folder']) {
+                $filePaths[] = [
+                    PCLZIP_ATT_FILE_NAME => $realPath,
+                    PCLZIP_ATT_FILE_NEW_FULL_NAME => nv_EncString($row['file_name']),
+                    PCLZIP_ATT_FILE_COMMENT => 'folder'
+                ];
+            } else {
+                $filePaths[] = [
+                    PCLZIP_ATT_FILE_NAME => $realPath,
+                    PCLZIP_ATT_FILE_NEW_FULL_NAME => nv_EncString($row['file_name'])
+                ];
+            }
         } else {
-            return ['status' => $lang_module['error'], 'message' => $lang_module['f_hasnt_exit'] . $realPath];
+            return ['status' => 'error', 'message' => $lang_module['f_hasnt_exit'] . $realPath];
         }
     }
 
     if (count($filePaths) > 0) {
         $return = $zip->create($filePaths);
         if ($return == 0) {
-            return ['status' => $lang_module['error'], 'message' => $lang_module['zip_false'] . $zip->errorInfo(true)];
+            return ['status' => 'error', 'message' => $lang_module['zip_false'] . $zip->errorInfo(true)];
         }
-        return ['status' => $lang_module['success'], 'message' => $lang_module['zip_ok']];
+        return ['status' => 'success', 'message' => $lang_module['zip_ok']];
     } else {
-        return ['status' => $lang_module['error'], 'message' => $lang_module['file_invalid']];
+        return ['status' => 'error', 'message' => $lang_module['file_invalid']];
     }
 }
 
@@ -571,8 +583,8 @@ function getAllChildFileIds($fileId)
     global $module_data, $db;
     $childFileIds = [];
     $sql = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev =' . $fileId;
-    $result = $db->query($sql)->fetchAll();
-    foreach ($result as $row) {
+    $result = $db->query($sql);
+    while ($row = $result->fetch()) {
         $childFileIds[] = $row['file_id'];
         $childFileIds = array_merge($childFileIds, getAllChildFileIds($row['file_id']));
     }
