@@ -7,6 +7,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 if (!defined('NV_IS_SPADMIN')) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
 }
+
 $page_title = $lang_module['perm'];
 
 $status = '';

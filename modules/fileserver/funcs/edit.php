@@ -228,7 +228,7 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
     }
 }
 
-$contents = nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $status, $message, $back_url, $current_permission);
+$contents = nv_fileserver_edit( $file_content, $file_id, $file_name, $view_url, $status, $message, $back_url, $current_permission);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

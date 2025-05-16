@@ -6,23 +6,20 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 $status = '';
 $message = '';
 
-if (!defined('NV_IS_SPADMIN')) {
-    $sql_per = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
-    $result_per = $db->query($sql_per);
-    $row_per = $result_per->fetch();
-
-    if (empty($row_per) || ($row_per['p_group'] < 3 && $row_per['p_other'] < 3)) {
-        $status = $lang_module['error'];
-        $message = $lang_module['not_thing_to_do'];
-    }
-}
-
 $rank = $nv_Request->get_int('rank', 'get', 0);
 $copy = $nv_Request->get_int('copy', 'get', 0);
 $move = $nv_Request->get_int('move', 'get', 0);
 $root = $nv_Request->get_int('root', 'get', 0);
 $page = $nv_Request->get_int('page', 'get', 1);
 $current_permission = get_user_permission($lev, $row);
+
+if (!defined('NV_IS_SPADMIN')) {
+    $is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
+
+    if ($current_permission < 3 || $user_info == null) {
+        nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
+    }
+}
 
 $sql = 'SELECT file_name, file_path, file_size, is_folder, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $file_id;
 $result = $db->query($sql);
@@ -101,12 +98,9 @@ if ($copy == 1) {
         $status = 'error';
         $message = $lang_module['please_select_folder'];
     } else {
-        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_name = :file_name AND lev = :lev AND status = 1';
-        $stmtCheck = $db->prepare($sqlCheck);
-        $stmtCheck->bindParam(':file_name', $row['file_name']);
-        $stmtCheck->bindParam(':lev', $target_lev);
-        $stmtCheck->execute();
-        $existingFile = $stmtCheck->fetchColumn();
+        $file_name = $db->quote($row['file_name']);
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_name = ' . $file_name . ' AND lev = ' . $target_lev . ' AND status = 1';
+        $existingFile = $db->query($sqlCheck)->fetchColumn();
 
         if ($existingFile > 0) {
             $status = $lang_module['error'];
@@ -158,9 +152,8 @@ if ($copy == 1) {
                     if ($root == 1) {
                         $permissions = ['p_group' => 3, 'p_other' => 3];
                     } else {
-                        $sql_permissions = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = :folder_id';
+                        $sql_permissions = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $target_lev;
                         $stmt_permissions = $db->prepare($sql_permissions);
-                        $stmt_permissions->bindParam(':folder_id', $target_lev);
                         $stmt_permissions->execute();
                         $permissions = $stmt_permissions->fetch();
                     }
@@ -292,7 +285,7 @@ if ($rank > 0) {
     $selected_folder_path = $lang_module['root'];
 }
 
-$contents = nv_fileserver_clone($row, $file_id, $file_name, $file_path, $status, $message, $selected_folder_path, $view_url, $folder_tree, $page_url, $base_url, $has_root_level);
+$contents = nv_fileserver_clone( $file_id, $file_name, $file_path, $status, $message, $selected_folder_path, $view_url, $folder_tree, $base_url);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

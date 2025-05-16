@@ -722,7 +722,7 @@ function getAllFilesAndFolders($folder_id, $base_path) {
 
 function checkChildrenPermissions($folder_id)
 {
-    global $db, $module_data, $lang_module, $user_info, $module_config, $module_name;
+    global $db, $module_data;
 
     $sql = 'WITH RECURSIVE folder_tree AS (
         SELECT file_id, file_name, lev, is_folder
