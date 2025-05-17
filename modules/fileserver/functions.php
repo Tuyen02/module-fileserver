@@ -109,6 +109,8 @@ if ($use_elastic == 1) {
 }
 
 $allowed_extensions = ['txt', 'xlsx', 'xls', 'html', 'css'];
+$editable_extensions = ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql', 'doc', 'docx', 'xls', 'xlsx'];
+$viewable_extensions = ['png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'ppt', 'pptx'];
 $base_dir = '/uploads/fileserver';
 $tmp_dir = '/data/tmp/';
 

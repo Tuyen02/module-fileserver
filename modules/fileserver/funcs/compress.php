@@ -12,6 +12,7 @@ $current_permission = get_user_permission($lev, $row);
 $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $lev;
 $result = $db->query($sql);
 $row = $result->fetch();
+$file_id = $row['file_id'];
 
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
 $array_mod_title[] = [
@@ -178,7 +179,7 @@ if (!$row) {
 $tree = buildTree($list);
 $tree_html = displayTree($tree);
 
-$contents = nv_fileserver_compress($list, $row['file_id'], $status, $message, $tree_html, $current_permission);
+$contents = nv_fileserver_compress($list, $file_id, $status, $message, $tree_html, $current_permission);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

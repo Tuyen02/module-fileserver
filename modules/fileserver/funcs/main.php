@@ -19,6 +19,9 @@ $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DA
 
 $page_url = $base_url;
 
+$status = 'error';
+$mess = $lang_module['sys_err'];
+
 $breadcrumbs = [];
 $current_lev = $lev;
 
@@ -117,7 +120,7 @@ if ($use_elastic == 1) {
             $result = [];
         }
     } catch (Exception $e) {
-        error_log("Lỗi tìm kiếm Elasticsearch: " . $e->getMessage());
+        error_log($lang_module['error_elastic_search'] . $e->getMessage());
     }
 } else {
     try {
@@ -157,7 +160,7 @@ if ($use_elastic == 1) {
         $sql .= $where . ' ORDER BY f.file_id ASC LIMIT ' . (($page - 1) * $perpage) . ', ' . $perpage;
         $result = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        error_log("Lỗi truy vấn Database: " . $e->getMessage());
+        error_log($lang_module['error_db'] . $e->getMessage());
     }
 }
 
@@ -184,17 +187,16 @@ if ($lev > 0) {
     $full_dir = NV_ROOTDIR . $base_dir;
     $page_url .= '&lev=' . $lev;
 
-    $sql = 'SELECT lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $lev;
-    $parent = $db->query($sql)->fetch();
-    if ($parent) {
+    $parent_lev = $row['lev'];
+    if ($parent_lev > 0) {
+        $sql = 'SELECT alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $parent_lev;
+        $parent_alias = $db->query($sql)->fetchColumn();
         $back_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
-        if ($parent['lev'] > 0) {
-            $sql = 'SELECT alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $parent['lev'];
-            $parent_alias = $db->query($sql)->fetchColumn();
-            if ($parent_alias) {
-                $back_url .= '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $parent_alias;
-            }
+        if ($parent_alias) {
+            $back_url .= '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $parent_alias;
         }
+    } else {
+        $back_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
     }
 
     $parentFileType = checkIfParentIsFolder($lev);
@@ -209,9 +211,6 @@ if ($lev > 0) {
 
 $action = $nv_Request->get_title('action', 'post', '');
 $fileIds = $nv_Request->get_array('files', 'post', []);
-
-$status = 'error';
-$mess = $lang_module['sys_err'];
 
 if (!empty($action)) {
     if ($action == 'create') {
@@ -280,7 +279,6 @@ if (!empty($action)) {
                 mkdir($file_dir);
             }
             $status = 'success';
-            $mess = $lang_module['create_ok'];
         } else {
             $status = file_put_contents($file_dir, '') !== false ? 'success' : 'error';
             $mess = $status == 'success' ? $lang_module['create_ok'] : $lang_module['cannot_create_file'];
@@ -325,17 +323,15 @@ if (!empty($action)) {
                 updateLog($lev);
                 nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['delete_btn'], 'File id: ' . $fileId, $user_info['userid']);
                 nv_jsonOutput(['status' => 'success', 'message' => $lang_module['delete_ok'], 'redirect' => $page_url]);
-            } else {
-                $mess = $lang_module['delete_false'];
-                nv_jsonOutput(['status' => $status, 'message' => $mess]);
-            }
+            } 
+                
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['delete_false']]);
         }
     }
 
     if ($action == 'deleteAll') {
         if (empty($fileIds)) {
-            $mess = $lang_module['choose_file_0'];
-            nv_jsonOutput(['status' => $status, 'message' => $mess]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['choose_file_0']]);
         }
 
         $deletedFileIds = [];
@@ -355,20 +351,19 @@ if (!empty($action)) {
             nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['deleteAll_btn'], 'File id: ' . implode(',', $deletedFileIds), $admin_info['userid']);
             nv_jsonOutput(['status' => 'success', 'message' => $lang_module['delete_ok'], 'redirect' => $page_url]);
         } else {
-            $mess = $lang_module['delete_false'];
-            nv_jsonOutput(['status' => $status, 'message' => $mess]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['delete_false']]);
         }
     }
 
     if ($action == 'rename') {
         $fileId = intval($nv_Request->get_int('file_id', 'post', 0));
-        $newName = nv_EncString(trim($nv_Request->get_title('new_name', 'post', '')));
-
-        if ($newName == '') {
+        if ($fileId == 0) {
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_empty']]);
         }
 
-        if (!isValidFileName($newName)) {
+        $newName = nv_EncString(trim($nv_Request->get_title('new_name', 'post', '')));
+
+        if ($newName == '' || !isValidFileName($newName)) {
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_invalid']]);
         }
 
@@ -379,8 +374,11 @@ if (!empty($action)) {
             $sql_perm = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $fileId;
             $perm = $db->query($sql_perm)->fetch();
 
-            $row['p_group'] = $perm ? $perm['p_group'] : 1;
-            $row['p_other'] = $perm ? $perm['p_other'] : 1;
+            $row['p_group'] = $row['p_other'] = 1;
+            if ($perm) {
+                $row['p_group'] = $perm['p_group'];
+                $row['p_other'] = $perm['p_other'];
+            }
         }
 
         if (empty($row)) {
@@ -593,8 +591,9 @@ if (!empty($action)) {
         if ($name_f == '' || !isValidFileName($name_f)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_invalid']]);
         }
-
+        $message = $lang_module['folder_name_valid'];
         if ($type == 0) {
+            $message = $lang_module['file_name_valid'];
             $extension = pathinfo($name_f, PATHINFO_EXTENSION);
             $filename = pathinfo($name_f, PATHINFO_FILENAME);
 
@@ -615,17 +614,19 @@ if (!empty($action)) {
             $extension = pathinfo($name_f, PATHINFO_EXTENSION);
             $suggestedName = suggestNewName($lev, $baseName, $extension, $type);
             nv_jsonOutput(['status' => 'error', 'message' => sprintf($lang_module['file_name_exists_suggest'], $name_f, $suggestedName)]);
-        } else {
-            nv_jsonOutput(['status' => 'success', 'message' => $type == 0 ? $lang_module['file_name_valid'] : $lang_module['folder_name_valid']]);
-        }
+        } 
+        nv_jsonOutput(['status' => 'success', 'message' => $message]);
     }
 
     if ($action == 'check_rename') {
         $new_name = nv_EncString($nv_Request->get_title('new_name', 'post', ''));
         $file_id = $nv_Request->get_int('file_id', 'post', 0);
 
-        if ($new_name == '') {
+        if ($file_id == 0) {
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_empty']]);
+        }
+        if ($new_name == '' || !isValidFileName($new_name)) {
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_invalid']]);
         }
 
         $sql = 'SELECT f.*, p.p_group, p.p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
@@ -637,7 +638,9 @@ if (!empty($action)) {
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_not_found']]);
         }
 
+        $message = $lang_module['folder_name_valid'];
         if ($row['is_folder'] == 0) {
+            $message = $lang_module['file_name_valid'];
             $extension = pathinfo($new_name, PATHINFO_EXTENSION);
             $filename = pathinfo($new_name, PATHINFO_FILENAME);
             $originalExtension = pathinfo($row['file_name'], PATHINFO_EXTENSION);
@@ -666,9 +669,8 @@ if (!empty($action)) {
             $extension = pathinfo($new_name, PATHINFO_EXTENSION);
             $suggestedName = suggestNewName($row['lev'], $baseName, $extension, $row['is_folder']);
             nv_jsonOutput(['status' => $status, 'message' => sprintf($lang_module['file_name_exists_suggest'], $new_name, $suggestedName)]);
-        } else {
-            nv_jsonOutput(['status' => 'success', 'message' => $row['is_folder'] == 1 ? $lang_module['folder_name_valid'] : $lang_module['file_name_valid']]);
-        }
+        } 
+        nv_jsonOutput(['status' => 'success', 'message' => $message]);  
     }
 
     if ($action == 'check_zip_name') {
@@ -682,22 +684,18 @@ if (!empty($action)) {
             $name_with_zip = $zipFileName . '.zip';
         }
 
-        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND is_folder = 0 AND (file_name = :file_name OR file_name = :file_name_zip) AND lev = :lev';
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND is_folder = 0 AND (file_name = '. $db->quote($zipFileName).' OR file_name = '. $db->quote($name_with_zip).') AND lev = ' . $lev;
         $stmtCheck = $db->prepare($sqlCheck);
-        $stmtCheck->bindParam(':file_name', $zipFileName, PDO::PARAM_STR);
-        $stmtCheck->bindParam(':file_name_zip', $name_with_zip, PDO::PARAM_STR);
-        $stmtCheck->bindParam(':lev', $lev, PDO::PARAM_INT);
         $stmtCheck->execute();
         $count = $stmtCheck->fetchColumn();
 
         if ($count > 0) {
             $baseName = pathinfo($zipFileName, PATHINFO_FILENAME);
             $extension = pathinfo($zipFileName, PATHINFO_EXTENSION);
-            $suggestedName = suggestNewName($db, NV_PREFIXLANG . '_' . $module_data . '_files', $lev, $baseName, $extension, 0);
-            nv_jsonOutput(['status' => $status, 'message' => 'Tên file zip đã tồn tại. Gợi ý tên mới: ' . $suggestedName]);
+            $suggestedName = suggestNewName($lev, $baseName, $extension, 0);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['zip_name_exists'] . $suggestedName]);
         } else {
-            $status = 'success';
-            nv_jsonOutput(['status' => $status, 'message' => 'Tên file zip hợp lệ']);
+            nv_jsonOutput(['status' => 'success', 'message' => $lang_module['zip_name_valid']]);
         }
     }
     nv_jsonOutput(['status' => $status, 'message' => $mess]);
@@ -708,20 +706,19 @@ if ($download == 1) {
     $file_id = $nv_Request->get_int('file_id', 'get', 0);
     $token = $nv_Request->get_title('token', 'get', '');
 
-    if (empty($token) || $token != md5($file_id . NV_CHECK_SESSION . $global_config['sitekey'])) {
+    if ($file_id == 0 || empty($token) || $token != md5($file_id . NV_CHECK_SESSION . $global_config['sitekey'])) {
         nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
     }
 
-    $sql = "SELECT file_path, file_name, is_folder FROM " . NV_PREFIXLANG . '_' . $module_data . "_files WHERE file_id = :file_id AND status = 1";
+    $sql = 'SELECT file_path, file_name, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND file_id = ' . $file_id;
     $stmt = $db->prepare($sql);
-    $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
     $stmt->execute();
     $file = $stmt->fetch();
 
-    if ($file) {
+    if (!empty($file)) {
         if (!defined('NV_IS_SPADMIN')) {
-            $sql = 'SELECT p.p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p 
-                    WHERE p.file_id = ' . $file_id;
+            $sql = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions
+                    WHERE file_id = ' . $file_id;
             $row = $db->query($sql)->fetch();
 
             $is_group_user = false;

@@ -124,6 +124,9 @@ $lang_module['error_sync_elastic'] = 'Lỗi đồng bộ Elasticsearch: ';
 $lang_module['error_update_elastic'] = 'Lỗi cập nhật Elasticsearch';
 $lang_module['elastic_index_response'] = 'Lỗi phản hồi Elasticsearch: ';
 $lang_module['error_elastic_index'] = 'Lỗi chỉ mục Elasticsearch: ';
+$lang_module['error_elastic_delete'] = 'Lỗi xóa chỉ mục Elasticsearch: ';
+$lang_module['error_elastic_search'] = 'Lỗi tìm kiếm Elasticsearch: ';  
+$lang_module['error_db'] = 'Lỗi cơ sở dữ liệu: ';
 $lang_module['cannot_update_db'] = 'Không thể cập nhật cơ sở dữ liệu: ';
 $lang_module['not_permission_to_view'] = 'Bạn không có quyền xem file này.';
 $lang_module['not_permission_to_edit'] = 'Bạn không có quyền chỉnh sửa file này.';
@@ -162,6 +165,6 @@ $lang_module['file_name_empty'] = 'Tên file không được để trống';
 $lang_module['file_name_valid'] = 'Tên file hợp lệ';
 $lang_module['folder_name_exists'] = 'Tên thư mục đã tồn tại';
 $lang_module['folder_name_valid'] = 'Tên thư mục hợp lệ';
-$lang_module['zip_name_exists'] = 'Tên file zip đã tồn tại';
+$lang_module['zip_name_exists'] = 'Tên file zip đã tồn tại. Tên gợi ý:';
 $lang_module['zip_name_valid'] = 'Tên file zip hợp lệ';
 

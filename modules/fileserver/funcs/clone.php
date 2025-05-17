@@ -39,7 +39,7 @@ while ($current_lev > 0) {
     $stmt_check = $db->prepare($sql_check);
     $stmt_check->execute();
     $row1 = $stmt_check->fetch(PDO::FETCH_ASSOC);
-    if (!$row1) {
+    if (empty($row1)) {
         break;
     }
     $op_alias = ($row1['is_folder'] == 1) ? $module_info['alias']['main'] : $op;
@@ -83,11 +83,6 @@ if ($copy == 1) {
         $target_folder = $stmt_target->fetch(PDO::FETCH_ASSOC);
         if (!$target_folder) {
             $message = $lang_module['target_folder_not_found'];
-            $contents = nv_fileserver_clone($file_id, $file_name, $file_path, $status, $message, '', $view_url, $folder_tree, $base_url);
-            include NV_ROOTDIR . '/includes/header.php';
-            echo nv_site_theme($contents);
-            include NV_ROOTDIR . '/includes/footer.php';
-            exit;
         }
         $target_url = $target_folder['file_path'];
         $target_lev = $target_folder['file_id'];
@@ -180,7 +175,7 @@ if ($move == 1) {
             $stmt_target->execute();
             $target_folder = $stmt_target->fetch(PDO::FETCH_ASSOC);
             if (!$target_folder) {
-                throw new Exception($lang_module['target_folder_not_found']);
+               $message = $lang_module['target_folder_not_found'];
             }
             $target_url = $target_folder['file_path'];
             $target_lev = $target_folder['file_id'];
@@ -192,12 +187,12 @@ if ($move == 1) {
         $stmt_check->execute();
 
         if ($stmt_check->fetchColumn() > 0) {
-            throw new Exception($lang_module['f_has_exit']);
+            $message = $lang_module['f_has_exit'];
         }
 
         $new_file_path = $target_url . '/' . $file_name;
         if (!rename($full_path, NV_ROOTDIR . $new_file_path)) {
-            throw new Exception($lang_module['move_false']);
+            $message = $lang_module['move_false'];
         }
 
         $db->beginTransaction();
@@ -241,7 +236,6 @@ if ($move == 1) {
             $db->commit();
             $status = 'success';
             $message = $lang_module['move_ok'];
-            nv_redirect_location($view_url);
         } catch (Exception $e) {
             $db->rollBack();
             throw $e;

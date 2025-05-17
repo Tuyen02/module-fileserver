@@ -15,7 +15,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 
 function nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page)
 {
-    global $module_file, $global_config, $lang_module, $module_name, $module_config, $lang_global, $back_url, $op;
+    global $module_file, $global_config, $lang_module, $module_name, $module_config, $lang_global, $back_url, $op, $editable_extensions, $viewable_extensions;
 
     $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
@@ -52,9 +52,6 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
     if (empty($result) && $lev == 0) {
         $xtpl->parse('main.no_data');
     } else {
-        $editable_extensions = ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql', 'doc', 'docx', 'xls', 'xlsx'];
-        $viewable_extensions = ['png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'ppt', 'pptx'];
-
         foreach ($result as $row) {
             if (!empty($logs)) {
                 $row['total_size'] = isset($logs[$row['lev']]['total_size']) ? nv_convertfromBytes($logs[$row['lev']]['total_size']) : '0 B';
@@ -190,17 +187,16 @@ function nv_fileserver_clone( $file_id, $file_name, $file_path, $status, $messag
         $xtpl->parse('main.message');
     }
 
-    $url_copy = $base_url . '&copy=1';
-    $xtpl->assign('url_copy', $url_copy);
 
-    $url_move = $base_url . '&move=1';
-    $xtpl->assign('url_move', $url_move);
+    $xtpl->assign('url_copy', $base_url . '&copy=1');
+
+    $xtpl->assign('url_move', $base_url . '&move=1');
 
     $xtpl->parse('main');
     return $xtpl->text('main');
 }
 
-function nv_fileserver_compress($file_id, $list, $status, $message, $tree_html, $current_permission)
+function nv_fileserver_compress($list, $file_id, $status, $message, $tree_html, $current_permission)
 {
     global $module_file, $global_config, $lang_module;
 

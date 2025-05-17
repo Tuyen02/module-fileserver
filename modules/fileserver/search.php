@@ -3,7 +3,7 @@ if (!defined('NV_IS_MOD_SEARCH')) {
     exit('Stop!!!');
 }
 
-$link = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
+$link = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $site_mods['fileserver']['module_data'] . '&amp;' . NV_OP_VARIABLE . '=main';
 $logic = '';
 $sql = "SELECT * FROM " . NV_PREFIXLANG . "_fileserver_files WHERE file_name LIKE " . $db->quote('%' . $key . '%');
 $num_items = $db->query($sql)->rowCount();
