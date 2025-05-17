@@ -122,16 +122,16 @@ if ($use_elastic == 1) {
 } else {
     try {
         $sql = 'SELECT f.* FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f';
-        
+
         if (!defined('NV_IS_SPADMIN')) {
             $sql .= ' LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id';
         }
-    
+
         $where_conditions = [
             'f.status = 1',
             'f.lev = ' . $lev
         ];
-    
+
         if (!defined('NV_IS_SPADMIN')) {
             if (isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array))) {
                 $where_conditions[] = 'p.p_group >= 2';
@@ -139,21 +139,21 @@ if ($use_elastic == 1) {
                 $where_conditions[] = 'p.p_other = 2';
             }
         }
-    
+
         if (!empty($search_term)) {
             $where_conditions[] = 'f.file_name LIKE ' . $db->quote('%' . $search_term . '%');
         }
-    
+
         if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
             $is_folder = ($search_type == 'file') ? 0 : 1;
             $where_conditions[] = 'f.is_folder = ' . $is_folder;
         }
-    
+
         $where = ' WHERE ' . implode(' AND ', $where_conditions);
-    
+
         $stmt = $db->query($sql . $where);
         $total = $stmt->rowCount();
-    
+
         $sql .= $where . ' ORDER BY f.file_id ASC LIMIT ' . (($page - 1) * $perpage) . ', ' . $perpage;
         $result = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
@@ -197,11 +197,11 @@ if ($lev > 0) {
         }
     }
 
-    $parentFileType = checkIfParentIsFolder( $lev);
+    $parentFileType = checkIfParentIsFolder($lev);
     if ($parentFileType == 0) {
         nv_jsonOutput([
-            'status' => $status, 
-            'message' => $lang_module['cannot_create_file_in_file'], 
+            'status' => $status,
+            'message' => $lang_module['cannot_create_file_in_file'],
             'refresh_captcha' => true
         ]);
     }
@@ -235,7 +235,7 @@ if (!empty($action)) {
             if ($extension == '' || !in_array($extension, $allowed_extensions)) {
                 nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_extension_not_allowed'], 'refresh_captcha' => true]);
             }
-            
+
             if ($filename == '') {
                 nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_invalid'], 'refresh_captcha' => true]);
             }
@@ -245,8 +245,8 @@ if (!empty($action)) {
             $parentFileType = checkIfParentIsFolder($lev);
             if ($parentFileType == 0) {
                 nv_jsonOutput([
-                    'status' => $status, 
-                    'message' => $lang_module['cannot_create_file_in_file'], 
+                    'status' => $status,
+                    'message' => $lang_module['cannot_create_file_in_file'],
                     'refresh_captcha' => true
                 ]);
             }
@@ -273,7 +273,7 @@ if (!empty($action)) {
 
         $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, uploaded_by, is_folder, created_at, lev) 
                 VALUES (' . $db->quote($name_f) . ', ' . $db->quote($file_path) . ', ' . $user_info['userid'] . ', ' . $type . ', ' . NV_CURRENTTIME . ', ' . $lev . ')';
-        
+
         $file_dir = NV_ROOTDIR . $file_path;
         if ($type == 1) {
             if (!file_exists($file_dir)) {
@@ -315,11 +315,11 @@ if (!empty($action)) {
                    LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id 
                    WHERE f.file_id = ' . $fileId;
             $row = $db->query($sql)->fetch();
-            
+
             if (!checkPermission($row, $user_info, defined('NV_IS_SPADMIN'))) {
                 nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_permission_to_delete']]);
             }
-    
+
             $deleted = deleteFileOrFolder($fileId);
             if ($deleted) {
                 updateLog($lev);
@@ -364,7 +364,7 @@ if (!empty($action)) {
         $fileId = intval($nv_Request->get_int('file_id', 'post', 0));
         $newName = nv_EncString(trim($nv_Request->get_title('new_name', 'post', '')));
 
-        if($newName == ''){
+        if ($newName == '') {
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_empty']]);
         }
 
@@ -378,7 +378,7 @@ if (!empty($action)) {
         if ($row) {
             $sql_perm = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $fileId;
             $perm = $db->query($sql_perm)->fetch();
-            
+
             $row['p_group'] = $perm ? $perm['p_group'] : 1;
             $row['p_other'] = $perm ? $perm['p_other'] : 1;
         }
@@ -423,7 +423,7 @@ if (!empty($action)) {
                 nv_jsonOutput(['status' => $status, 'message' => $lang_module['cannot_change_extension']]);
             }
 
-            if(pathinfo($newName, PATHINFO_FILENAME) == '') {
+            if (pathinfo($newName, PATHINFO_FILENAME) == '') {
                 nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_invalid']]);
             }
         }
@@ -490,29 +490,29 @@ if (!empty($action)) {
             $zipFileName .= '.zip';
         }
         if (!defined('NV_IS_SPADMIN')) {
-            $is_group_user = isset($user_info['in_groups']) && 
-                            is_array($user_info['in_groups']) && 
-                            !empty(array_intersect($user_info['in_groups'], $config_value_array));
-        
+            $is_group_user = isset($user_info['in_groups']) &&
+                is_array($user_info['in_groups']) &&
+                !empty(array_intersect($user_info['in_groups'], $config_value_array));
+
             $sql = 'SELECT file_id, p_group, p_other 
                     FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
                     WHERE file_id IN (' . implode(',', array_map('intval', $fileIds)) . ')';
             $permissions = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-        
+
             $permissions_map = array_column($permissions, null, 'file_id');
-        
+
             foreach ($fileIds as $fileId) {
                 if (!isset($permissions_map[$fileId])) {
                     nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_not_found']]);
                 }
-        
+
                 $perm = $permissions_map[$fileId];
                 $current_permission = $is_group_user ? $perm['p_group'] : $perm['p_other'];
-        
+
                 if (!$is_group_user && $perm['p_group'] == 3) {
                     nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_permission_group_only']]);
                 }
-        
+
                 if ($current_permission < 3) {
                     nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_permission_to_compress']]);
                 }
@@ -589,7 +589,7 @@ if (!empty($action)) {
     if ($action == 'check_filename') {
         $name_f = nv_EncString($nv_Request->get_title('name_f', 'post', ''));
         $type = $nv_Request->get_int('type', 'post', 0);
-        
+
         if ($name_f == '' || !isValidFileName($name_f)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_invalid']]);
         }
@@ -597,11 +597,11 @@ if (!empty($action)) {
         if ($type == 0) {
             $extension = pathinfo($name_f, PATHINFO_EXTENSION);
             $filename = pathinfo($name_f, PATHINFO_FILENAME);
-            
+
             if ($extension == '' || !in_array($extension, $allowed_extensions)) {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_extension_not_allowed']]);
             }
-            
+
             if ($filename == '') {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_invalid']]);
             }
@@ -623,7 +623,7 @@ if (!empty($action)) {
     if ($action == 'check_rename') {
         $new_name = nv_EncString($nv_Request->get_title('new_name', 'post', ''));
         $file_id = $nv_Request->get_int('file_id', 'post', 0);
-        
+
         if ($new_name == '') {
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_empty']]);
         }
@@ -700,7 +700,6 @@ if (!empty($action)) {
             nv_jsonOutput(['status' => $status, 'message' => 'Tên file zip hợp lệ']);
         }
     }
-
     nv_jsonOutput(['status' => $status, 'message' => $mess]);
 }
 
@@ -708,7 +707,7 @@ $download = $nv_Request->get_int('download', 'get', 0);
 if ($download == 1) {
     $file_id = $nv_Request->get_int('file_id', 'get', 0);
     $token = $nv_Request->get_title('token', 'get', '');
-    
+
     if (empty($token) || $token != md5($file_id . NV_CHECK_SESSION . $global_config['sitekey'])) {
         nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
     }
@@ -888,13 +887,13 @@ $selected = [
 
 if (!empty($result)) {
     $file_ids = array_column($result, 'file_id');
-    
+
     $sql_logs = 'SELECT *
             FROM ' . NV_PREFIXLANG . '_' . $module_data . '_stats 
             WHERE lev IN (' . implode(',', array_unique(array_column($result, 'lev'))) . ') 
             ORDER BY log_time DESC';
     $logs_result = $db->query($sql_logs)->fetchAll(PDO::FETCH_ASSOC);
-    
+
     $logs = [];
     foreach ($logs_result as $log) {
         $logs[$log['lev']] = [
@@ -904,7 +903,7 @@ if (!empty($result)) {
             'log_time' => isset($log['log_time']) ? $log['log_time'] : NV_CURRENTTIME
         ];
     }
-    
+
     foreach ($result as $row) {
         if (!isset($logs[$row['lev']])) {
             $logs[$row['lev']] = [
@@ -915,12 +914,12 @@ if (!empty($result)) {
             ];
         }
     }
-    
+
     $sql_permissions = 'SELECT file_id, p_group, p_other 
             FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
             WHERE file_id IN (' . implode(',', $file_ids) . ')';
     $permissions_result = $db->query($sql_permissions)->fetchAll(PDO::FETCH_ASSOC);
-    
+
     $permissions = [];
     foreach ($permissions_result as $perm) {
         $permissions[$perm['file_id']] = [
@@ -928,7 +927,7 @@ if (!empty($result)) {
             'p_other' => isset($perm['p_other']) ? $perm['p_other'] : 1
         ];
     }
-    
+
     foreach ($file_ids as $file_id) {
         if (!isset($permissions[$file_id])) {
             $permissions[$file_id] = [
@@ -948,9 +947,8 @@ if ($total > $perpage) {
 }
 
 $nv_BotManager->setFollow()->setNoIndex();
-$contents = nv_fileserver_main( $result, $page_url, $error, $success, $permissions, $selected,  $base_url, $lev, $search_term, $logs, $back_url, $generate_page);
+$contents = nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected,  $base_url, $lev, $search_term, $logs, $back_url, $generate_page);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);
 include NV_ROOTDIR . '/includes/footer.php';
-

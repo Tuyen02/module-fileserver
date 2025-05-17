@@ -2,7 +2,6 @@
 if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
-use PhpOffice\PhpSpreadsheet\IOFactory;
 
 $page_title = $lang_module['edit_img'];
 

@@ -11,6 +11,7 @@ $success = '';
 
 $perpage = 20;
 $page = $nv_Request->get_int('page', 'get', 1);
+$generate_page = '';
 $lev = $nv_Request->get_int('lev', 'get', 0);
 
 $search_term = $nv_Request->get_title('search', 'get', '');
@@ -248,6 +249,11 @@ $selected_file = ($search_type == 'file') ? ' selected' : '';
 $selected_folder = ($search_type == 'folder') ? ' selected' : '';
 $nv_BotManager->setFollow()->setNoIndex();
 
+if ($total > $perpage) {
+    $page_url = $base_url . '&lev=' . $lev . '&search=' . $search_term . '&search_type=' . $search_type;
+    $generate_page = nv_generate_page($page_url, $total, $perpage, $page);
+}
+
 $xtpl = new XTemplate('recycle_bin.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
 $xtpl->assign('LANG', $lang_module);
 $xtpl->assign('FORM_ACTION', $base_url);
@@ -257,6 +263,9 @@ $xtpl->assign('SELECTED_ALL', $selected_all);
 $xtpl->assign('SELECTED_FILE', $selected_file);
 $xtpl->assign('SELECTED_FOLDER', $selected_folder);
 $xtpl->assign('LEV', $lev);
+
+$xtpl->assign('GENERATE_PAGE', $generate_page);
+$xtpl->parse('main.generate_page');
 
 
 if (!empty($display_items)) {
@@ -278,13 +287,6 @@ if (!empty($display_items)) {
     }
 } else {
     $xtpl->parse('main.no_data');
-}
-
-if ($total > $perpage) {
-    $page_url = $base_url . '&lev=' . $lev . '&search=' . $search_term . '&search_type=' . $search_type;
-    $generate_page = nv_generate_page($page_url, $total, $perpage, $page);
-    $xtpl->assign('GENERATE_PAGE', $generate_page);
-    $xtpl->parse('main.generate_page');
 }
 
 if ($error) {

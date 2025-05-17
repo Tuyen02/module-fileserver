@@ -27,13 +27,11 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
     $xtpl->assign('SELECTED_FILE', $selected['file']);
     $xtpl->assign('SELECTED_FOLDER', $selected['folder']);
 
+    $xtpl->assign('GENERATE_PAGE', $generate_page);
+
     if (!empty($back_url)) {
         $xtpl->assign('BACK_URL', $back_url);
         $xtpl->parse('main.back');
-    }
-
-    if ($generate_page) {
-        $xtpl->assign('GENERATE_PAGE', $generate_page);
     }
 
     if ($error != '') {
@@ -131,8 +129,7 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
                     }
 
                     if (in_array($fileInfo, $editable_extensions)) {
-                        $xtpl->assign('EDIT', $row['url_edit']);
-                        $xtpl->parse('main.file_row.edit');
+                        $xtpl->assign('EDIT', $row['url_edit']);            
                     } else if (in_array($fileInfo, $viewable_extensions)) {
                         $view_urls[] = $row['url_edit_img'];
                     }

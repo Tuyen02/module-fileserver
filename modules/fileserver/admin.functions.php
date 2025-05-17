@@ -275,9 +275,10 @@ function deleteFileOrFolder($fileId)
             }
 
             $childIds = array_column($children, 'file_id');
-            $sqlDeleteChildren = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+            $sqlUpdateChildren = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                                SET status = -1 
                                 WHERE file_id IN (' . implode(',', $childIds) . ')';
-            $db->query($sqlDeleteChildren);
+            $db->query($sqlUpdateChildren);
         }
     }
 
@@ -305,7 +306,10 @@ function deleteFileOrFolder($fileId)
         }
     }
 
-    $sql = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
+    $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+            SET status = -1 
+            WHERE file_id = ' . $fileId;
+            
     if ($db->query($sql)) {
         nv_insert_logs(NV_LANG_DATA, $module_name, 'Delete from trash', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
         return true;

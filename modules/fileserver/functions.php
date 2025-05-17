@@ -244,7 +244,7 @@ function suggestNewName($lev, $baseName, $extension, $is_folder = null) {
 
 function deleteFileOrFolder($fileId)
 {
-    global $db, $module_data;
+    global $db, $module_data, $tmp_dir;
     $trash_dir = $tmp_dir . 'fileserver_trash';
 
     $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
@@ -383,62 +383,132 @@ function checkIfParentIsFolder($lev)
 
 function compressFiles($fileIds, $zipFilePath)
 {
-    global $db, $lang_module, $module_data;
+    global $db, $lang_module, $module_data, $tmp_dir;
 
     if (empty($fileIds) || !is_array($fileIds)) {
         return ['status' => 'error', 'message' => $lang_module['list_invalid']];
     }
 
-    if (file_exists($zipFilePath)) {
-        unlink($zipFilePath);
+    if (!file_exists($tmp_dir)) {
+        mkdir($tmp_dir, 0777, true);
     }
 
-    if (!class_exists('PclZip')) {
-        require_once NV_ROOTDIR . '/includes/class/pclzip/pclzip.lib.php';
+    $tmpZipPath = $tmp_dir . basename($zipFilePath);
+    if (file_exists($tmpZipPath)) {
+        unlink($tmpZipPath);
     }
 
-    $zip = new PclZip($zipFilePath);
-    $filePaths = [];
-
-    $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
-    $sql = 'SELECT file_path, file_name, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-            WHERE file_id IN (' . $placeholders . ') AND status = 1';
-    $stmt = $db->prepare($sql);
-    $stmt->execute($fileIds);
-    $rows = $stmt->fetchAll();
-
-    if (empty($rows)) {
-        return ['status' => 'error', 'message' => $lang_module['cannot_find_file']];
+    if (!is_writable($tmp_dir)) {
+        chmod($tmp_dir, 0777);
     }
 
-    foreach ($rows as $row) {
-        $realPath = NV_ROOTDIR . $row['file_path'];
-        if (file_exists($realPath)) {
-            if ($row['is_folder']) {
-                $filePaths[] = [
-                    PCLZIP_ATT_FILE_NAME => $realPath,
-                    PCLZIP_ATT_FILE_NEW_FULL_NAME => nv_EncString($row['file_name']),
-                    PCLZIP_ATT_FILE_COMMENT => 'folder'
-                ];
-            } else {
-                $filePaths[] = [
-                    PCLZIP_ATT_FILE_NAME => $realPath,
-                    PCLZIP_ATT_FILE_NEW_FULL_NAME => nv_EncString($row['file_name'])
-                ];
+    try {
+        $zipArchive = new ZipArchive();
+        $result = $zipArchive->open($tmpZipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        
+        if ($result !== TRUE) {
+            $error = 'Lỗi mở file zip: ';
+            switch($result) {
+                case ZipArchive::ER_EXISTS:
+                    $error .= 'File đã tồn tại';
+                    break;
+                case ZipArchive::ER_INCONS:
+                    $error .= 'File zip không nhất quán';
+                    break;
+                case ZipArchive::ER_INVAL:
+                    $error .= 'Tham số không hợp lệ';
+                    break;
+                case ZipArchive::ER_MEMORY:
+                    $error .= 'Không đủ bộ nhớ';
+                    break;
+                case ZipArchive::ER_NOENT:
+                    $error .= 'Không tìm thấy file';
+                    break;
+                case ZipArchive::ER_NOZIP:
+                    $error .= 'Không phải file zip';
+                    break;
+                case ZipArchive::ER_OPEN:
+                    $error .= 'Không thể mở file';
+                    break;
+                case ZipArchive::ER_READ:
+                    $error .= 'Lỗi đọc file';
+                    break;
+                case ZipArchive::ER_SEEK:
+                    $error .= 'Lỗi tìm kiếm';
+                    break;
+                default:
+                    $error .= 'Lỗi không xác định';
             }
-        } else {
-            return ['status' => 'error', 'message' => $lang_module['f_hasnt_exit'] . $realPath];
+            return ['status' => 'error', 'message' => $lang_module['zip_false'] . ' - ' . $error];
         }
-    }
 
-    if (count($filePaths) > 0) {
-        $return = $zip->create($filePaths);
-        if ($return == 0) {
-            return ['status' => 'error', 'message' => $lang_module['zip_false'] . $zip->errorInfo(true)];
+        $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
+        $sql = 'SELECT file_path, file_name, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                WHERE file_id IN (' . $placeholders . ') AND status = 1';
+        $stmt = $db->prepare($sql);
+        
+        foreach ($fileIds as $key => $fileId) {
+            $stmt->bindValue($key + 1, $fileId, PDO::PARAM_INT);
         }
+        
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        if (empty($rows)) {
+            $zipArchive->close();
+            return ['status' => 'error', 'message' => $lang_module['cannot_find_file']];
+        }
+
+        $hasFiles = false;
+        foreach ($rows as $row) {
+            $realPath = NV_ROOTDIR . $row['file_path'];
+            if (file_exists($realPath)) {
+                $hasFiles = true;
+                if ($row['is_folder']) {
+                    $zipArchive->addEmptyDir(nv_EncString($row['file_name']));
+                    
+                    $files = new RecursiveIteratorIterator(
+                        new RecursiveDirectoryIterator($realPath),
+                        RecursiveIteratorIterator::LEAVES_ONLY
+                    );
+
+                    foreach ($files as $file) {
+                        if (!$file->isDir()) {
+                            $filePath = $file->getRealPath();
+                            $relativePath = substr($filePath, strlen($realPath) + 1);
+                            $zipArchive->addFile($filePath, nv_EncString($row['file_name']) . '/' . $relativePath);
+                        }
+                    }
+                } else {
+                    $zipArchive->addFile($realPath, nv_EncString($row['file_name']));
+                }
+            } else {
+                $zipArchive->close();
+                return ['status' => 'error', 'message' => $lang_module['f_hasnt_exit'] . $realPath];
+            }
+        }
+
+        $zipArchive->close();
+
+        if (!$hasFiles) {
+            return ['status' => 'error', 'message' => $lang_module['file_invalid']];
+        }
+
+        if (file_exists($zipFilePath)) {
+            unlink($zipFilePath);
+        }
+        
+        if (!rename($tmpZipPath, $zipFilePath)) {
+            return ['status' => 'error', 'message' => $lang_module['zip_false'] . ' - Không thể di chuyển file zip'];
+        }
+
         return ['status' => 'success', 'message' => $lang_module['zip_ok']];
-    } else {
-        return ['status' => 'error', 'message' => $lang_module['file_invalid']];
+        
+    } catch (Exception $e) {
+        if (isset($zipArchive) && $zipArchive instanceof ZipArchive) {
+            $zipArchive->close();
+        }
+        return ['status' => 'error', 'message' => $lang_module['zip_false'] . ' - ' . $e->getMessage()];
     }
 }
 
@@ -501,7 +571,7 @@ function calculateFolderSize($folderId)
 
 function calculateFileFolderStats($lev)
 {
-    global $db, $module_data, $lang_module; 
+    global $db, $module_data; 
 
     $total_files = 0;
     $total_folders = 0;
@@ -555,7 +625,7 @@ function updateParentFolderSize($folderId)
 
 function updateLog($lev)
 {
-    global $db, $module_data, $lang_module;
+    global $db, $module_data;
 
     $stats = calculateFileFolderStats($lev);
 
@@ -698,7 +768,7 @@ function normalizePath($path)
 }
 
 function getAllFilesAndFolders($folder_id, $base_path) {
-    global $db, $module_data, $user_info, $module_config, $module_name;
+    global $db, $module_data;
     
     $items = [];
     
@@ -912,11 +982,6 @@ function isValidFileName($filename) {
     
     $pathInfo = pathinfo($filename);
     $name = $pathInfo['filename'];
-    $extension = isset($pathInfo['extension']) ? $pathInfo['extension'] : '';
-    
-    if (preg_match('/[\\\/:*?"<>|]/', $name)) {
-        return false;
-    }
     
     if (substr($name, -1) === ' ' || substr($name, -1) === '.') {
         return false;
