@@ -1,5 +1,4 @@
 <?php
-
 if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
@@ -26,7 +25,9 @@ $breadcrumbs = [];
 $current_lev = $lev;
 
 while ($current_lev > 0) {
-    $sql_check = 'SELECT file_name, file_path, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
+    $sql_check = 'SELECT file_name, file_path, lev, alias 
+                  FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                  WHERE file_id = ' . $current_lev;
     $result1 = $db->query($sql_check);
     $row1 = $result1->fetch();
     $breadcrumbs[] = [
@@ -323,8 +324,8 @@ if (!empty($action)) {
                 updateLog($lev);
                 nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['delete_btn'], 'File id: ' . $fileId, $user_info['userid']);
                 nv_jsonOutput(['status' => 'success', 'message' => $lang_module['delete_ok'], 'redirect' => $page_url]);
-            } 
-                
+            }
+
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['delete_false']]);
         }
     }
@@ -614,7 +615,7 @@ if (!empty($action)) {
             $extension = pathinfo($name_f, PATHINFO_EXTENSION);
             $suggestedName = suggestNewName($lev, $baseName, $extension, $type);
             nv_jsonOutput(['status' => 'error', 'message' => sprintf($lang_module['file_name_exists_suggest'], $name_f, $suggestedName)]);
-        } 
+        }
         nv_jsonOutput(['status' => 'success', 'message' => $message]);
     }
 
@@ -669,8 +670,8 @@ if (!empty($action)) {
             $extension = pathinfo($new_name, PATHINFO_EXTENSION);
             $suggestedName = suggestNewName($row['lev'], $baseName, $extension, $row['is_folder']);
             nv_jsonOutput(['status' => $status, 'message' => sprintf($lang_module['file_name_exists_suggest'], $new_name, $suggestedName)]);
-        } 
-        nv_jsonOutput(['status' => 'success', 'message' => $message]);  
+        }
+        nv_jsonOutput(['status' => 'success', 'message' => $message]);
     }
 
     if ($action == 'check_zip_name') {
@@ -684,7 +685,7 @@ if (!empty($action)) {
             $name_with_zip = $zipFileName . '.zip';
         }
 
-        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND is_folder = 0 AND (file_name = '. $db->quote($zipFileName).' OR file_name = '. $db->quote($name_with_zip).') AND lev = ' . $lev;
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND is_folder = 0 AND (file_name = ' . $db->quote($zipFileName) . ' OR file_name = ' . $db->quote($name_with_zip) . ') AND lev = ' . $lev;
         $stmtCheck = $db->prepare($sqlCheck);
         $stmtCheck->execute();
         $count = $stmtCheck->fetchColumn();
@@ -944,7 +945,7 @@ if ($total > $perpage) {
 }
 
 $nv_BotManager->setFollow()->setNoIndex();
-$contents = nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected,  $base_url, $lev, $search_term, $logs, $back_url, $generate_page);
+$contents = nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

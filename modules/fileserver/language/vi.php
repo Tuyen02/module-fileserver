@@ -167,4 +167,15 @@ $lang_module['folder_name_exists'] = 'Tên thư mục đã tồn tại';
 $lang_module['folder_name_valid'] = 'Tên thư mục hợp lệ';
 $lang_module['zip_name_exists'] = 'Tên file zip đã tồn tại. Tên gợi ý:';
 $lang_module['zip_name_valid'] = 'Tên file zip hợp lệ';
+$lang_module['zip_has_exit'] = 'File đã tồn tại';
+$lang_module['zip_incons'] = 'File không nhất quán';
+$lang_module['zip_inval'] = 'File không hợp lệ';
+$lang_module['zip_memory'] = 'Thiếu bộ nhớ';
+$lang_module['zip_noent'] = 'Không tìm thấy file';
+$lang_module['zip_nozip'] = 'Không phải file zip';
+$lang_module['zip_open'] = 'Lỗi mở file zip';
+$lang_module['zip_read'] = 'Lỗi đọc file zip';
+$lang_module['zip_seek'] = 'Lỗi tìm kiếm file zip';
+$lang_module['unknow_error'] = 'Lỗi không xác định';
+$lang_module['cannot_move_zip'] = ' - Không thể di chuyển file zip';
 

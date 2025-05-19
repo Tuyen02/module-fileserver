@@ -81,7 +81,7 @@ if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
 $stmt->execute();
 $all_items = $stmt->fetchAll();
 
-$root_items = array_filter($all_items, function($item) {
+$root_items = array_filter($all_items, function ($item) {
     return $item['lev'] == 0;
 });
 
@@ -90,7 +90,7 @@ foreach ($root_items as $item) {
     $root_by_deleted_at[$item['deleted_at']][] = $item['file_id'];
 }
 
-$other_items = array_filter($all_items, function($item) {
+$other_items = array_filter($all_items, function ($item) {
     return $item['lev'] > 0;
 });
 

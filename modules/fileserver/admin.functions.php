@@ -23,6 +23,7 @@ $allow_func = [
 
 
 define('NV_IS_FILE_ADMIN', true);
+$trash_dir = '/data/tmp/fileserver_trash';
 
 if (!empty($array_op)) {
     preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m);
@@ -122,7 +123,7 @@ function getFileIconClass($file)
 
 function updatePerm($file_id)
 {
-    global $db, $module_data;
+    global $db, $module_data, $lang_module;
     try {
         $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
                             VALUES (:file_id, :p_group, :p_other, :updated_at)';
@@ -134,21 +135,21 @@ function updatePerm($file_id)
         $stmt->execute();
         return true;
     } catch (PDOException $e) {
-        error_log('Lỗi updatePerm: ' . $e->getMessage());
+        error_log($lang_module['update_perm_error'] . $e->getMessage());
         return false;
     }
 }
 
 function updateAlias($file_id, $file_name)
 {
-    global $db, $module_data;
+    global $db, $module_data, $lang_module;
     try {
         $alias = change_alias($file_name . '_' . $file_id);
         $sqlUpdate = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET alias=' . $db->quote($alias) . ' WHERE file_id = ' . $file_id;
         $db->query($sqlUpdate);
         return true;
     } catch (PDOException $e) {
-        error_log('Lỗi updateAlias: ' . $e->getMessage());
+        error_log($lang_module['update_alias_error'] . $e->getMessage());
         return false;
     }
 }
@@ -165,27 +166,31 @@ function calculateFolderSize($folderId)
 
 function updateLog($lev)
 {
-    global $db, $module_data;
+    global $db, $module_data, $lang_module;
 
-    $stats = calculateFileFolderStats($lev);
+    try {
+        $stats = calculateFileFolderStats($lev);
 
-    $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_stats 
-                  (lev, total_files, total_folders, total_size, log_time) 
-                  VALUES (:lev, :total_files, :total_folders, :total_size, :log_time)
-                  ON DUPLICATE KEY UPDATE 
-                  total_files = VALUES(total_files), 
-                  total_folders = VALUES(total_folders), 
-                  total_size = VALUES(total_size), 
-                  log_time = VALUES(log_time)';
+        $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_stats 
+                      (lev, total_files, total_folders, total_size, log_time) 
+                      VALUES (:lev, :total_files, :total_folders, :total_size, :log_time)
+                      ON DUPLICATE KEY UPDATE 
+                      total_files = VALUES(total_files), 
+                      total_folders = VALUES(total_folders), 
+                      total_size = VALUES(total_size), 
+                      log_time = VALUES(log_time)';
 
-    $stmtInsert = $db->prepare($sqlInsert);
-    $stmtInsert->bindValue(':lev', $lev, PDO::PARAM_INT);
-    $stmtInsert->bindValue(':total_files', $stats['files'], PDO::PARAM_INT);
-    $stmtInsert->bindValue(':total_folders', $stats['folders'], PDO::PARAM_INT);
-    $stmtInsert->bindValue(':total_size', $stats['size'], PDO::PARAM_INT);
-    $stmtInsert->bindValue(':log_time', NV_CURRENTTIME, PDO::PARAM_INT);
-
-    $stmtInsert->execute();
+        $stmtInsert = $db->prepare($sqlInsert);
+        $stmtInsert->bindValue(':lev', $lev, PDO::PARAM_INT);
+        $stmtInsert->bindValue(':total_files', $stats['files'], PDO::PARAM_INT);
+        $stmtInsert->bindValue(':total_folders', $stats['folders'], PDO::PARAM_INT);
+        $stmtInsert->bindValue(':total_size', $stats['size'], PDO::PARAM_INT);
+        $stmtInsert->bindValue(':log_time', NV_CURRENTTIME, PDO::PARAM_INT);
+        return $stmtInsert->execute();
+    } catch (PDOException $e) {
+        error_log($lang_module['update_log_false'] . $e->getMessage());
+        return false;
+    }
 }
 
 function calculateFileFolderStats($lev)
@@ -220,13 +225,12 @@ function calculateFileFolderStats($lev)
 
 function deleteFileOrFolder($fileId)
 {
-    global $db, $module_data, $admin_info, $module_name;
-    $trash_dir = '/data/tmp/fileserver_trash';
+    global $db, $module_data, $admin_info, $module_name, $trash_dir;
 
     $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId . ' AND status = 0';
     $row = $db->query($sql)->fetch();
 
-    if (!$row) {
+    if (empty($row)) {
         return false;
     }
 
@@ -309,7 +313,7 @@ function deleteFileOrFolder($fileId)
     $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
             SET status = -1 
             WHERE file_id = ' . $fileId;
-            
+
     if ($db->query($sql)) {
         nv_insert_logs(NV_LANG_DATA, $module_name, 'Delete from trash', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
         return true;
@@ -320,13 +324,12 @@ function deleteFileOrFolder($fileId)
 
 function restoreFileOrFolder($fileId)
 {
-    global $db, $module_data, $admin_info, $module_name;
-    $trash_dir = '/data/tmp/fileserver_trash';
+    global $db, $module_data, $admin_info, $module_name, $trash_dir;
 
     $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
     $row = $db->query($sql)->fetch();
 
-    if (!$row || $row['status'] == 1) {
+    if (empty($row) || $row['status'] == 1) {
         return false;
     }
 
@@ -386,14 +389,14 @@ function restoreFileOrFolder($fileId)
         $parent_trash_paths = array_reverse($parent_trash_paths);
         $parent_rows = array_reverse($parent_rows);
         $parent_statuses = array_reverse($parent_statuses);
-        
+
         foreach ($parent_paths as $index => $dir) {
             $parent_trash_full_path = NV_ROOTDIR . $parent_trash_paths[$index];
-            
+
             if (!file_exists($dir)) {
                 mkdir($dir, 0777, true);
             }
-            
+
             $sqlUpdateParent = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
                                 SET status = 1, deleted_at = 0, updated_at = :updated_at 
                                 WHERE file_id = :file_id';
@@ -543,5 +546,3 @@ function updateParentFolderSize($folderId)
 // {
 //     exit('<pre><code>' . htmlspecialchars(print_r($a, true)) . '</code></pre>');
 // }
-
-

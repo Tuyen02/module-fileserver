@@ -146,7 +146,7 @@ if ($nv_Request->isset_request('sync_elastic', 'post')) {
             $message = sprintf($lang_module['sync_elastic_success'], $updated_count);
             $message_type = 'success';
             nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['config'], $lang_module['sync_elastic'], $admin_info['userid']);
-            
+
             $nv_Cache->delAll();
         }
     } catch (Exception $e) {

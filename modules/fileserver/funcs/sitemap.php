@@ -13,20 +13,6 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
-/*
- * Xem thêm https://www.sitemaps.org/protocol.html
- * always
- * hourly
- * daily
- * weekly
- * monthly
- * yearly
- * never
- *
- * priority from 0.0 to 1.0
- *
- */
-
 $url = [];
 $cacheFile = NV_LANG_DATA . '_sitemap_' . NV_CACHE_PREFIX . '.cache';
 $cacheTTL = 7200;

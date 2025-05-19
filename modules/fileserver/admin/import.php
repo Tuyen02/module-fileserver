@@ -14,6 +14,13 @@ $tmp_dir = '/data/tmp/';
 $import_folder = 'import-file';
 $import_dir = $tmp_dir . $import_folder;
 
+/**
+ * Download file from Google Drive URL
+ * 
+ * @param string $fileUrl URL of file to download
+ * @param string $dir Directory to save file
+ * @return string|bool Path to downloaded file or false on failure
+ */
 function downloadFromUrl($fileUrl, $dir = './data/tmp/import-file')
 {
     if (!file_exists($dir)) {
@@ -64,7 +71,6 @@ function downloadFromUrl($fileUrl, $dir = './data/tmp/import-file')
 
     return file_exists($filePath) ? $filePath : false;
 }
-
 function importSheetData($sheet, $parent_id, &$importedSheets, $parent_path = '/uploads/fileserver', $base_dir = '')
 {
     global $db, $lang_module, $module_name, $admin_info;
@@ -95,8 +101,10 @@ function importSheetData($sheet, $parent_id, &$importedSheets, $parent_path = '/
             mkdir($full_path, 777, true);
         }
 
-        $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_fileserver_files (file_name, file_path, file_size, uploaded_by, created_at, is_folder, lev) 
+        $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_fileserver_files 
+                (file_name, file_path, file_size, uploaded_by, created_at, is_folder, lev) 
                 VALUES (:file_name, :file_path, :file_size, :uploaded_by, :created_at, :is_folder, :lev)';
+
         $stmt = $db->prepare($sql);
         $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
         $stmt->bindParam(':file_path', $file_path, PDO::PARAM_STR);
@@ -112,7 +120,7 @@ function importSheetData($sheet, $parent_id, &$importedSheets, $parent_path = '/
         $file_id = $db->lastInsertId();
         updateAlias($file_id, $file_name);
         updatePerm($file_id);
-        updateLog($parent_id, 'import', $file_id);
+        updateLog($file_id);
 
         if ($is_folder && !in_array($file_name, $importedSheets)) {
             $sub_sheet = $sheet->getParent()->getSheetByName($file_name);
@@ -126,6 +134,7 @@ function importSheetData($sheet, $parent_id, &$importedSheets, $parent_path = '/
 
 if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['excel_file']) && is_uploaded_file($_FILES['excel_file']['tmp_name'])) {
     $file_extension = pathinfo($_FILES['excel_file']['name'], PATHINFO_EXTENSION);
+
     if (!in_array($file_extension, ['xlsx', 'xls'])) {
         $error = 'Chỉ hỗ trợ file Excel (.xlsx hoặc .xls).';
     } else {
@@ -151,7 +160,8 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['excel_
                 if (!in_array($sheetName, $importedSheets)) {
                     $sheet = $objPHPExcel->getSheet($sheetIndex);
 
-                    $sql = 'SELECT file_id, file_path FROM ' . NV_PREFIXLANG . '_fileserver_files_files WHERE file_name = ' . $db->quote($sheetName) . ' AND is_folder = 1 AND lev = 0';
+                    $sql = 'SELECT file_id, file_path FROM ' . NV_PREFIXLANG . '_fileserver_files_files 
+                            WHERE file_name = ' . $db->quote($sheetName) . ' AND is_folder = 1 AND lev = 0';
                     $parent = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
 
                     if ($parent) {
@@ -159,6 +169,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['excel_
                     }
                 }
             }
+
             $success = $lang_module['import_success'];
             nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['import'], $lang_module['import_file'], (int)$admin_info['userid']);
         } catch (Exception $e) {

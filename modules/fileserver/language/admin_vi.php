@@ -96,3 +96,7 @@ $lang_module['use_captcha'] = 'Sử dụng Captcha';
 $lang_module['enable_captcha'] = 'Bật Captcha';
 $lang_module['elastic_not_enabled'] = 'Elasticsearch chưa được bật. Vui lòng bật và cấu hình trước khi đồng bộ.';
 $lang_module['elastic_config_incomplete'] = 'Cấu hình Elasticsearch chưa đầy đủ. Vui lòng điền đầy đủ thông tin.';
+$lang_module['update_perm_error'] = 'Cập nhật quyền truy cập thất bại';
+$lang_module['update_alias_error'] = 'Cập nhật alias thất bại';
+$lang_module['update_log_false'] = 'Cập nhật nhật ký thất bại';
+$lang_module['update_config_false'] = 'Cập nhật cấu hình thất bại';
