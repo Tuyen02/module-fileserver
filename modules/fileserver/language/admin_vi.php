@@ -100,3 +100,5 @@ $lang_module['update_perm_error'] = 'Cập nhật quyền truy cập thất bạ
 $lang_module['update_alias_error'] = 'Cập nhật alias thất bại';
 $lang_module['update_log_false'] = 'Cập nhật nhật ký thất bại';
 $lang_module['update_config_false'] = 'Cập nhật cấu hình thất bại';
+$lang_module['active'] = 'Hoạt động';
+$lang_module['deactive'] = 'Ngừng hoạt động';

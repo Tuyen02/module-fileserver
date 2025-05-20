@@ -4,7 +4,12 @@ if (!defined('NV_IS_FILE_ADMIN')) {
     exit('Stop!!!');
 }
 
-$page_title = 'FILE SERVER';
+$page_title = $module_name;
+$post = [];
+$mess = '';
+$err = '';
+$lang = NV_LANG_DATA;
+$config_name = 'group_admin_fileserver';
 
 $sql = 'SELECT group_id, title 
         FROM ' . NV_GROUPSDETAIL_GLOBALTABLE . ' 
@@ -12,12 +17,6 @@ $sql = 'SELECT group_id, title
         AND group_id != 6
         ORDER BY group_id ASC';
 $result = $db->query($sql);
-
-$post = [];
-$mess = '';
-$err = '';
-$lang = 'vi';
-$config_name = 'group_admin_fileserver';
 
 $post['group_ids'] = $nv_Request->get_array('group_ids', 'post', []);
 $group_ids_str = implode(',', $post['group_ids']);
@@ -58,6 +57,13 @@ if ($nv_Request->isset_request('submit', 'post')) {
             if ($stmt_insert->execute()) {
                 $nv_Cache->delAll();
                 $mess = $lang_module['update_success'];
+                nv_insert_logs(
+                    NV_LANG_DATA,
+                    $module_name,
+                    $lang_module['choose_group'],
+                    $lang_module['main_title'],
+                    $admin_info['userid']
+                );
             } else {
                 $err = $lang_module['update_error'];
             }
@@ -68,16 +74,6 @@ if ($nv_Request->isset_request('submit', 'post')) {
                 WHERE config_name = ' . $db->quote($config_name);
     $group_ids_str = $db->query($sql_get)->fetchColumn();
     $post['group_ids'] = !empty($group_ids_str) ? explode(',', $group_ids_str) : [];
-}
-
-if ($mess == $lang_module['update_success']) {
-    nv_insert_logs(
-        NV_LANG_DATA,
-        $module_name,
-        $lang_module['choose_group'],
-        $lang_module['main_title'],
-        $admin_info['userid']
-    );
 }
 
 $group_titles = [];

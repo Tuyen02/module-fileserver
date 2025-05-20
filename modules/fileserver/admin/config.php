@@ -13,47 +13,53 @@ $message = '';
 $message_type = '';
 
 if ($nv_Request->isset_request('submit', 'post')) {
-    $array_config = [];
-    $use_elastic = $nv_Request->get_int('use_elastic', 'post', 0);
-    $array_config['use_elastic'] = $use_elastic;
-    $use_captcha = $nv_Request->get_int('use_captcha', 'post', 0);
-    $array_config['use_captcha'] = $use_captcha;
+    $array_config = [
+        'use_elastic' => $nv_Request->get_int('use_elastic', 'post', 0),
+        'use_captcha' => $nv_Request->get_int('use_captcha', 'post', 0)
+    ];
 
-    if ($use_elastic) {
-        $array_config['elas_host'] = $nv_Request->get_title('elas_host', 'post', '');
-        $array_config['elas_port'] = $nv_Request->get_title('elas_port', 'post', '');
-        $array_config['elas_user'] = $nv_Request->get_title('elas_user', 'post', '');
-        $array_config['elas_pass'] = $nv_Request->get_title('elas_pass', 'post', '');
+    if ($array_config['use_elastic']) {
+        $array_config += [
+            'elas_host' => $nv_Request->get_title('elas_host', 'post', ''),
+            'elas_port' => $nv_Request->get_title('elas_port', 'post', ''),
+            'elas_user' => $nv_Request->get_title('elas_user', 'post', ''),
+            'elas_pass' => $nv_Request->get_title('elas_pass', 'post', '')
+        ];
     }
 
-    $status = false;
-    foreach ($array_config as $config_name => $config_value) {
-        $sql = "UPDATE " . NV_CONFIG_GLOBALTABLE . " SET config_value = :config_value 
-            WHERE lang = :lang AND module = :module AND config_name = :config_name";
-        $sth = $db->prepare($sql);
-        $sth->bindValue(':lang', NV_LANG_DATA);
-        $sth->bindValue(':module', $module_name);
-        $sth->bindValue(':config_name', $config_name);
-        $sth->bindValue(':config_value', $config_value);
-
-        try {
-            if ($sth->execute()) {
-                $status = true;
+    $sql = 'UPDATE ' . NV_CONFIG_GLOBALTABLE . ' 
+            SET config_value = :config_value 
+            WHERE lang = :lang 
+            AND module = :module 
+            AND config_name = :config_name';
+    $sth = $db->prepare($sql);
+    
+    try {
+        $status = true;
+        foreach ($array_config as $config_name => $config_value) {
+            if (!$sth->execute([
+                'config_value' => $config_value,
+                'lang' => NV_LANG_DATA,
+                'module' => $module_name,
+                'config_name' => $config_name
+            ])) {
+                $status = false;
+                break;
             }
-        } catch (PDOException $e) {
-            $status = false;
-            error_log("Error updating config: " . $e->getMessage());
         }
-    }
 
-    if ($status) {
-        $message = $lang_module['config_updated'];
-        $message_type = 'success';
-        nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['config'], $lang_module['config_elastic'], $admin_info['userid']);
-        $nv_Cache->delAll();
-    } else {
-        $message = $lang_module['config_failed'];
+        if ($status) {
+            $message = $lang_module['config_updated'];
+            $message_type = 'success';
+            nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['config'], $lang_module['config_elastic'], $admin_info['userid']);
+            $nv_Cache->delAll();
+        } else {
+            throw new Exception($lang_module['config_update_failed']);
+        }
+    } catch (Exception $e) {
+        $message = $e->getMessage();
         $message_type = 'danger';
+        error_log($lang_module['config_update_failed'] . $e->getMessage());
     }
 }
 

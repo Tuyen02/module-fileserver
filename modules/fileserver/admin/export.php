@@ -32,7 +32,7 @@ function getUserCache()
 
 function createFolderSheet($objPHPExcel, $folderId, $folderName, $user_cache, $arr_header_row, $styleTitleArray, $styleTableArray, $title_char_from, $title_number_from)
 {
-    global $db, $module_data;
+    global $db, $module_data, $lang_module;
 
     $folderSheet = $objPHPExcel->createSheet();
     $folderSheet->setTitle(substr($folderName, 0, 31));
@@ -41,7 +41,7 @@ function createFolderSheet($objPHPExcel, $folderId, $folderName, $user_cache, $a
     $folderSheet->getStyle($title_char_from . $title_number_from . ':' . $title_char_to . $title_number_from)
         ->applyFromArray($styleTitleArray);
 
-    $folderFiles = $db->query('SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . $folderId)->fetchAll();
+    $folderFiles = $db->query('SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND  lev = ' . $folderId)->fetchAll();
     $j = 4;
     $folder_stt = 0;
 
@@ -59,8 +59,8 @@ function createFolderSheet($objPHPExcel, $folderId, $folderName, $user_cache, $a
         $username = $user_cache[$folderFile['uploaded_by']] ?? 'Unknown';
         $folderSheet->setCellValue($table_char_from++ . $j, $username);
         $folderSheet->setCellValue($table_char_from++ . $j, date('d/m/Y H:i:s', $folderFile['created_at']));
-        $folderSheet->setCellValue($table_char_from++ . $j, ($folderFile['is_folder'] == 1) ? 'Thư mục' : 'Tệp tin');
-        $folderSheet->setCellValue($table_char_from++ . $j, ($folderFile['status'] == 1) ? 'Hoạt động' : 'Không hoạt động');
+        $folderSheet->setCellValue($table_char_from++ . $j, ($folderFile['is_folder'] == 1) ? $lang_module['folder'] : $lang_module['file']);
+        $folderSheet->setCellValue($table_char_from++ . $j, ($folderFile['status'] == 1) ? $lang_module['active'] : $lang_module['deactive']);
         $folderSheet->getRowDimension($j)->setRowHeight(20);
 
         if ($folderFile['is_folder'] == 1) {
@@ -286,6 +286,9 @@ if ($download == 1) {
         }
     }
 }
+$sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev = 0';
+$result = $db->query($sql);
+$stt = 1;
 
 $xtpl = new XTemplate('export.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
 $xtpl->assign('LANG', $lang_module);
@@ -293,10 +296,6 @@ $xtpl->assign('OP', $op);
 $xtpl->assign('MODULE_NAME', $module_name);
 $xtpl->assign('FORM_ACTION', NV_BASE_ADMINURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op);
 $xtpl->assign('MODULE_DATA', $module_data);
-
-$sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev = 0';
-$result = $db->query($sql);
-$stt = 1;
 
 while ($row = $result->fetch()) {
     $row['stt'] = $stt++;

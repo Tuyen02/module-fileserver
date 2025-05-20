@@ -73,7 +73,7 @@ function downloadFromUrl($fileUrl, $dir = './data/tmp/import-file')
 }
 function importSheetData($sheet, $parent_id, &$importedSheets, $parent_path = '/uploads/fileserver', $base_dir = '')
 {
-    global $db, $lang_module, $module_name, $admin_info;
+    global $db;
     $Totalrow = $sheet->getHighestRow();
 
     for ($i = 5; $i <= $Totalrow; $i++) {
