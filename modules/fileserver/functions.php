@@ -111,8 +111,9 @@ if ($use_elastic == 1) {
 $allowed_extensions = ['txt', 'xlsx', 'xls', 'html', 'css'];
 $editable_extensions = ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql', 'doc', 'docx', 'xls', 'xlsx'];
 $viewable_extensions = ['png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'ppt', 'pptx'];
-$base_dir = '/uploads/fileserver';
+$base_dir = '/uploads/' . $module_name;
 $tmp_dir = '/data/tmp/';
+$trash_dir = $tmp_dir . ''. $module_name .'_trash';
 
 if (!empty($array_op)) {
     preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m);
@@ -121,8 +122,6 @@ if (!empty($array_op)) {
 } else {
     $lev = $nv_Request->get_int('lev', 'get,post', 0);
 }
-
-updateLog(isset($lev) ? $lev : 0);
 
 $config_value = isset($module_config[$module_name]['group_admin_fileserver']) ? $module_config[$module_name]['group_admin_fileserver'] : '';
 $config_value_array = !empty($config_value) ? explode(',', $config_value) : [];
@@ -163,31 +162,6 @@ if (!defined('NV_IS_SPADMIN')) {
             $arr_full_per[] = $row['file_id'];
         }
     }
-}
-
-function get_user_permission($file_id, $row = array())
-{
-    global $module_config, $module_name, $user_info, $module_data, $db;
-
-    if (defined('NV_IS_SPADMIN'))
-        return 3;
-
-    $sql = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . intval($file_id);
-    $perm = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
-
-    if (defined('NV_IS_USER')) {
-        if (isset($user_info['in_groups']) && is_array($user_info['in_groups'])) {
-            $admin_groups = explode(',', $module_config[$module_name]['group_admin_fileserver']);
-            if (!empty(array_intersect($user_info['in_groups'], $admin_groups))) {
-                return isset($perm['p_group']) ? intval($perm['p_group']) : 1;
-            }
-            if (isset($row['userid']) && $row['userid'] == $user_info['userid']) {
-                return 3;
-            }
-            return isset($perm['p_group']) ? intval($perm['p_group']) : 1;
-        }
-    }
-    return isset($perm['p_other']) ? intval($perm['p_other']) : 1;
 }
 
 function updateAlias($file_id, $file_name)
@@ -237,8 +211,7 @@ function suggestNewName($lev, $baseName, $extension, $is_folder = null)
 
 function deleteFileOrFolder($fileId)
 {
-    global $db, $module_data, $tmp_dir;
-    $trash_dir = $tmp_dir . 'fileserver_trash';
+    global $db, $module_data, $trash_dir;
 
     $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
     $row = $db->query($sql)->fetch();
@@ -366,8 +339,9 @@ function checkIfParentIsFolder($lev)
 {
     global $lang_module, $module_data, $db;
     $stmt = $db->query('SELECT is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . intval($lev));
-    if ($stmt) {
-        return $stmt->fetchColumn();
+    $data = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($data) {
+        return $data;
     } else {
         error_log($lang_module['checkIfParentIsFolder_false'] . intval($lev));
         return 0;
@@ -601,6 +575,10 @@ function updateLog($lev)
 {
     global $db, $module_data;
 
+    if (empty($lev)) {
+        $lev = 0;
+    }
+
     $stats = calculateFileFolderStats($lev);
 
     $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_stats 
@@ -667,78 +645,66 @@ function displayTree($tree)
     return $output;
 }
 
-function getFileIconClass($file)
+function buildFolderTree($user_info, $page_url, $parent_id = 0)
 {
-    $file_icons = [
-        'pdf' => 'fa-file-pdf-o',
-        'doc' => 'fa-file-word-o',
-        'docx' => 'fa-file-word-o',
-        'xls' => 'fa-file-excel-o',
-        'xlsx' => 'fa-file-excel-o',
-        'ppt' => 'fa-file-powerpoint-o',
-        'pptx' => 'fa-file-powerpoint-o',
-        'jpg' => 'fa-file-image-o',
-        'jpeg' => 'fa-file-image-o',
-        'png' => 'fa-file-image-o',
-        'gif' => 'fa-file-image-o',
-        'zip' => 'fa-file-archive-o',
-        'rar' => 'fa-file-archive-o',
-        '7z' => 'fa-file-archive-o',
-        'html' => 'fa-file-code-o',
-        'css' => 'fa-file-code-o',
-        'js' => 'fa-file-code-o',
-        'php' => 'fa-file-code-o',
-        'sql' => 'fa-file-code-o',
-        'txt' => 'fa-file-text-o',
-        'mp3' => 'fa-file-audio-o',
-        'wav' => 'fa-file-audio-o',
-        'wma' => 'fa-file-audio-o',
-        'mp4' => 'fa-file-video-o',
-        'avi' => 'fa-file-video-o',
-        'flv' => 'fa-file-video-o',
-        'mkv' => 'fa-file-video-o',
-        'mov' => 'fa-file-video-o',
-        'wmv' => 'fa-file-video-o',
-        'ps' => 'fa-file-o',
-    ];
+    global $db, $module_data, $lang_module;
+    $tree = [];
 
-    $file['compressed'] = isset($file['compressed']) ? $file['compressed'] : 0;
-    $file['is_folder'] = isset($file['is_folder']) ? $file['is_folder'] : 0;
-    $file['file_name'] = isset($file['file_name']) ? $file['file_name'] : '';
+    if(defined('NV_IS_SPADMIN')) {
+        $user_info['in_groups'] = [1];
+    }
 
-    if ($file['compressed'] != 0) {
-        return 'fa-file-archive-o';
-    } else {
-        if ($file['is_folder']) {
-            return 'fa-folder-o';
-        } else {
-            $extension = pathinfo($file['file_name'], PATHINFO_EXTENSION);
-            return isset($file_icons[$extension]) ? $file_icons[$extension] : 'fa-file-o';
+    if ($parent_id == 0) {
+        $root_node = [
+            'file_id' => 0,
+            'file_name' => $lang_module['root'],
+            'url' => $page_url . '&root=1',
+            'path' => $lang_module['root'],
+            'children' => []
+        ];
+        $tree[] = $root_node;
+    }
+
+    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+            WHERE lev = ' . $parent_id . ' 
+            AND is_folder = 1 
+            AND status = 1 
+            ORDER BY file_id ASC';
+    $result = $db->query($sql);
+    $dirs = $result->fetchAll();
+
+    foreach ($dirs as &$dir) {
+        $sql_perm = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $dir['file_id'];
+        $perm = $db->query($sql_perm)->fetch(PDO::FETCH_ASSOC);
+        $dir['p_group'] = isset($perm['p_group']) ? $perm['p_group'] : null;
+        $dir['p_other'] = isset($perm['p_other']) ? $perm['p_other'] : null;
+    }
+    unset($dir);
+
+    foreach ($dirs as $dir) {
+        if (checkPermission($dir, $user_info)) {
+            $dir['url'] = $page_url . '&rank=' . $dir['file_id'];
+            $dir['path'] = $dir['file_name'];
+            $dir['children'] = buildFolderTree($user_info, $page_url,  $dir['file_id']);
+            $tree[] = $dir;
         }
     }
+    return $tree;
 }
 
-function normalizePath($path)
+function renderFolderTree($tree)
 {
-    $path = str_replace('\\', '/', $path);
-
-    $path = preg_replace('|/{2,}|', '/', $path);
-
-    $path = str_replace('./', '', $path);
-
-    $parts = array_filter(explode('/', $path), 'strlen');
-    $absolutes = array();
-    foreach ($parts as $part) {
-        if ('.' == $part)
-            continue;
-        if ('..' == $part) {
-            array_pop($absolutes);
-        } else {
-            $absolutes[] = $part;
+    $html = '<ul>';
+    foreach ($tree as $node) {
+        $html .= '<li data-file-id="' . $node['file_id'] . '" data-path="' . htmlspecialchars($node['path']) . '" data-url="' . $node['url'] . '">';
+        $html .= '<span class="folder-name"><i class="fa fa-folder-o" aria-hidden="true"></i> ' . htmlspecialchars($node['file_name']) . '</span>';
+        if (!empty($node['children'])) {
+            $html .= renderFolderTree($node['children']);
         }
+        $html .= '</li>';
     }
-
-    return '/' . implode('/', $absolutes);
+    $html .= '</ul>';
+    return $html;
 }
 
 function getAllFilesAndFolders($folder_id, $base_path)
@@ -763,6 +729,21 @@ function getAllFilesAndFolders($folder_id, $base_path)
     }
 
     return $items;
+}
+
+function getAllFileIds($parent_id, &$file_ids)
+{
+    global $db, $module_data;
+
+    $file_ids[] = $parent_id;
+
+    $sql = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+            WHERE lev = ' . $parent_id . ' AND status = 1';
+    $result = $db->query($sql);
+
+    while ($row = $result->fetch()) {
+        getAllFileIds($row['file_id'], $file_ids);
+    }
 }
 
 function checkChildrenPermissions($folder_id)
@@ -830,19 +811,29 @@ function getParentPermissions($parent_id)
 
 }
 
-function getAllFileIds($parent_id, &$file_ids)
+function get_user_permission($file_id, $row = array())
 {
-    global $db, $module_data;
+    global $module_config, $module_name, $user_info, $module_data, $db;
 
-    $file_ids[] = $parent_id;
+    if (defined('NV_IS_SPADMIN'))
+        return 3;
 
-    $sql = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-            WHERE lev = ' . $parent_id . ' AND status = 1';
-    $result = $db->query($sql);
+    $sql = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . intval($file_id);
+    $perm = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
 
-    while ($row = $result->fetch()) {
-        getAllFileIds($row['file_id'], $file_ids);
+    if (defined('NV_IS_USER')) {
+        if (isset($user_info['in_groups']) && is_array($user_info['in_groups'])) {
+            $admin_groups = explode(',', $module_config[$module_name]['group_admin_fileserver']);
+            if (!empty(array_intersect($user_info['in_groups'], $admin_groups))) {
+                return isset($perm['p_group']) ? intval($perm['p_group']) : 1;
+            }
+            if (isset($row['userid']) && $row['userid'] == $user_info['userid']) {
+                return 3;
+            }
+            return isset($perm['p_group']) ? intval($perm['p_group']) : 1;
+        }
     }
+    return isset($perm['p_other']) ? intval($perm['p_other']) : 1;
 }
 
 function updatePermissions($parent_id, $p_group, $p_other)
@@ -860,20 +851,14 @@ function updatePermissions($parent_id, $p_group, $p_other)
                      WHERE file_id = ' . $file_id;
         $exists = $db->query($sql_check)->fetchColumn();
 
-        if ($exists) {
-            $sql_update = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
-                          SET p_group = :p_group, 
-                              p_other = :p_other, 
-                              updated_at = :updated_at 
-                          WHERE file_id = :file_id';
-            $stmt = $db->prepare($sql_update);
-        } else {
-            $sql_insert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
-                          (file_id, p_group, p_other, updated_at) 
-                          VALUES (:file_id, :p_group, :p_other, :updated_at)';
-            $stmt = $db->prepare($sql_insert);
-        }
-
+        $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
+            (file_id, p_group, p_other, updated_at) 
+            VALUES (:file_id, :p_group, :p_other, :updated_at)
+            ON DUPLICATE KEY UPDATE 
+                p_group = VALUES(p_group), 
+                p_other = VALUES(p_other), 
+                updated_at = VALUES(updated_at)';
+        $stmt = $db->prepare($sql);
         $stmt->bindValue(':file_id', $file_id, PDO::PARAM_INT);
         $stmt->bindValue(':p_group', $p_group, PDO::PARAM_INT);
         $stmt->bindValue(':p_other', $p_other, PDO::PARAM_INT);
@@ -882,47 +867,9 @@ function updatePermissions($parent_id, $p_group, $p_other)
     }
 }
 
-function buildFolderTree($user_info, $page_url, $is_admin = false, $parent_id = 0)
+function checkPermission($directory, $user_info)
 {
-    global $db, $module_data, $lang_module;
-    $tree = [];
-
-    if ($parent_id == 0) {
-        $root_node = [
-            'file_id' => 0,
-            'file_name' => $lang_module['root'],
-            'url' => $page_url . '&root=1',
-            'path' => $lang_module['root'],
-            'children' => []
-        ];
-        $tree[] = $root_node;
-    }
-
-    $sql = 'SELECT f.*, p.p_group, p.p_other 
-            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
-            LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p 
-            ON f.file_id = p.file_id
-            WHERE f.lev = ' . $parent_id . ' 
-            AND f.is_folder = 1 
-            AND f.status = 1 
-            ORDER BY f.file_id ASC';
-    $result = $db->query($sql);
-    $dirs = $result->fetchAll();
-
-    foreach ($dirs as $dir) {
-        if (checkPermission($dir, $user_info, $is_admin)) {
-            $dir['url'] = $page_url . '&rank=' . $dir['file_id'];
-            $dir['path'] = $dir['file_name'];
-            $dir['children'] = buildFolderTree($user_info, $page_url, $is_admin, $dir['file_id']);
-            $tree[] = $dir;
-        }
-    }
-    return $tree;
-}
-
-function checkPermission($directory, $user_info, $is_admin = false)
-{
-    if ($is_admin) {
+    if (defined('NV_IS_SPADMIN')) {
         return true;
     }
     if (isset($directory['userid']) && $directory['userid'] == $user_info['userid']) {
@@ -934,21 +881,6 @@ function checkPermission($directory, $user_info, $is_admin = false)
         }
     }
     return false;
-}
-
-function renderFolderTree($tree)
-{
-    $html = '<ul>';
-    foreach ($tree as $node) {
-        $html .= '<li data-file-id="' . $node['file_id'] . '" data-path="' . htmlspecialchars($node['path']) . '" data-url="' . $node['url'] . '">';
-        $html .= '<span class="folder-name"><i class="fa fa-folder-o" aria-hidden="true"></i> ' . htmlspecialchars($node['file_name']) . '</span>';
-        if (!empty($node['children'])) {
-            $html .= renderFolderTree($node['children']);
-        }
-        $html .= '</li>';
-    }
-    $html .= '</ul>';
-    return $html;
 }
 
 function isValidFileName($filename)
@@ -973,3 +905,53 @@ function isValidFileName($filename)
     return true;
 }
 
+function getFileIconClass($file)
+{
+    $file_icons = [
+        'pdf' => 'fa-file-pdf-o',
+        'doc' => 'fa-file-word-o',
+        'docx' => 'fa-file-word-o',
+        'xls' => 'fa-file-excel-o',
+        'xlsx' => 'fa-file-excel-o',
+        'ppt' => 'fa-file-powerpoint-o',
+        'pptx' => 'fa-file-powerpoint-o',
+        'jpg' => 'fa-file-image-o',
+        'jpeg' => 'fa-file-image-o',
+        'png' => 'fa-file-image-o',
+        'gif' => 'fa-file-image-o',
+        'zip' => 'fa-file-archive-o',
+        'rar' => 'fa-file-archive-o',
+        '7z' => 'fa-file-archive-o',
+        'html' => 'fa-file-code-o',
+        'css' => 'fa-file-code-o',
+        'js' => 'fa-file-code-o',
+        'php' => 'fa-file-code-o',
+        'sql' => 'fa-file-code-o',
+        'txt' => 'fa-file-text-o',
+        'mp3' => 'fa-file-audio-o',
+        'wav' => 'fa-file-audio-o',
+        'wma' => 'fa-file-audio-o',
+        'mp4' => 'fa-file-video-o',
+        'avi' => 'fa-file-video-o',
+        'flv' => 'fa-file-video-o',
+        'mkv' => 'fa-file-video-o',
+        'mov' => 'fa-file-video-o',
+        'wmv' => 'fa-file-video-o',
+        'ps' => 'fa-file-o',
+    ];
+
+    $file['compressed'] = isset($file['compressed']) ? $file['compressed'] : 0;
+    $file['is_folder'] = isset($file['is_folder']) ? $file['is_folder'] : 0;
+    $file['file_name'] = isset($file['file_name']) ? $file['file_name'] : '';
+
+    if ($file['compressed'] != 0) {
+        return 'fa-file-archive-o';
+    } else {
+        if ($file['is_folder']) {
+            return 'fa-folder-o';
+        } else {
+            $extension = pathinfo($file['file_name'], PATHINFO_EXTENSION);
+            return isset($file_icons[$extension]) ? $file_icons[$extension] : 'fa-file-o';
+        }
+    }
+}

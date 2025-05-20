@@ -17,7 +17,7 @@ if (!defined('NV_IS_SPADMIN')) {
     }
 }
 
-$sql = 'SELECT file_name, file_path, file_size, is_folder, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $file_id;
+$sql = 'SELECT file_id, file_name, file_path, file_size, is_folder, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $file_id;
 $row = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
 
 if (empty($row) || $row['is_folder'] == 1) {
@@ -41,26 +41,31 @@ if ($rank > 0) {
     $base_url .= '&root=1';
 }
 
-$breadcrumbs = [];
-$current_lev = $lev;
+$breadcrumbs[] = [
+        'catid' => $row['lev'],
+        'title' => $row['file_name'],
+        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias']
+    ];
+$current_lev = $row['lev'];
+
 while ($current_lev > 0) {
-    $sql = 'SELECT file_name, is_folder, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
-    $row1 = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
-    if (empty($row1)) {
+    $sql = 'SELECT file_name, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
+    $_row = $db->query($sql)->fetch();
+    if (empty($_row)) {
         break;
     }
-    $op_alias = $row1['is_folder'] == 1 ? $module_info['alias']['main'] : $op;
+    $op = $_row['is_folder'] == 1 ? $module_info['alias']['main'] : $op;
     $breadcrumbs[] = [
         'catid' => $current_lev,
-        'title' => $row1['file_name'],
-        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op_alias . '/' . $row1['alias']
+        'title' => $_row['file_name'],
+        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $_row['alias']
     ];
-    $current_lev = $row1['lev'];
+    $current_lev = $_row['lev'];
 }
 $breadcrumbs = array_reverse($breadcrumbs);
 $array_mod_title = array_merge($array_mod_title ?? [], $breadcrumbs);
 
-$folder_tree = buildFolderTree($user_info, $page_url, defined('NV_IS_SPADMIN'), 0);
+$folder_tree = buildFolderTree($user_info, $page_url, 0);
 $selected_folder_path = '';
 
 if ($root == 1) {
@@ -236,7 +241,7 @@ if ($move == 1) {
     }
 }
 
-$contents = nv_fileserver_clone($file_id, $file_name, $file_path, $status, $message, $selected_folder_path, $view_url, $folder_tree, $base_url);
+$contents = nv_fileserver_clone($row, $status, $message, $selected_folder_path, $view_url, $folder_tree, $base_url);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

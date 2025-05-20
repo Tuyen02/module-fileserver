@@ -54,7 +54,6 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
                 $row['p_other'] = $permissions[$row['file_id']]['p_other'] ?? 1;
             }
 
-            // Gán URL
             $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
             $row['url_perm'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=perm/' . $row['alias'];
             $row['url_edit'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=edit/' . $row['alias'];
@@ -133,14 +132,14 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
     return $xtpl->text('main');
 }
 
-function nv_fileserver_clone($file_id, $file_name, $file_path, $status, $message, $selected_folder_path, $view_url, $folder_tree, $base_url)
+function nv_fileserver_clone($row, $status, $message, $selected_folder_path, $view_url, $folder_tree, $base_url)
 {
     global $module_file, $global_config, $lang_module;
     $xtpl = new XTemplate('clone.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
-    $xtpl->assign('FILE_ID', $file_id);
-    $xtpl->assign('FILE_NAME', $file_name);
-    $xtpl->assign('FILE_PATH', $file_path);
+    $xtpl->assign('FILE_ID', $row['file_id']);
+    $xtpl->assign('FILE_NAME', $row['file_name']);
+    $xtpl->assign('FILE_PATH', $row['file_path']);
     $xtpl->assign('MESSAGE', $message);
     $xtpl->assign('SELECTED_FOLDER_PATH', $selected_folder_path);
     $xtpl->assign('url_view', $view_url);
@@ -155,12 +154,12 @@ function nv_fileserver_clone($file_id, $file_name, $file_path, $status, $message
     return $xtpl->text('main');
 }
 
-function nv_fileserver_compress($list, $file_id, $status, $message, $tree_html, $current_permission)
+function nv_fileserver_compress($row, $list, $status, $message, $tree_html, $current_permission)
 {
     global $module_file, $global_config, $lang_module;
     $xtpl = new XTemplate('compress.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
-    $xtpl->assign('FILE_ID', $file_id);
+    $xtpl->assign('FILE_NAME', $row['file_name']);
     if (defined('NV_IS_SPADMIN') || $current_permission == 3) $xtpl->parse('main.can_unzip');
     if ($list) $xtpl->assign('TREE_HTML', $tree_html);
     if ($message) {
@@ -172,12 +171,12 @@ function nv_fileserver_compress($list, $file_id, $status, $message, $tree_html, 
     return $xtpl->text('main');
 }
 
-function nv_fileserver_edit_img($row, $file_id, $is_image, $is_video, $is_audio, $is_powerpoint)
+function nv_fileserver_edit_img($row, $is_image, $is_video, $is_audio, $is_powerpoint)
 {
     global $module_file, $global_config, $lang_module;
     $xtpl = new XTemplate('edit_img.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
-    $xtpl->assign('FILE_ID', $file_id);
+    $xtpl->assign('FILE_ID', $row);
     $xtpl->assign('FILE_NAME', $row['file_name']);
     $xtpl->assign('FILE_PATH', $row['file_path']);
     if ($is_audio) $xtpl->parse('main.audio');
@@ -188,14 +187,13 @@ function nv_fileserver_edit_img($row, $file_id, $is_image, $is_video, $is_audio,
     return $xtpl->text('main');
 }
 
-function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $status, $message, $back_url, $current_permission)
+function nv_fileserver_edit($row, $file_content, $view_url, $status, $message, $back_url, $current_permission)
 {
     global $module_file, $global_config, $lang_module;
     $xtpl = new XTemplate('edit.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
     $xtpl->assign('FILE_CONTENT', htmlspecialchars($file_content));
-    $xtpl->assign('FILE_ID', $file_id);
-    $xtpl->assign('FILE_NAME', $file_name);
+    $xtpl->assign('FILE_NAME', $row['file_name']);
     $xtpl->assign('url_view', $view_url);
     if ($back_url) {
         $xtpl->assign('BACK_URL', $back_url);
@@ -205,7 +203,7 @@ function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $sta
     $xtpl->assign('DISABLE_CLASS', $can_edit ? '' : 'readonly-editor');
     $xtpl->assign('DISABLE_ATTR', $can_edit ? '' : 'readonly');
     $xtpl->assign('READONLY', $can_edit ? 'false' : 'true');
-    $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+    $file_extension = pathinfo($row['file_name'], PATHINFO_EXTENSION);
     $text_extensions = ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'];
     if ($can_edit && in_array($file_extension, $text_extensions)) $xtpl->parse('main.can_save');
     else $xtpl->parse('main.cannt_save');
@@ -231,23 +229,22 @@ function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $sta
     return $xtpl->text('main');
 }
 
-function nv_fileserver_perm($row, $file_id, $group_level, $other_level, $status, $message, $back_url)
+function nv_fileserver_perm($row, $perm, $status, $message, $back_url)
 {
     global $module_file, $global_config, $lang_module;
     $xtpl = new XTemplate('perm.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
     $xtpl->assign('FILE_NAME', $row['file_name']);
     $xtpl->assign('FILE_PATH', $row['file_path']);
-    $xtpl->assign('FILE_ID', $file_id);
     if ($back_url) {
         $xtpl->assign('BACK_URL', $back_url);
         $xtpl->parse('main.back');
     }
-    $xtpl->assign('GROUP_LEVEL_1', $group_level == 1 ? 'selected' : '');
-    $xtpl->assign('GROUP_LEVEL_2', $group_level == 2 ? 'selected' : '');
-    $xtpl->assign('GROUP_LEVEL_3', $group_level == 3 ? 'selected' : '');
-    $xtpl->assign('OTHER_LEVEL_1', $other_level == 1 ? 'selected' : '');
-    $xtpl->assign('OTHER_LEVEL_2', $other_level == 2 ? 'selected' : '');
+    $xtpl->assign('GROUP_LEVEL_1', $perm['p_group'] == 1 ? 'selected' : '');
+    $xtpl->assign('GROUP_LEVEL_2', $perm['p_group'] == 2 ? 'selected' : '');
+    $xtpl->assign('GROUP_LEVEL_3', $perm['p_group'] == 3 ? 'selected' : '');
+    $xtpl->assign('OTHER_LEVEL_1', $perm['p_other'] == 1 ? 'selected' : '');
+    $xtpl->assign('OTHER_LEVEL_2', $perm['p_other'] == 2 ? 'selected' : '');
     if ($status) {
         $xtpl->assign('MESSAGE_CLASS', $status == 'success' ? 'alert-success' : 'alert-danger');
         $xtpl->assign('MESSAGE', $message);

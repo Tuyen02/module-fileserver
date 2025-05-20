@@ -315,7 +315,7 @@ if (!empty($action)) {
                    WHERE f.file_id = ' . $fileId;
             $row = $db->query($sql)->fetch();
 
-            if (!checkPermission($row, $user_info, defined('NV_IS_SPADMIN'))) {
+            if (!checkPermission($row, $user_info)) {
                 nv_jsonOutput(['status' => $status, 'message' => $lang_module['not_permission_to_delete']]);
             }
 

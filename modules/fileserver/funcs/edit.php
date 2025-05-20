@@ -9,17 +9,16 @@ use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
 $page_title = $lang_module['edit'];
 $page = $nv_Request->get_int('page', 'get', 1);
 
-$sql = 'SELECT file_name, file_path, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND file_id = ' . $file_id;
+$sql = 'SELECT file_id, file_name, file_path, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND is_folder = 0 AND file_id = ' . $file_id;
 $row = $db->query($sql)->fetch();
 
-if (empty($row) || $row['is_folder'] == 1) {
+if (empty($row)) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
 }
 
 $back_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name;
 if ($row['lev'] > 0) {
-    $sql = 'SELECT lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $row['lev'];
-    $parent = $db->query($sql)->fetch();
+    $parent = $db->query('SELECT lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $row['lev'])->fetch();
     if ($parent && $parent['lev'] > 0) {
         $parent_alias = $db->query('SELECT alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $parent['lev'])->fetchColumn();
         if ($parent_alias) {
@@ -29,20 +28,24 @@ if ($row['lev'] > 0) {
 }
 
 $breadcrumbs = [];
-$current_lev = $lev;
+$current_lev = $row['lev'];
+$op_breadcrumb = $op;
+$breadcrumbs[] = [
+    'catid' => $row['lev'],
+    'title' => $row['file_name'],
+    'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op_breadcrumb . '/' . $row['alias']
+];
+
 while ($current_lev > 0) {
-    $sql = 'SELECT file_name, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
-    $row1 = $db->query($sql)->fetch();
-    if (empty($row1)) {
-        break;
-    }
-    $op = $row1['is_folder'] == 1 ? $module_info['alias']['main'] : $op;
+    $_row = $db->query('SELECT file_name, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev)->fetch();
+    if (empty($_row)) break;
+    $op_breadcrumb = $_row['is_folder'] == 1 ? $module_info['alias']['main'] : $op_breadcrumb;
     $breadcrumbs[] = [
         'catid' => $current_lev,
-        'title' => $row1['file_name'],
-        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row1['alias']
+        'title' => $_row['file_name'],
+        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op_breadcrumb . '/' . $_row['alias']
     ];
-    $current_lev = $row1['lev'];
+    $current_lev = $_row['lev'];
 }
 $breadcrumbs = array_reverse($breadcrumbs);
 $array_mod_title = array_merge($array_mod_title ?? [], $breadcrumbs);
@@ -52,7 +55,7 @@ $view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DA
 $file_name = $row['file_name'];
 $file_path = $row['file_path'];
 $full_path = NV_ROOTDIR . $file_path;
-$file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+$file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
 $file_content = '';
 $status = '';
@@ -61,52 +64,56 @@ $message = '';
 if (!file_exists($full_path)) {
     $status = $lang_module['error'];
     $message = $lang_module['file_not_found'];
-} elseif ($file_extension == 'pdf') {
-    $file_content = NV_BASE_SITEURL . ltrim($file_path, '/');
-} elseif (in_array($file_extension, ['doc', 'docx'])) {
-    if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpword')) {
-        trigger_error('No phpword lib. Run command "composer require phpoffice/phpword" to install', 256);
-    }
-    try {
-        $phpWord = IOFactory::load($full_path);
-        $text = '';
-        foreach ($phpWord->getSections() as $section) {
-            foreach ($section->getElements() as $element) {
-                if (method_exists($element, 'getText')) {
-                    $text .= $element->getText() . "\n";
-                }
-            }
-        }
-        $file_content = $text;
-    } catch (Exception $e) {
-        $status = $lang_module['error'];
-        $message = $lang_module['cannot_open_word_file'] . $e->getMessage();
-    }
-} elseif (in_array($file_extension, ['xls', 'xlsx'])) {
-    if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpspreadsheet')) {
-        trigger_error('No phpspreadsheet lib. Run command "composer require phpoffice/phpspreadsheet" to install', 256);
-    }
-    try {
-        $spreadsheet = SpreadsheetIOFactory::load($full_path);
-        $worksheet = $spreadsheet->getActiveSheet();
-        $text = '';
-        foreach ($worksheet->getRowIterator() as $row) {
-            $rowData = [];
-            foreach ($row->getCellIterator() as $cell) {
-                $rowData[] = $cell->getValue();
-            }
-            $text .= implode("\t", $rowData) . "\n";
-        }
-        $file_content = $text;
-    } catch (Exception $e) {
-        $status = $lang_module['error'];
-        $message = $lang_module['cannot_open_excel_file'] . $e->getMessage();
-    }
-} else {
-    $file_content = file_get_contents($full_path);
 }
 
-if (!defined('NV_IS_SPADMIN') && empty($status)) {
+if (empty($status)) {
+    if ($file_extension == 'pdf') {
+        $file_content = NV_BASE_SITEURL . ltrim($file_path, '/');
+    } elseif (in_array($file_extension, ['doc', 'docx'])) {
+        if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpword')) {
+            trigger_error('No phpword lib. Run command "composer require phpoffice/phpword" to install', 256);
+        }
+        try {
+            $phpWord = IOFactory::load($full_path);
+            $text = '';
+            foreach ($phpWord->getSections() as $section) {
+                foreach ($section->getElements() as $element) {
+                    if (method_exists($element, 'getText')) {
+                        $text .= $element->getText() . "\n";
+                    }
+                }
+            }
+            $file_content = $text;
+        } catch (Exception $e) {
+            $status = $lang_module['error'];
+            $message = $lang_module['cannot_open_word_file'] . $e->getMessage();
+        }
+    } elseif (in_array($file_extension, ['xls', 'xlsx'])) {
+        if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpspreadsheet')) {
+            trigger_error('No phpspreadsheet lib. Run command "composer require phpoffice/phpspreadsheet" to install', 256);
+        }
+        try {
+            $spreadsheet = SpreadsheetIOFactory::load($full_path);
+            $worksheet = $spreadsheet->getActiveSheet();
+            $text = '';
+            foreach ($worksheet->getRowIterator() as $row) {
+                $rowData = [];
+                foreach ($row->getCellIterator() as $cell) {
+                    $rowData[] = $cell->getValue();
+                }
+                $text .= implode("\t", $rowData) . "\n";
+            }
+            $file_content = $text;
+        } catch (Exception $e) {
+            $status = $lang_module['error'];
+            $message = $lang_module['cannot_open_excel_file'] . $e->getMessage();
+        }
+    } else {
+        $file_content = @file_get_contents($full_path);
+    }
+}
+
+if (!defined('NV_IS_SPADMIN')) {
     $is_group_user = !empty($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
     if (!$is_group_user) {
         $status = $lang_module['error'];
@@ -120,14 +127,14 @@ if (!defined('NV_IS_SPADMIN') && empty($status)) {
     }
 }
 
-if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
+if ($nv_Request->get_int('file_id', 'post') > 0) {
     $old_content = '';
     $has_changes = false;
 
     if (in_array($file_extension, ['doc', 'docx', 'txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
-        $old_content = file_get_contents($full_path);
+        $old_content = @file_get_contents($full_path);
     } elseif ($file_extension != 'pdf') {
-        $old_content = file_get_contents($full_path);
+        $old_content = @file_get_contents($full_path);
     } elseif (in_array($file_extension, ['xls', 'xlsx'])) {
         $status = $lang_module['error'];
         $message = $lang_module['cannot_edit_excel_file_'];
@@ -149,7 +156,7 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
                     $status = $lang_module['error'];
                     $message = $lang_module['cannot_save_file'] . $e->getMessage();
                 }
-            } elseif (file_put_contents($full_path, $file_content) === false) {
+            } elseif (@file_put_contents($full_path, $file_content) === false) {
                 $status = $lang_module['error'];
                 $message = $lang_module['cannot_save_file'];
             }
@@ -184,7 +191,9 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
     }
 }
 
-$contents = nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $status, $message, $back_url, get_user_permission($file_id, $row));
+$current_permission = get_user_permission($file_id, $row);
+
+$contents = nv_fileserver_edit($row, $file_content, $file_id, $view_url, $status, $message, $back_url, $current_permission);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

@@ -7,7 +7,7 @@ $page_title = $lang_module['compress'];
 $action = $nv_Request->get_title('action', 'post', '');
 $page = $nv_Request->get_int('page', 'get', 1);
 
-$sql = 'SELECT file_id, file_name, file_path, compressed, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $lev;
+$sql = 'SELECT file_id, file_name, file_path, compressed, alias, lev FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $lev;
 $row = $db->query($sql)->fetch();
 
 if (empty($row)) {
@@ -15,11 +15,30 @@ if (empty($row)) {
 }
 
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
-$array_mod_title[] = [
-    'catid' => 0,
-    'title' => $row['file_name'],
-    'link' => $base_url
-];
+
+$breadcrumbs[] = [
+        'catid' => $row['lev'],
+        'title' => $row['file_name'],
+        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias']
+    ];
+$current_lev = $row['lev'];
+
+while ($current_lev > 0) {
+    $sql = 'SELECT file_name, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
+    $_row = $db->query($sql)->fetch();
+    if (empty($_row)) {
+        break;
+    }
+    $op = $_row['is_folder'] == 1 ? $module_info['alias']['main'] : $op;
+    $breadcrumbs[] = [
+        'catid' => $current_lev,
+        'title' => $_row['file_name'],
+        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $_row['alias']
+    ];
+    $current_lev = $_row['lev'];
+}
+$breadcrumbs = array_reverse($breadcrumbs);
+$array_mod_title = array_merge($array_mod_title ?? [], $breadcrumbs);
 
 $status = '';
 $message = '';
@@ -136,7 +155,7 @@ if (!empty($compressed)) {
 $tree = buildTree($list);
 $tree_html = displayTree($tree);
 
-$contents = nv_fileserver_compress($list, $row['file_id'], $status, $message, $tree_html, get_user_permission($lev, $row));
+$contents = nv_fileserver_compress($row, $list, $status, $message, $tree_html, get_user_permission($lev, $row));
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);
