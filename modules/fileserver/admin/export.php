@@ -7,26 +7,31 @@ if (!defined('NV_IS_FILE_ADMIN')) {
 }
 
 $page_title = $lang_module['export_title'];
-
-define('NV_CONSOLE_DIR', str_replace(DIRECTORY_SEPARATOR, '/', realpath(pathinfo(str_replace(DIRECTORY_SEPARATOR, '/', __FILE__), PATHINFO_DIRNAME))));
-
 function getUserCache()
 {
     global $db, $module_data;
     $user_cache = [];
-    $sql = 'SELECT DISTINCT u.userid, u.username, u.first_name, u.last_name 
-            FROM ' . NV_USERS_GLOBALTABLE . ' u 
-            INNER JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_files f 
-            ON u.userid = f.uploaded_by';
-    try {
+
+    $sql = 'SELECT DISTINCT uploaded_by FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files';
+    $user_ids = [];
+    $stmt = $db->prepare($sql);
+    $stmt->execute();
+    while ($row = $stmt->fetch()) {
+        if ($row['uploaded_by']) {
+            $user_ids[] = (int)$row['uploaded_by'];
+        }
+    }
+
+    if (!empty($user_ids)) {
+        $placeholders = implode(',', array_fill(0, count($user_ids), '?'));
+        $sql = 'SELECT userid, username, first_name, last_name FROM ' . NV_USERS_GLOBALTABLE . ' WHERE userid IN (' . $placeholders . ')';
         $stmt = $db->prepare($sql);
-        $stmt->execute();
+        $stmt->execute($user_ids);
         while ($user = $stmt->fetch()) {
             $user_cache[$user['userid']] = trim($user['last_name'] . ' ' . $user['first_name'] . ' (' . $user['username'] . ')');
         }
-    } catch (PDOException $e) {
-        trigger_error('Error fetching users: ' . $e->getMessage(), 256);
     }
+
     return $user_cache;
 }
 
@@ -286,6 +291,7 @@ if ($download == 1) {
         }
     }
 }
+
 $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev = 0';
 $result = $db->query($sql);
 $stt = 1;

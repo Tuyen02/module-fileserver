@@ -3,7 +3,9 @@
 <div class="alert {MESSAGE_CLASS}">{MESSAGE}</div>
 <!-- END: message -->
 <h1>Nội dung file nén: {FILE_NAME}</h1>
+<!-- BEGIN: tree_html -->
 <div class="tree well">{TREE_HTML}</div>
+<!-- END: tree_html -->
 <form method="post" id="unzipForm">
   <button type="button" class="btn btn-info" id="backButton">
     <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}

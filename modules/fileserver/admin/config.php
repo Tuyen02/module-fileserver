@@ -33,7 +33,7 @@ if ($nv_Request->isset_request('submit', 'post')) {
             AND module = :module 
             AND config_name = :config_name';
     $sth = $db->prepare($sql);
-    
+
     try {
         $status = true;
         foreach ($array_config as $config_name => $config_value) {

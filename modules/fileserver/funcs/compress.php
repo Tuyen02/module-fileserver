@@ -152,6 +152,11 @@ if (!empty($compressed)) {
     }
 }
 
+if(empty($list)){
+    $status = $lang_module['error'];
+    $message = $lang_module['download_to_view'];
+}
+
 $tree = buildTree($list);
 $tree_html = displayTree($tree);
 

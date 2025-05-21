@@ -74,13 +74,18 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
             $xtpl->parse('main.file_row.download');
 
             $view_urls = [];
+            $is_zip_uncompressed = (strtolower($fileInfo) == 'zip' && empty($row['compressed']));
+
             if (defined('NV_IS_SPADMIN') || $current_permission == 3) {
                 $xtpl->parse('main.file_row.delete');
                 $xtpl->parse('main.file_row.rename');
-                if (defined('NV_IS_SPADMIN')) $xtpl->parse('main.file_row.share');
+                if (defined('NV_IS_SPADMIN'))
+                    $xtpl->parse('main.file_row.share');
                 if (!$row['is_folder']) {
                     $view_urls[] = $row['url_edit'];
-                    if ($row['compressed'] || $fileInfo == 'zip') $view_urls[] = $row['url_compress'];
+                    if ($row['compressed'] || $is_zip_uncompressed) {
+                        $view_urls[] = $row['url_compress'];
+                    }
                     if (in_array($fileInfo, $editable_extensions)) {
                         $xtpl->assign('EDIT', $row['url_edit']);
                         $xtpl->parse('main.file_row.edit');
@@ -95,7 +100,9 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
             } elseif ($current_permission == 2) {
                 if (!$row['is_folder']) {
                     $view_urls[] = $row['url_edit'];
-                    if ($row['compressed']) $view_urls[] = $row['url_compress'];
+                    if ($row['compressed'] || $is_zip_uncompressed) {
+                        $view_urls[] = $row['url_compress'];
+                    }
                     if (in_array($fileInfo, $editable_extensions)) {
                         $xtpl->assign('EDIT', $row['url_edit']);
                     } elseif (in_array($fileInfo, $viewable_extensions)) {
@@ -112,7 +119,8 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
             }
             $xtpl->parse('main.file_row');
         }
-        if (defined('NV_IS_SPADMIN')) $xtpl->parse('main.stats');
+        if (defined('NV_IS_SPADMIN'))
+            $xtpl->parse('main.stats');
         if ($show_create_buttons) {
             $xtpl->parse('main.can_compress');
             $xtpl->parse('main.can_delete_all');
@@ -160,8 +168,16 @@ function nv_fileserver_compress($row, $list, $status, $message, $tree_html, $cur
     $xtpl = new XTemplate('compress.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
     $xtpl->assign('FILE_NAME', $row['file_name']);
-    if (defined('NV_IS_SPADMIN') || $current_permission == 3) $xtpl->parse('main.can_unzip');
-    if ($list) $xtpl->assign('TREE_HTML', $tree_html);
+
+    if ($list && (defined('NV_IS_SPADMIN') || $current_permission == 3)) {
+        $xtpl->parse('main.can_unzip');
+    }
+
+    if ($list) {
+        $xtpl->assign('TREE_HTML', $tree_html);
+        $xtpl->parse('main.tree_html');
+    }
+
     if ($message) {
         $xtpl->assign('MESSAGE_CLASS', ($status == 'success') ? 'alert-success' : 'alert-danger');
         $xtpl->assign('MESSAGE', $message);
@@ -179,10 +195,14 @@ function nv_fileserver_edit_img($row, $is_image, $is_video, $is_audio, $is_power
     $xtpl->assign('FILE_ID', $row);
     $xtpl->assign('FILE_NAME', $row['file_name']);
     $xtpl->assign('FILE_PATH', $row['file_path']);
-    if ($is_audio) $xtpl->parse('main.audio');
-    elseif ($is_video) $xtpl->parse('main.video');
-    elseif ($is_image) $xtpl->parse('main.img');
-    elseif ($is_powerpoint) $xtpl->parse('main.powerpoint');
+    if ($is_audio)
+        $xtpl->parse('main.audio');
+    elseif ($is_video)
+        $xtpl->parse('main.video');
+    elseif ($is_image)
+        $xtpl->parse('main.img');
+    elseif ($is_powerpoint)
+        $xtpl->parse('main.powerpoint');
     $xtpl->parse('main');
     return $xtpl->text('main');
 }
@@ -205,8 +225,10 @@ function nv_fileserver_edit($row, $file_content, $view_url, $status, $message, $
     $xtpl->assign('READONLY', $can_edit ? 'false' : 'true');
     $file_extension = pathinfo($row['file_name'], PATHINFO_EXTENSION);
     $text_extensions = ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'];
-    if ($can_edit && in_array($file_extension, $text_extensions)) $xtpl->parse('main.can_save');
-    else $xtpl->parse('main.cannt_save');
+    if ($can_edit && in_array($file_extension, $text_extensions))
+        $xtpl->parse('main.can_save');
+    else
+        $xtpl->parse('main.cannt_save');
     if ($message) {
         $xtpl->assign('MESSAGE_CLASS', ($status == 'success') ? 'alert-success' : 'alert-danger');
         $xtpl->assign('MESSAGE', $message);
