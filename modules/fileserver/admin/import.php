@@ -160,7 +160,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['excel_
                 if (!in_array($sheetName, $importedSheets)) {
                     $sheet = $objPHPExcel->getSheet($sheetIndex);
 
-                    $sql = 'SELECT file_id, file_path FROM ' . NV_PREFIXLANG . '_fileserver_files_files 
+                    $sql = 'SELECT file_id, file_path FROM ' . NV_PREFIXLANG . '_fileserver_files
                             WHERE file_name = ' . $db->quote($sheetName) . ' AND is_folder = 1 AND lev = 0';
                     $parent = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
 

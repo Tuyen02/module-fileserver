@@ -848,19 +848,16 @@ function updatePermissions($parent_id, $p_group, $p_other)
 
     $file_ids = array_unique($file_ids);
 
-    foreach ($file_ids as $file_id) {
-        $sql_check = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
-                     WHERE file_id = ' . $file_id;
-        $exists = $db->query($sql_check)->fetchColumn();
-
-        $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
-            (file_id, p_group, p_other, updated_at) 
+    $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
+                (file_id, p_group, p_other, updated_at)
             VALUES (:file_id, :p_group, :p_other, :updated_at)
-            ON DUPLICATE KEY UPDATE 
-                p_group = VALUES(p_group), 
-                p_other = VALUES(p_other), 
+            ON DUPLICATE KEY UPDATE
+                p_group = VALUES(p_group),
+                p_other = VALUES(p_other),
                 updated_at = VALUES(updated_at)';
-        $stmt = $db->prepare($sql);
+    $stmt = $db->prepare($sql);
+
+    foreach ($file_ids as $file_id) {
         $stmt->bindValue(':file_id', $file_id, PDO::PARAM_INT);
         $stmt->bindValue(':p_group', $p_group, PDO::PARAM_INT);
         $stmt->bindValue(':p_other', $p_other, PDO::PARAM_INT);
@@ -868,6 +865,7 @@ function updatePermissions($parent_id, $p_group, $p_other)
         $stmt->execute();
     }
 }
+
 
 function checkPermission($directory, $user_info)
 {

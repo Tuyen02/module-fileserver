@@ -42,7 +42,7 @@ $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_
 
 $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_' . $module_data . '_permissions (
     permission_id INT PRIMARY KEY AUTO_INCREMENT,
-    file_id INT NOT NULL,
+    file_id INT NOT NULL UNIQUE,
     p_group TINYINT(3) DEFAULT 1,
     p_other TINYINT(3) DEFAULT 1,
     updated_at INT(11) NOT NULL DEFAULT 0

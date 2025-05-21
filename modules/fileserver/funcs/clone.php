@@ -99,7 +99,7 @@ if ($copy == 1) {
     }
 
     if (!isset($target_lev)) {
-        $message = $lang_module['please_select_folder'];
+        $message = $lang_module['target_folder_not_found'];
     } elseif ($db->query('SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND file_name = ' . $db->quote($file_name) . ' AND lev = ' . $target_lev)->fetchColumn() > 0) {
         $message = $lang_module['f_has_exit'];
     } else {

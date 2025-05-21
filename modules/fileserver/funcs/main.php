@@ -48,6 +48,73 @@ $file_ids = array_keys($arr_per);
 $result = [];
 $total = 0;
 
+$error = '';
+$success = '';
+$admin_info['allow_files_type'][] = 'text';
+
+if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['uploadfile']) && is_uploaded_file($_FILES['uploadfile']['tmp_name'])) {
+    $file_extension = strtolower(pathinfo($_FILES['uploadfile']['name'], PATHINFO_EXTENSION));
+    if ($file_extension == 'zip') {
+        $error = $lang_module['not_allow_zip'];
+    } else {
+        if (!defined('NV_IS_SPADMIN')) {
+            if (empty($arr_full_per)) {
+                $error = $lang_module['not_thing_to_do'];
+            } else {
+                if (!in_array($lev, $arr_full_per)) {
+                    $error = $lang_module['not_thing_to_do'];
+                }
+            }
+        }
+    }
+
+    if (empty($error)) {
+        $upload = new NukeViet\Files\Upload(
+            $admin_info['allow_files_type'],
+            $global_config['forbid_extensions'],
+            $global_config['forbid_mimes'],
+            NV_UPLOAD_MAX_FILESIZE,
+            NV_MAX_WIDTH,
+            NV_MAX_HEIGHT
+        );
+        $upload->setLanguage($lang_global);
+        $upload_info = $upload->save_file($_FILES['uploadfile'], NV_ROOTDIR . $base_dir, false, $global_config['nv_auto_resize']);
+        if ($upload_info['error'] == '') {
+            $full_path = $upload_info['name'];
+            chmod($full_path, 0777);
+
+            $relative_path = str_replace(NV_ROOTDIR, '', $full_path);
+
+            $file_name = $upload_info['basename'];
+            $file_size = $upload_info['size'];
+
+            $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev) 
+                    VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)';
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
+            $stmt->bindParam(':file_path', $relative_path, PDO::PARAM_STR);
+            $stmt->bindParam(':file_size', $file_size, PDO::PARAM_STR);
+            $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_STR);
+            $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
+            $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
+
+            if ($stmt->execute()) {
+                $file_id = $db->lastInsertId();
+                updateAlias($file_id, $file_name);
+                $sql_insert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
+                        VALUES (' . $file_id . ', 1, 1, ' . NV_CURRENTTIME . ')';
+                $db->query($sql_insert);
+                updateLog($lev);
+                nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['upload_btn'], 'File id: ' . $file_id, $user_info['userid']);
+                updateParentFolderSize($lev);
+            }
+            $success = $lang_module['upload_ok'];
+        } else {
+            $error = $upload_info['error'];
+        }
+    }
+}
+
 if ($use_elastic == 1) {
     try {
         $searchParams = [
@@ -244,11 +311,7 @@ if (!empty($action)) {
         if ($lev > 0) {
             $parentFileType = checkIfParentIsFolder($lev);
             if ($parentFileType == 0) {
-                nv_jsonOutput([
-                    'status' => $status,
-                    'message' => $lang_module['cannot_create_file_in_file'],
-                    'refresh_captcha' => true
-                ]);
+                nv_jsonOutput([ 'status' => $status, 'message' => $lang_module['cannot_create_file_in_file'], 'refresh_captcha' => true]);
             }
         }
 
@@ -339,7 +402,7 @@ if (!empty($action)) {
         foreach ($fileIds as $fileId) {
             $fileId = (int) $fileId;
             $checksess = md5($fileId . NV_CHECK_SESSION);
-            if ($fileId > 0) {
+            if ($fileId > 0 && $checksess == md5($fileId . NV_CHECK_SESSION)) {
                 $deleted = deleteFileOrFolder($fileId);
                 if ($deleted) {
                     $deletedFileIds[] = $fileId;
@@ -371,19 +434,17 @@ if (!empty($action)) {
         $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
         $row = $db->query($sql)->fetch();
 
-        if ($row) {
-            $sql_perm = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $fileId;
-            $perm = $db->query($sql_perm)->fetch();
-
-            $row['p_group'] = $row['p_other'] = 1;
-            if ($perm) {
-                $row['p_group'] = $perm['p_group'];
-                $row['p_other'] = $perm['p_other'];
-            }
-        }
-
         if (empty($row)) {
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_not_found']]);
+        }
+
+        $sql_perm = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $fileId;
+        $perm = $db->query($sql_perm)->fetch();
+
+        $row['p_group'] = $row['p_other'] = 1;
+        if ($perm) {
+            $row['p_group'] = $perm['p_group'];
+            $row['p_other'] = $perm['p_other'];
         }
 
         $fileName = $row['file_name'];
@@ -592,6 +653,7 @@ if (!empty($action)) {
         if ($name_f == '' || !isValidFileName($name_f)) {
             nv_jsonOutput(['status' => 'error', 'message' => $lang_module['file_name_invalid']]);
         }
+
         $message = $lang_module['folder_name_valid'];
         if ($type == 0) {
             $message = $lang_module['file_name_valid'];
@@ -624,7 +686,7 @@ if (!empty($action)) {
         $file_id = $nv_Request->get_int('file_id', 'post', 0);
 
         if ($file_id == 0) {
-            nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_empty']]);
+            nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_not_found']]);
         }
         if ($new_name == '' || !isValidFileName($new_name)) {
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_invalid']]);
@@ -805,74 +867,6 @@ if ($download == 1) {
             exit();
         } else {
             nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
-        }
-    }
-}
-
-$error = '';
-$success = '';
-$admin_info['allow_files_type'][] = 'text';
-
-if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['uploadfile']) && is_uploaded_file($_FILES['uploadfile']['tmp_name'])) {
-    $file_extension = strtolower(pathinfo($_FILES['uploadfile']['name'], PATHINFO_EXTENSION));
-    if ($file_extension == 'zip') {
-        $error = $lang_module['not_allow_zip'];
-    } else {
-        if (!defined('NV_IS_SPADMIN')) {
-            if (empty($arr_full_per)) {
-                $error = $lang_module['not_thing_to_do'];
-            } else {
-                if (!in_array($lev, $arr_full_per)) {
-                    $error = $lang_module['not_thing_to_do'];
-                }
-            }
-        }
-    }
-
-    if (empty($error)) {
-        $upload = new NukeViet\Files\Upload(
-            $admin_info['allow_files_type'],
-            $global_config['forbid_extensions'],
-            $global_config['forbid_mimes'],
-            NV_UPLOAD_MAX_FILESIZE,
-            NV_MAX_WIDTH,
-            NV_MAX_HEIGHT
-        );
-        $upload->setLanguage($lang_global);
-        $upload_info = $upload->save_file($_FILES['uploadfile'], $full_dir, false, $global_config['nv_auto_resize']);
-        if ($upload_info['error'] == '') {
-            $full_path = $upload_info['name'];
-            chmod($full_path, 0777);
-
-            $relative_path = str_replace(NV_ROOTDIR, '', $full_path);
-
-            $file_name = $upload_info['basename'];
-            $file_size = $upload_info['size'];
-
-            $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev) 
-                    VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)';
-            $stmt = $db->prepare($sql);
-            $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
-            $stmt->bindParam(':file_path', $relative_path, PDO::PARAM_STR);
-            $stmt->bindParam(':file_size', $file_size, PDO::PARAM_STR);
-            $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_STR);
-            $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
-            $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
-
-            if ($stmt->execute()) {
-                $file_id = $db->lastInsertId();
-                updateAlias($file_id, $file_name);
-                $sql_insert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
-                        VALUES (' . $file_id . ', 1, 1, ' . NV_CURRENTTIME . ')';
-                $db->query($sql_insert);
-                updateLog($lev);
-                nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['upload_btn'], 'File id: ' . $file_id, $user_info['userid']);
-                updateParentFolderSize($lev);
-            }
-            nv_redirect_location($page_url);
-            $success = $lang_module['upload_ok'];
-        } else {
-            $error = $upload_info['error'];
         }
     }
 }

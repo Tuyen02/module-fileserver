@@ -27,7 +27,7 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
         $xtpl->parse('main.error');
     }
     if ($success) {
-        $xtpl->assign('success', $success);
+        $xtpl->assign('SUCCESS', $success);
         $xtpl->parse('main.success');
     }
 
@@ -207,39 +207,49 @@ function nv_fileserver_edit_img($row, $is_image, $is_video, $is_audio, $is_power
     return $xtpl->text('main');
 }
 
-function nv_fileserver_edit($row, $file_content, $view_url, $status, $message, $back_url, $current_permission)
+function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $status, $message, $back_url, $current_permission)
 {
     global $module_file, $global_config, $lang_module;
+
     $xtpl = new XTemplate('edit.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
     $xtpl->assign('FILE_CONTENT', htmlspecialchars($file_content));
-    $xtpl->assign('FILE_NAME', $row['file_name']);
+    $xtpl->assign('FILE_ID', $file_id);
+    $xtpl->assign('FILE_NAME', $file_name);
     $xtpl->assign('url_view', $view_url);
-    if ($back_url) {
+
+    if (!empty($back_url)) {
         $xtpl->assign('BACK_URL', $back_url);
         $xtpl->parse('main.back');
     }
+
     $can_edit = ($current_permission >= 3 || defined('NV_IS_SPADMIN'));
     $xtpl->assign('DISABLE_CLASS', $can_edit ? '' : 'readonly-editor');
     $xtpl->assign('DISABLE_ATTR', $can_edit ? '' : 'readonly');
     $xtpl->assign('READONLY', $can_edit ? 'false' : 'true');
-    $file_extension = pathinfo($row['file_name'], PATHINFO_EXTENSION);
+
+    $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
     $text_extensions = ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'];
-    if ($can_edit && in_array($file_extension, $text_extensions))
+    
+    if ($can_edit && in_array($file_extension, $text_extensions)) {
         $xtpl->parse('main.can_save');
-    else
+    } else {
         $xtpl->parse('main.cannt_save');
-    if ($message) {
+    }
+
+    if (!empty($message)) {
         $xtpl->assign('MESSAGE_CLASS', ($status == 'success') ? 'alert-success' : 'alert-danger');
         $xtpl->assign('MESSAGE', $message);
         $xtpl->parse('main.message');
     }
+
     $file_types = [
         'text' => ['txt', 'html', 'css'],
         'pdf' => ['pdf'],
         'docx' => ['doc', 'docx'],
         'excel' => ['xls', 'xlsx']
     ];
+
     foreach ($file_types as $type => $extensions) {
         if (in_array($file_extension, $extensions)) {
             $xtpl->assign($type, '');
@@ -247,6 +257,7 @@ function nv_fileserver_edit($row, $file_content, $view_url, $status, $message, $
             break;
         }
     }
+
     $xtpl->parse('main');
     return $xtpl->text('main');
 }

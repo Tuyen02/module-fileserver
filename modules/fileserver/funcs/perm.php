@@ -1,4 +1,5 @@
 <?php
+
 if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
@@ -8,44 +9,50 @@ if (!defined('NV_IS_SPADMIN')) {
 }
 
 $page_title = $lang_module['perm'];
+
+$status = '';
+$message = '';
+$back_url = '';
+
 $page = $nv_Request->get_int('page', 'get', 1);
 
-$sql = 'SELECT file_id, file_name, file_path, alias, lev FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND file_id = ' . $file_id;
-$stmt = $db->prepare($sql);
-$stmt->execute();
-$row = $stmt->fetch();
+$sql_file = 'SELECT file_name, file_path, alias, lev FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = :file_id AND status = 1';
+$stmt_file = $db->prepare($sql_file);
+$stmt_file->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+$stmt_file->execute();
+$row = $stmt_file->fetch();
 
-if ($row) {
-    $sql_perm = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
-    $stmt_perm = $db->prepare($sql_perm);
-    $stmt_perm->execute();
-    $perm = $stmt_perm->fetch();
-    if ($perm) {
-        $row['p_group'] = $perm['p_group'];
-        $row['p_other'] = $perm['p_other'];
-    } else {
-        $row['p_group'] = 0;
-        $row['p_other'] = 0;
-    }
+$sql_perm = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = :file_id';
+$stmt_perm = $db->prepare($sql_perm);
+$stmt_perm->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+$stmt_perm->execute();
+$row_perm = $stmt_perm->fetch();
+
+if ($row_perm) {
+    $row['p_group'] = $row_perm['p_group'];
+    $row['p_other'] = $row_perm['p_other'];
+} else {
+    $row['p_group'] = 0;
+    $row['p_other'] = 0;
 }
 
-if (empty($row)) {
-    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
-}
-
-$back_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name;
 if ($row['lev'] > 0) {
     $sql = 'SELECT lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $row['lev'];
     $parent = $db->query($sql)->fetch();
-    if ($parent && $parent['lev'] > 0) {
-        $parent_alias = $db->query('SELECT alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $parent['lev'])->fetchColumn();
-        if ($parent_alias) {
-            $back_url .= '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '/' . $parent_alias;
+    if ($parent) {
+        $back_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
+        if ($parent['lev'] > 0) {
+            $sql = 'SELECT alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $parent['lev'];
+            $parent_alias = $db->query($sql)->fetchColumn();
+            if ($parent_alias) {
+                $op = $module_info['alias']['main'];
+                $back_url .= '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $parent_alias;
+            }
         }
     }
 }
 
-$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
+$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
 
 $breadcrumbs[] = [
         'catid' => $row['lev'],
@@ -71,42 +78,67 @@ while ($current_lev > 0) {
 $breadcrumbs = array_reverse($breadcrumbs);
 $array_mod_title = array_merge($array_mod_title ?? [], $breadcrumbs);
 
-$group_level = $row['p_group'] ?? 0;
-$other_level = $row['p_other'] ?? 0;
-$status = '';
-$message = '';
+$group_level = $row['p_group'];
+$other_level = $row['p_other'];
 
 if ($nv_Request->isset_request('submit', 'post')) {
     $group_permission = $nv_Request->get_int('group_permission', 'post', 0);
     $other_permission = $nv_Request->get_int('other_permission', 'post', 0);
 
+    $old_group_level = $group_level;
+    $old_other_level = $other_level;
+
+    $sql_check = 'SELECT permission_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
+    $check_stmt = $db->query($sql_check);
+
+    if ($check_stmt->rowCount() > 0) {
+        $sql_update = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
+                           SET  p_group = :p_group, p_other = :p_other, updated_at = :updated_at 
+                           WHERE file_id = :file_id';
+        $update_stmt = $db->prepare($sql_update);
+        $update_stmt->bindParam(':p_group', $group_permission);
+        $update_stmt->bindParam(':p_other', $other_permission);
+        $update_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+        $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+        $update_stmt->execute();
+    } else {
+        $sql_insert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
+                           (file_id, p_group, p_other, updated_at) 
+                           VALUES (:file_id, :p_group, :p_other, :updated_at)';
+        $insert_stmt = $db->prepare($sql_insert);
+        $insert_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+        $insert_stmt->bindParam(':p_group', $group_permission);
+        $insert_stmt->bindParam(':p_other', $other_permission);
+        $insert_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+        $insert_stmt->execute();
+    }
+
     if ($group_permission != $group_level || $other_permission != $other_level) {
-        $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
-                SET p_group = :p_group, p_other = :p_other, updated_at = :updated_at 
-                WHERE file_id = :file_id';
-        $stmt = $db->prepare($sql);
-        $stmt->bindParam(':p_group', $group_permission, PDO::PARAM_INT);
-        $stmt->bindParam(':p_other', $other_permission, PDO::PARAM_INT);
-        $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-        $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-        $stmt->execute();
-
         updatePermissions($file_id, $group_permission, $other_permission);
-        nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['perm'], 'File id: ' . $file_id . '. Nhóm người dùng mức: ' . $group_permission . '. Nhóm khác mức: ' . $other_permission, $user_info['userid']);
-
-        $group_level = $group_permission;
-        $other_level = $other_permission;
-        $perm = [
-            'p_group' => $group_level,
-            'p_other' => $other_level
-        ];
         $status = 'success';
         $message = $lang_module['update_ok'];
-    } else {
-        $status = 'error';
-        $message = $lang_module['no_changes'];
+    }
+
+    $sql_perm = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = :file_id';
+    $stmt_perm = $db->prepare($sql_perm);
+    $stmt_perm->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+    $stmt_perm->execute();
+    $row_perm = $stmt_perm->fetch();
+
+    if ($row_perm) {
+        $group_level = $row_perm['p_group'];
+        $other_level = $row_perm['p_other'];
+    }
+
+    if ($old_group_level != $group_level || $old_other_level != $other_level) {
+        nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['perm'], 'File id: ' . $file_id . '. Nhóm người dùng mức: ' . $group_level . '. Nhóm khác mức: ' . $other_level, $user_info['userid']);
     }
 }
+
+$perm = [
+    'p_group' => $group_level,
+    'p_other' => $other_level,
+];
 
 $contents = nv_fileserver_perm($row, $perm, $status, $message, $back_url);
 
