@@ -154,16 +154,6 @@ function updateAlias($file_id, $file_name)
     }
 }
 
-function calculateFolderSize($folderId)
-{
-    global $db, $module_data;
-
-    $sql = 'SELECT SUM(file_size) as total_size 
-            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-            WHERE lev = ' . $folderId . ' AND status = 1';
-    return $db->query($sql)->fetchColumn();
-}
-
 function updateLog($lev)
 {
     global $db, $module_data, $lang_module;
@@ -204,7 +194,10 @@ function calculateFileFolderStats($lev)
     $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status =  1 AND lev = ' . $lev;
     $files = $db->query($sql)->fetchAll();
 
-    foreach ($files as $file) {
+    $i = 0;
+    $count = count($files);
+    while ($i < $count) {
+        $file = $files[$i];
         if ($file['is_folder'] == 1) {
             $total_folders++;
             $folder_stats = calculateFileFolderStats($file['file_id']);
@@ -215,6 +208,7 @@ function calculateFileFolderStats($lev)
             $total_files++;
             $total_size += $file['file_size'];
         }
+        $i++;
     }
     return [
         'files' => $total_files,
@@ -320,6 +314,40 @@ function deleteFileOrFolder($fileId)
     }
 
     return false;
+}
+function calculateFolderSize($folderId)
+{
+    global $db, $module_data;
+
+    $sql = 'SELECT SUM(file_size) as total_size 
+            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+            WHERE lev = ' . $folderId . ' AND status = 1';
+    return $db->query($sql)->fetchColumn();
+}
+
+function updateParentFolderSize($folderId)
+{
+    global $db, $module_data;
+
+    $newSize = calculateFolderSize($folderId);
+
+    $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+            SET file_size = :file_size, updated_at = :updated_at 
+            WHERE file_id = :file_id AND is_folder = 1';
+    $stmt = $db->prepare($sql);
+    $stmt->bindValue(':file_size', $newSize, PDO::PARAM_INT);
+    $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+    $stmt->bindValue(':file_id', $folderId, PDO::PARAM_INT);
+    $stmt->execute();
+
+    updateLog($folderId);
+
+    $sql = 'SELECT lev FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $folderId;
+    $parentId = $db->query($sql)->fetchColumn();
+
+    if ($parentId > 0) {
+        updateParentFolderSize($parentId);
+    }
 }
 
 function restoreFileOrFolder($fileId)
@@ -514,31 +542,6 @@ function restoreFileOrFolder($fileId)
     nv_insert_logs(NV_LANG_DATA, $module_name, 'Restore from trash', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
 
     return true;
-}
-
-function updateParentFolderSize($folderId)
-{
-    global $db, $module_data;
-
-    $newSize = calculateFolderSize($folderId);
-
-    $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-            SET file_size = :file_size, updated_at = :updated_at 
-            WHERE file_id = :file_id AND is_folder = 1';
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':file_size', $newSize, PDO::PARAM_INT);
-    $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-    $stmt->bindValue(':file_id', $folderId, PDO::PARAM_INT);
-    $stmt->execute();
-
-    updateLog($folderId);
-
-    $sql = 'SELECT lev FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $folderId;
-    $parentId = $db->query($sql)->fetchColumn();
-
-    if ($parentId > 0) {
-        updateParentFolderSize($parentId);
-    }
 }
 
 

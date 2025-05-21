@@ -143,21 +143,17 @@ $arr_per = [];
 $arr_full_per = [];
 
 if (!defined('NV_IS_SPADMIN')) {
-    $sql = 'SELECT file_id, p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions';
+    $is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty($config_value_array);
+    $where = $is_group_user ? 'p_group >= 2' : 'p_other >= 2';
 
-    if (isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty($config_value_array)) {
-        $sql .= ' WHERE p_group >= 2';
-    } else {
-        $sql .= ' WHERE p_other >= 2';
-    }
+    $sql = 'SELECT file_id, p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE ' . $where;
+    $result = $db->query($sql);
 
-    $result = $db->query($sql)->fetchAll();
-
-    foreach ($result as $row) {
+    while ($row = $result->fetch()) {
         $arr_per[] = $row['file_id'];
         if (
-            (isset($user_info['in_groups']) && $row['p_group'] == 3) ||
-            (!isset($user_info['in_groups']) && $row['p_other'] == 3)
+            ($is_group_user && $row['p_group'] == 3) ||
+            (!$is_group_user && $row['p_other'] == 3)
         ) {
             $arr_full_per[] = $row['file_id'];
         }
@@ -255,21 +251,20 @@ function deleteFileOrFolder($fileId)
     $newParentPath = $newFileName;
 
     if ($isFolder) {
-        $sqlChildren = 'WITH RECURSIVE file_tree AS (
-            SELECT file_id, file_path, lev, is_folder, file_name, 1 as level
-            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files
-            WHERE lev = ' . $fileId . ' AND status = 1
-            
-            UNION ALL
-            
-            SELECT f.file_id, f.file_path, f.lev, f.is_folder, f.file_name, ft.level + 1
-            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
-            INNER JOIN file_tree ft ON f.lev = ft.file_id
-            WHERE f.status = 1
-        )
-        SELECT * FROM file_tree ORDER BY level DESC';
-
-        $children = $db->query($sqlChildren)->fetchAll();
+        $children = [];
+        $stack = [$fileId];
+        while (!empty($stack)) {
+            $parent = array_pop($stack);
+            $sql = 'SELECT file_id, file_path, lev, is_folder, file_name FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . intval($parent) . ' AND status = 1';
+            $rows = $db->query($sql)->fetchAll();
+            foreach ($rows as $row) {
+            $children[] = $row;
+            if ($row['is_folder']) {
+                $stack[] = $row['file_id'];
+            }
+            }
+        }
+        $children = array_reverse($children);
 
         foreach ($children as $child) {
             $childPath = $child['file_path'];
@@ -507,12 +502,15 @@ function calculateFolderSize($folderId)
     $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 and lev = ' . $folderId;
     $files = $db->query($sql)->fetchAll();
 
-    foreach ($files as $file) {
+    $i = 0;
+    while ($i < count($files)) {
+        $file = $files[$i];
         if ($file['is_folder'] == 1) {
             $totalSize += calculateFolderSize($file['file_id']);
         } else {
             $totalSize += intval($file['file_size']);
         }
+        $i++;
     }
     return $totalSize;
 }
@@ -531,13 +529,16 @@ function calculateFileFolderStats($lev)
     }
     $files = $db->query($sql)->fetchAll();
 
-    foreach ($files as $file) {
+    $i = 0;
+    while ($i < count($files)) {
+        $file = $files[$i];
         if ($file['is_folder'] == 1) {
             $total_folders++;
         } else {
             $total_files++;
         }
         $total_size += intval($file['file_size']);
+        $i++;
     }
     return [
         'files' => $total_files,
@@ -621,11 +622,15 @@ function buildTree($list)
         $items[$item['file_id']] = $item;
         $items[$item['file_id']]['children'] = [];
     }
-    foreach ($items as $item) {
+
+    $unprocessed = array_keys($items);
+    while (!empty($unprocessed)) {
+        $file_id = array_shift($unprocessed);
+        $item = &$items[$file_id];
         if ($item['lev'] != 0 && isset($items[$item['lev']])) {
-            $items[$item['lev']]['children'][] = &$items[$item['file_id']];
+            $items[$item['lev']]['children'][] = &$item;
         } else {
-            $tree[] = &$items[$item['file_id']];
+            $tree[] = &$item;
         }
     }
     return $tree;
@@ -673,19 +678,16 @@ function buildFolderTree($user_info, $page_url, $parent_id = 0)
     $result = $db->query($sql);
     $dirs = $result->fetchAll();
 
-    foreach ($dirs as &$dir) {
+    foreach ($dirs as $dir) {
         $sql_perm = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $dir['file_id'];
         $perm = $db->query($sql_perm)->fetch(PDO::FETCH_ASSOC);
         $dir['p_group'] = isset($perm['p_group']) ? $perm['p_group'] : null;
         $dir['p_other'] = isset($perm['p_other']) ? $perm['p_other'] : null;
-    }
-    unset($dir);
 
-    foreach ($dirs as $dir) {
         if (checkPermission($dir, $user_info)) {
             $dir['url'] = $page_url . '&rank=' . $dir['file_id'];
             $dir['path'] = $dir['file_name'];
-            $dir['children'] = buildFolderTree($user_info, $page_url,  $dir['file_id']);
+            $dir['children'] = buildFolderTree($user_info, $page_url, $dir['file_id']);
             $tree[] = $dir;
         }
     }
