@@ -91,27 +91,19 @@ if ($nv_Request->isset_request('submit', 'post')) {
     $sql_check = 'SELECT permission_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
     $check_stmt = $db->query($sql_check);
 
-    if ($check_stmt->rowCount() > 0) {
-        $sql_update = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
-                           SET  p_group = :p_group, p_other = :p_other, updated_at = :updated_at 
-                           WHERE file_id = :file_id';
-        $update_stmt = $db->prepare($sql_update);
-        $update_stmt->bindParam(':p_group', $group_permission);
-        $update_stmt->bindParam(':p_other', $other_permission);
-        $update_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-        $update_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-        $update_stmt->execute();
-    } else {
-        $sql_insert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
-                           (file_id, p_group, p_other, updated_at) 
-                           VALUES (:file_id, :p_group, :p_other, :updated_at)';
-        $insert_stmt = $db->prepare($sql_insert);
-        $insert_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-        $insert_stmt->bindParam(':p_group', $group_permission);
-        $insert_stmt->bindParam(':p_other', $other_permission);
-        $insert_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-        $insert_stmt->execute();
-    }
+    $sql_upsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
+        (file_id, p_group, p_other, updated_at) 
+        VALUES (:file_id, :p_group, :p_other, :updated_at)
+        ON DUPLICATE KEY UPDATE 
+            p_group = VALUES(p_group), 
+            p_other = VALUES(p_other), 
+            updated_at = VALUES(updated_at)';
+    $upsert_stmt = $db->prepare($sql_upsert);
+    $upsert_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+    $upsert_stmt->bindParam(':p_group', $group_permission);
+    $upsert_stmt->bindParam(':p_other', $other_permission);
+    $upsert_stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+    $upsert_stmt->execute();
 
     if ($group_permission != $group_level || $other_permission != $other_level) {
         updatePermissions($file_id, $group_permission, $other_permission);

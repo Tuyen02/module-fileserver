@@ -1,4 +1,5 @@
 <?php
+
 if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
