@@ -12,8 +12,7 @@ $use_elastic = $module_config['fileserver']['use_elastic'];
 
 $page = $nv_Request->get_int('page', 'get', 1);
 $back_url = '';
-$current_permission = get_user_permission($file_id, $row);
-$sql = 'SELECT file_id, file_name, file_path, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 and file_id = ' . $file_id;
+$sql = 'SELECT file_id, file_name, file_path, lev, alias, is_folder, uploaded_by FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 and file_id = ' . $file_id;
 $result = $db->query($sql);
 $row = $result->fetch();
 
@@ -227,6 +226,7 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
         $message = $lang_module['no_changes'];
     }
 }
+$current_permission = get_user_permission($file_id, $row['uploaded_by']);
 
 $contents = nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $status, $message, $back_url, $current_permission);
 

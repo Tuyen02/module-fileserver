@@ -7,7 +7,7 @@ $page_title = $lang_module['compress'];
 $action = $nv_Request->get_title('action', 'post', '');
 $page = $nv_Request->get_int('page', 'get', 1);
 
-$sql = 'SELECT file_id, file_name, file_path, compressed, alias, lev FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $lev;
+$sql = 'SELECT file_id, file_name, file_path, compressed, alias, lev, uploaded_by FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $lev;
 $row = $db->query($sql)->fetch();
 
 if (empty($row)) {
@@ -160,7 +160,8 @@ if(empty($list)){
 $tree = buildTree($list);
 $tree_html = displayTree($tree);
 
-$contents = nv_fileserver_compress($row, $list, $status, $message, $tree_html, get_user_permission($lev, $row));
+$current_permission = get_user_permission($lev, $row['uploaded_by']);
+$contents = nv_fileserver_compress($row, $list, $status, $message, $tree_html,$current_permission);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

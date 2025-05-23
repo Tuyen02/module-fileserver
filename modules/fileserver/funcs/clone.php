@@ -9,19 +9,19 @@ $move = $nv_Request->get_int('move', 'get', 0);
 $root = $nv_Request->get_int('root', 'get', 0);
 $page = $nv_Request->get_int('page', 'get', 1);
 
-if (!defined('NV_IS_SPADMIN')) {
-    $is_group_user = !empty($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
-    $current_permission = get_user_permission($lev, $row);
-    if ($current_permission < 3 || empty($user_info)) {
-        nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
-    }
-}
-
-$sql = 'SELECT file_id, file_name, file_path, file_size, is_folder, lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $file_id;
+$sql = 'SELECT file_id, file_name, file_path, file_size, is_folder, lev, alias, uploaded_by FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $file_id;
 $row = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
 
 if (empty($row) || $row['is_folder'] == 1) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
+}
+
+if (!defined('NV_IS_SPADMIN')) {
+    $is_group_user = !empty($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
+    $current_permission = get_user_permission($lev, $row['uploaded_by']);
+    if ($current_permission < 3 || empty($user_info)) {
+        nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
+    }
 }
 
 $file_name = $row['file_name'];

@@ -113,10 +113,9 @@ $editable_extensions = ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql',
 $viewable_extensions = ['png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'ppt', 'pptx'];
 $base_dir = '/uploads/' . $module_name;
 $tmp_dir = '/data/tmp/';
-$trash_dir = $tmp_dir . ''. $module_name .'_trash';
+$trash_dir = $tmp_dir . '' . $module_name . '_trash';
 
-if (!empty($array_op)) {
-    preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m);
+if (!empty($array_op) && preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m)) {
     $lev = $m[2];
     $file_id = $m[2];
 } else {
@@ -152,8 +151,7 @@ if (!defined('NV_IS_SPADMIN')) {
     while ($row = $result->fetch()) {
         $arr_per[] = $row['file_id'];
         if (
-            ($is_group_user && $row['p_group'] == 3) ||
-            (!$is_group_user && $row['p_other'] == 3)
+            ($is_group_user && $row['p_group'] == 3) || (!$is_group_user && $row['p_other'] == 3)
         ) {
             $arr_full_per[] = $row['file_id'];
         }
@@ -180,28 +178,30 @@ function suggestNewName($lev, $baseName, $extension, $is_folder = null)
 {
     global $db, $module_data;
     $i = 1;
-    do {
+    while (true) {
         $suggestedName = $baseName . '_' . $i;
         if ($extension) {
             $suggestedName .= '.' . $extension;
         }
-        $params = [
-            ':file_name' => $suggestedName,
-            ':lev' => $lev
-        ];
         $sql = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND file_name = :file_name AND lev = :lev';
         if ($is_folder !== null) {
             $sql .= ' AND is_folder = :is_folder';
-            $params[':is_folder'] = $is_folder;
-        }
-        $stmt = $db->prepare($sql);
-        foreach ($params as $k => $v) {
-            $stmt->bindValue($k, $v);
+            $stmt = $db->prepare($sql);
+            $stmt->bindValue(':file_name', $suggestedName, PDO::PARAM_STR);
+            $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
+            $stmt->bindValue(':is_folder', $is_folder, PDO::PARAM_INT);
+        } else {
+            $stmt = $db->prepare($sql);
+            $stmt->bindValue(':file_name', $suggestedName, PDO::PARAM_STR);
+            $stmt->bindValue(':lev', $lev, PDO::PARAM_INT);
         }
         $stmt->execute();
         $count = $stmt->fetchColumn();
+        if ($count == 0) {
+            break;
+        }
         $i++;
-    } while ($count > 0);
+    }
     return $suggestedName;
 }
 
@@ -209,7 +209,7 @@ function deleteFileOrFolder($fileId)
 {
     global $db, $module_data, $trash_dir;
 
-    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
+    $sql = 'SELECT file_id, file_path, lev, is_folder, file_name, lev FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
     $row = $db->query($sql)->fetch();
 
     if (!is_array($row) || empty($row)) {
@@ -219,11 +219,9 @@ function deleteFileOrFolder($fileId)
     $filePath = $row['file_path'];
     $isFolder = $row['is_folder'];
     $fullPath = NV_ROOTDIR . $filePath;
-    $deleted_at = NV_CURRENTTIME;
 
     $fileName = basename($filePath);
     $fileInfo = pathinfo($fileName);
-    $lev = $row['lev'];
 
     $baseName = $fileInfo['filename'];
     $extension = isset($fileInfo['extension']) ? '.' . $fileInfo['extension'] : '';
@@ -250,20 +248,21 @@ function deleteFileOrFolder($fileId)
     $oldParentPath = $fileName;
     $newParentPath = $newFileName;
 
-    if ($isFolder) {
+   if ($isFolder) {
         $children = [];
         $stack = [$fileId];
         while (!empty($stack)) {
             $parent = array_pop($stack);
             $sql = 'SELECT file_id, file_path, lev, is_folder, file_name FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . intval($parent) . ' AND status = 1';
-            $rows = $db->query($sql)->fetchAll();
-            foreach ($rows as $row) {
-            $children[] = $row;
-            if ($row['is_folder']) {
-                $stack[] = $row['file_id'];
-            }
+            $query = $db->query($sql);
+            while ($row = $query->fetch()) {
+                $children[] = $row;
+                if ($row['is_folder']) {
+                    $stack[] = $row['file_id'];
+                }
             }
         }
+
         $children = array_reverse($children);
 
         foreach ($children as $child) {
@@ -301,7 +300,7 @@ function deleteFileOrFolder($fileId)
                                  file_name = :file_name
                              WHERE file_id = :file_id';
             $stmtChild = $db->prepare($sqlUpdateChild);
-            $stmtChild->bindValue(':deleted_at', $deleted_at, PDO::PARAM_INT);
+            $stmtChild->bindValue(':deleted_at', NV_CURRENTTIME, PDO::PARAM_INT);
             $stmtChild->bindValue(':file_path', $childNewPath, PDO::PARAM_STR);
             $stmtChild->bindValue(':file_name', $childNewName, PDO::PARAM_STR);
             $stmtChild->bindValue(':file_id', $child['file_id'], PDO::PARAM_INT);
@@ -318,10 +317,10 @@ function deleteFileOrFolder($fileId)
                       file_name = :file_name
                   WHERE file_id = :file_id';
     $stmt = $db->prepare($sqlUpdate);
-    $stmt->bindValue(':file_id', $fileId, PDO::PARAM_INT);
-    $stmt->bindValue(':deleted_at', $deleted_at, PDO::PARAM_INT);
+    $stmt->bindValue(':deleted_at', NV_CURRENTTIME, PDO::PARAM_INT);
     $stmt->bindValue(':file_path', $newPath, PDO::PARAM_STR);
     $stmt->bindValue(':file_name', $newFileName, PDO::PARAM_STR);
+    $stmt->bindValue(':file_id', $fileId, PDO::PARAM_INT);
     $stmt->execute();
 
     updateLog($row['lev']);
@@ -335,12 +334,11 @@ function checkIfParentIsFolder($lev)
     global $lang_module, $module_data, $db;
     $stmt = $db->query('SELECT is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . intval($lev));
     $data = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($data) {
-        return $data;
-    } else {
+    if (!$data) {
         error_log($lang_module['checkIfParentIsFolder_false'] . intval($lev));
         return 0;
     }
+    return $data;
 }
 
 function compressFiles($fileIds, $zipFilePath)
@@ -405,35 +403,35 @@ function compressFiles($fileIds, $zipFilePath)
         $hasFiles = false;
         foreach ($rows as $row) {
             $realPath = NV_ROOTDIR . $row['file_path'];
-            if (file_exists($realPath)) {
-                $hasFiles = true;
-                if ($row['is_folder']) {
-                    $zipArchive->addEmptyDir(nv_EncString($row['file_name']));
-
-                    $files = new RecursiveIteratorIterator(
-                        new RecursiveDirectoryIterator($realPath),
-                        RecursiveIteratorIterator::LEAVES_ONLY
-                    );
-
-                    foreach ($files as $file) {
-                        if (!$file->isDir()) {
-                            $filePath = $file->getRealPath();
-                            $relativePath = substr($filePath, strlen($realPath) + 1);
-                            $zipArchive->addFile($filePath, nv_EncString($row['file_name']) . '/' . $relativePath);
-                        }
-                    }
-                } else {
-                    $zipArchive->addFile($realPath, nv_EncString($row['file_name']));
-                }
-            } else {
+            if (!file_exists($realPath)) {
                 $zipArchive->close();
                 return ['status' => 'error', 'message' => $lang_module['f_hasnt_exit'] . $realPath];
+            }
+
+            $hasFiles = true;
+            if ($row['is_folder']) {
+                $zipArchive->addEmptyDir(nv_EncString($row['file_name']));
+
+                $files = new RecursiveIteratorIterator(
+                    new RecursiveDirectoryIterator($realPath),
+                    RecursiveIteratorIterator::LEAVES_ONLY
+                );
+
+                foreach ($files as $file) {
+                    if (!$file->isDir()) {
+                        $filePath = $file->getRealPath();
+                        $relativePath = substr($filePath, strlen($realPath) + 1);
+                        $zipArchive->addFile($filePath, nv_EncString($row['file_name']) . '/' . $relativePath);
+                    }
+                }
+            } else {
+                $zipArchive->addFile($realPath, nv_EncString($row['file_name']));
             }
         }
 
         $zipArchive->close();
 
-        if (!$hasFiles) {
+        if ($hasFiles == false) {
             return ['status' => 'error', 'message' => $lang_module['file_invalid']];
         }
 
@@ -441,17 +439,16 @@ function compressFiles($fileIds, $zipFilePath)
             unlink($zipFilePath);
         }
 
-        if (!rename($tmpZipPath, $zipFilePath)) {
+        if (rename($tmpZipPath, $zipFilePath) === false) {
             return ['status' => 'error', 'message' => $lang_module['zip_false'] . $lang_module['cannot_move_zip']];
         }
 
         return ['status' => 'success', 'message' => $lang_module['zip_ok']];
-
     } catch (Exception $e) {
         if (isset($zipArchive) && $zipArchive instanceof ZipArchive) {
             $zipArchive->close();
         }
-        return ['status' => 'error', 'message' => $lang_module['zip_false'] . ' - ' . $e->getMessage()];
+        return ['status' => 'error', 'message' => $lang_module['zip_false']];
     }
 }
 
@@ -500,25 +497,22 @@ function calculateFolderSize($folderId)
     $totalSize = 0;
 
     $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 and lev = ' . $folderId;
-    $files = $db->query($sql)->fetchAll();
+    $result = $db->query($sql);
 
-    $i = 0;
-    while ($i < count($files)) {
-        $file = $files[$i];
+    while ($file = $result->fetch()) {
         if ($file['is_folder'] == 1) {
             $totalSize += calculateFolderSize($file['file_id']);
         } else {
             $totalSize += intval($file['file_size']);
         }
-        $i++;
     }
     return $totalSize;
 }
 
+
 function calculateFileFolderStats($lev)
 {
     global $db, $module_data;
-
     $total_files = 0;
     $total_folders = 0;
     $total_size = 0;
@@ -527,19 +521,16 @@ function calculateFileFolderStats($lev)
     if ($lev !== null) {
         $sql .= ' AND lev = ' . $lev;
     }
-    $files = $db->query($sql)->fetchAll();
-
-    $i = 0;
-    while ($i < count($files)) {
-        $file = $files[$i];
+    $result = $db->query($sql);
+    while ($file = $result->fetch()) {
         if ($file['is_folder'] == 1) {
             $total_folders++;
         } else {
             $total_files++;
         }
         $total_size += intval($file['file_size']);
-        $i++;
     }
+
     return [
         'files' => $total_files,
         'folders' => $total_folders,
@@ -555,7 +546,7 @@ function updateParentFolderSize($folderId)
 
     $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
             SET file_size = :file_size, updated_at = :updated_at 
-            WHERE file_id = :file_id AND is_folder = 1';
+            WHERE file_id = :file_id';
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':file_size', $newSize, PDO::PARAM_INT);
     $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
@@ -655,7 +646,7 @@ function buildFolderTree($user_info, $page_url, $parent_id = 0)
     global $db, $module_data, $lang_module;
     $tree = [];
 
-    if(defined('NV_IS_SPADMIN')) {
+    if (defined('NV_IS_SPADMIN')) {
         $user_info['in_groups'] = [1];
     }
 
@@ -738,7 +729,6 @@ function getAllFileIds($parent_id, &$file_ids)
     global $db, $module_data;
 
     $file_ids[] = $parent_id;
-
     $sql = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
             WHERE lev = ' . $parent_id . ' AND status = 1';
     $result = $db->query($sql);
@@ -810,10 +800,9 @@ function getParentPermissions($parent_id)
         'p_group' => 1,
         'p_other' => 1
     ];
-
 }
 
-function get_user_permission($file_id, $row = array())
+function get_user_permission($file_id, $userid)
 {
     global $module_config, $module_name, $user_info, $module_data, $db;
 
@@ -829,7 +818,7 @@ function get_user_permission($file_id, $row = array())
             if (!empty(array_intersect($user_info['in_groups'], $admin_groups))) {
                 return isset($perm['p_group']) ? intval($perm['p_group']) : 1;
             }
-            if (isset($row['userid']) && $row['userid'] == $user_info['userid']) {
+            if (isset($userid) && $userid == $user_info['userid']) {
                 return 3;
             }
             return isset($perm['p_group']) ? intval($perm['p_group']) : 1;

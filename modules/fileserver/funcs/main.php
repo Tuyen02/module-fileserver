@@ -312,7 +312,7 @@ if (!empty($action)) {
         if ($lev > 0) {
             $parentFileType = checkIfParentIsFolder($lev);
             if ($parentFileType == 0) {
-                nv_jsonOutput([ 'status' => $status, 'message' => $lang_module['cannot_create_file_in_file'], 'refresh_captcha' => true]);
+                nv_jsonOutput(['status' => $status, 'message' => $lang_module['cannot_create_file_in_file'], 'refresh_captcha' => true]);
             }
         }
 
@@ -604,10 +604,11 @@ if (!empty($action)) {
                 nv_jsonOutput(['status' => 'error', 'message' => $lang_module['cannot_get_file_size']]);
             }
 
-            $allFileIds = $fileIds;
+            $allFileIds = [];
             foreach ($fileIds as $fileId) {
-                $allFileIds = array_merge($allFileIds, getAllChildFileIds($fileId));
+                getAllFileIds($fileId, $allFileIds);
             }
+            $allFileIds = array_unique($allFileIds);
             $compressed = implode(',', $allFileIds);
 
             $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files 
