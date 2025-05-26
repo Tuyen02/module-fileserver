@@ -14,13 +14,7 @@ $tmp_dir = '/data/tmp/';
 $import_folder = 'import-file';
 $import_dir = $tmp_dir . $import_folder;
 
-/**
- * Download file from Google Drive URL
- * 
- * @param string $fileUrl URL of file to download
- * @param string $dir Directory to save file
- * @return string|bool Path to downloaded file or false on failure
- */
+
 function downloadFromUrl($fileUrl, $dir = './data/tmp/import-file')
 {
     if (!file_exists($dir)) {
@@ -136,7 +130,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['excel_
     $file_extension = pathinfo($_FILES['excel_file']['name'], PATHINFO_EXTENSION);
 
     if (!in_array($file_extension, ['xlsx', 'xls'])) {
-        $error = 'Chỉ hỗ trợ file Excel (.xlsx hoặc .xls).';
+        $error = $lang_module['supported_file_types'];
     } else {
         $upload_dir = NV_ROOTDIR . $import_dir;
         if (!file_exists($upload_dir)) {
@@ -173,15 +167,14 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['excel_
             $success = $lang_module['import_success'];
             nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['import'], $lang_module['import_file'], (int)$admin_info['userid']);
         } catch (Exception $e) {
-            $error = $lang_module['error'] . $e->getMessage();
+            $error = $lang_module['error'];
         }
 
         unlink($excel_path);
     }
 }
 
-$download = $nv_Request->get_int('download', 'get', 0);
-if ($download == 1) {
+if ($download = $nv_Request->get_int('download', 'get') == 1) {
     $path = '/themes/default/images/fileserver/';
     $sample_file = 'import_file.xlsx';
     $file_path = NV_ROOTDIR . $path . $sample_file;

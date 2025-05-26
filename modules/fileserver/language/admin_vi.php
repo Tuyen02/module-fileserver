@@ -37,7 +37,6 @@ $lang_module['main_title'] = 'Chọn nhóm người được phép truy cập';
 $lang_module['group_user'] = 'Nhóm người dùng';
 $lang_module['choose_group'] = 'Chọn nhóm người dùng';
 $lang_module['submit'] = 'Xác nhận';
-
 $lang_module['error'] = 'Lỗi';
 $lang_module['success'] = 'Thành công';
 $lang_module['stt'] = 'STT';
@@ -102,3 +101,4 @@ $lang_module['update_log_false'] = 'Cập nhật nhật ký thất bại';
 $lang_module['update_config_false'] = 'Cập nhật cấu hình thất bại';
 $lang_module['active'] = 'Hoạt động';
 $lang_module['deactive'] = 'Ngừng hoạt động';
+$lang_module['supported_file_types'] = 'Các định dạng file được hỗ trợ: xlsx, xls';

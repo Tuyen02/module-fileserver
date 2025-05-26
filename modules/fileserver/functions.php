@@ -753,7 +753,7 @@ function getAllFileIds($parent_id, &$file_ids)
 
 function checkChildrenPermissions($folder_id)
 {
-    global $db, $module_data;
+    global $db, $module_data, $user_info;
 
     $sql = 'WITH RECURSIVE folder_tree AS (
         SELECT file_id, file_name, lev, is_folder
@@ -773,7 +773,7 @@ function checkChildrenPermissions($folder_id)
     $restricted_files = [];
 
     while ($row = $result->fetch()) {
-        $permission = get_user_permission($row['file_id']);
+        $permission = get_user_permission($row['file_id'], $user_info['userid']);
         if ($permission <= 2) {
             $restricted_files[] = $row['file_name'];
         }

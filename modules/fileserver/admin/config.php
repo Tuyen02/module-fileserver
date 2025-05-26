@@ -11,6 +11,7 @@ use Elastic\Elasticsearch\ClientBuilder;
 $page_title = $lang_module['config'];
 $message = '';
 $message_type = '';
+$array_config = [];
 
 if ($nv_Request->isset_request('submit', 'post')) {
     $array_config = [
@@ -162,7 +163,6 @@ if ($nv_Request->isset_request('sync_elastic', 'post')) {
     }
 }
 
-$array_config = [];
 $query = $db->query('SELECT config_name, config_value FROM ' . NV_CONFIG_GLOBALTABLE . ' WHERE module = ' . $db->quote($module_name) . ' AND lang = ' . $db->quote(NV_LANG_DATA));
 while ($row = $query->fetch()) {
     $array_config[$row['config_name']] = $row['config_value'];
