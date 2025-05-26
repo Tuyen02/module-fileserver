@@ -248,14 +248,14 @@ function deleteFileOrFolder($fileId)
     $oldParentPath = $fileName;
     $newParentPath = $newFileName;
 
-   if ($isFolder) {
+    if ($isFolder) {
         $children = [];
         $stack = [$fileId];
         while (!empty($stack)) {
             $parent = array_pop($stack);
             $sql = 'SELECT file_id, file_path, lev, is_folder, file_name FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . intval($parent) . ' AND status = 1';
-            $query = $db->query($sql);
-            while ($row = $query->fetch()) {
+            $rows = $db->query($sql)->fetchAll();
+            foreach ($rows as $row) {
                 $children[] = $row;
                 if ($row['is_folder']) {
                     $stack[] = $row['file_id'];
@@ -706,11 +706,24 @@ function getAllFilesAndFolders($folder_id, $base_path)
 
     $items = [];
 
-    $sql = 'SELECT f.*, p.p_group, p.p_other 
-            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
-            LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id
-            WHERE f.lev = ' . $folder_id . ' AND f.status = 1';
+    $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE lev = ' . $folder_id . ' AND status = 1';
     $result = $db->query($sql);
+
+    $permissions = [];
+    $file_ids = [];
+    foreach ($result as $row) {
+        $file_ids[] = $row['file_id'];
+    }
+
+    $result->execute();
+
+    if (!empty($file_ids)) {
+        $sql_perm = 'SELECT file_id, p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id IN (' . implode(',', $file_ids) . ')';
+        $perm_result = $db->query($sql_perm);
+        while ($perm = $perm_result->fetch()) {
+            $permissions[$perm['file_id']] = $perm;
+        }
+    }
 
     while ($row = $result->fetch()) {
         $items[] = $row;
@@ -787,13 +800,11 @@ function getParentPermissions($parent_id)
     $sql = 'SELECT p_group, p_other 
             FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
             WHERE file_id = ' . $parent_id;
-    $result = $db->query($sql);
-    $row = $result->fetch();
-
+    $row = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
     if ($row) {
         return [
-            'p_group' => intval($row['p_group']),
-            'p_other' => intval($row['p_other'])
+            'p_group' => (int)$row['p_group'],
+            'p_other' => (int)$row['p_other']
         ];
     }
     return [

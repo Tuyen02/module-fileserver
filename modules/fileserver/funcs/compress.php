@@ -38,7 +38,7 @@ while ($current_lev > 0) {
     $current_lev = $_row['lev'];
 }
 $breadcrumbs = array_reverse($breadcrumbs);
-$array_mod_title = array_merge($array_mod_title ?? [], $breadcrumbs);
+$array_mod_title = array_merge(isset($array_mod_title) ? $array_mod_title : [], $breadcrumbs);
 
 $status = '';
 $message = '';
@@ -55,7 +55,9 @@ if ($action == 'unzip' && $row['compressed'] != 0) {
                     WHERE f.file_id IN (' . implode(',', array_fill(0, count($compressed_files), '?')) . ')';
             $stmt = $db->prepare($sql);
             $stmt->execute($compressed_files);
-            $unauthorized_files = array_column(array_filter($stmt->fetchAll(), fn($file) => ($is_group_user ? $file['p_group'] : $file['p_other']) < 3), 'file_name');
+            $unauthorized_files = array_column(array_filter($stmt->fetchAll(), function($file) use ($is_group_user) {
+                return ($is_group_user ? $file['p_group'] : $file['p_other']) < 3;
+            }), 'file_name');
 
             if (!empty($unauthorized_files)) {
                 nv_jsonOutput([

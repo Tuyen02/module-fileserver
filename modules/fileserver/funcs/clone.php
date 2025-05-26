@@ -42,10 +42,10 @@ if ($rank > 0) {
 }
 
 $breadcrumbs[] = [
-        'catid' => $row['lev'],
-        'title' => $row['file_name'],
-        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias']
-    ];
+    'catid' => $row['lev'],
+    'title' => $row['file_name'],
+    'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias']
+];
 $current_lev = $row['lev'];
 
 while ($current_lev > 0) {
@@ -63,7 +63,7 @@ while ($current_lev > 0) {
     $current_lev = $_row['lev'];
 }
 $breadcrumbs = array_reverse($breadcrumbs);
-$array_mod_title = array_merge($array_mod_title ?? [], $breadcrumbs);
+$array_mod_title = array_merge(isset($array_mod_title) ? $array_mod_title : [], $breadcrumbs);
 
 $folder_tree = buildFolderTree($user_info, $page_url, 0);
 $selected_folder_path = '';
@@ -86,21 +86,15 @@ if ($copy == 1) {
     } else {
         $sql = 'SELECT file_path, file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $rank;
         $target_folder = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
-        if (!$target_folder) {
+        if (!empty($target_folder)) {
+            $target_url = $target_folder['file_path'];
+            $target_lev = $target_folder['file_id'];
+        } else {
             $message = $lang_module['target_folder_not_found'];
-            $contents = nv_fileserver_clone($file_id, $file_name, $file_path, $status, $message, $selected_folder_path, $view_url, $folder_tree, $base_url);
-            include NV_ROOTDIR . '/includes/header.php';
-            echo nv_site_theme($contents);
-            include NV_ROOTDIR . '/includes/footer.php';
-            exit();
         }
-        $target_url = $target_folder['file_path'];
-        $target_lev = $target_folder['file_id'];
     }
 
-    if (!isset($target_lev)) {
-        $message = $lang_module['target_folder_not_found'];
-    } elseif ($db->query('SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND file_name = ' . $db->quote($file_name) . ' AND lev = ' . $target_lev)->fetchColumn() > 0) {
+    if ($db->query('SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND file_name = ' . $db->quote($file_name) . ' AND lev = ' . $target_lev)->fetchColumn() > 0) {
         $message = $lang_module['f_has_exit'];
     } else {
         $new_file_path = $target_url . '/' . $file_name;
@@ -119,7 +113,7 @@ if ($copy == 1) {
                 $new_file_id = $db->lastInsertId();
                 updateAlias($new_file_id, $file_name);
 
-                if ($use_elastic == 1 && !is_null($client)) {
+                if ($use_elastic == 1 && $client != null) {
                     try {
                         $client->index([
                             'index' => 'fileserver',
@@ -172,16 +166,12 @@ if ($move == 1) {
     } else {
         $sql = 'SELECT file_path, file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $rank;
         $target_folder = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
-        if (!$target_folder) {
+        if (!empty($target_folder)) {
+            $target_url = $target_folder['file_path'];
+            $target_lev = $target_folder['file_id'];
+        } else {
             $message = $lang_module['target_folder_not_found'];
-            $contents = nv_fileserver_clone($file_id, $file_name, $file_path, $status, $message, $selected_folder_path, $view_url, $folder_tree, $base_url);
-            include NV_ROOTDIR . '/includes/header.php';
-            echo nv_site_theme($contents);
-            include NV_ROOTDIR . '/includes/footer.php';
-            exit();
         }
-        $target_url = $target_folder['file_path'];
-        $target_lev = $target_folder['file_id'];
     }
 
     if ($db->query('SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
@@ -202,7 +192,7 @@ if ($move == 1) {
                 $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 $stmt->execute();
 
-                if ($use_elastic == 1 && !is_null($client)) {
+                if ($use_elastic == 1 && $client != null) {
                     try {
                         $client->update([
                             'index' => 'fileserver',

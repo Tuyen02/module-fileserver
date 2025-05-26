@@ -25,8 +25,7 @@ $allow_func = [
 define('NV_IS_FILE_ADMIN', true);
 $trash_dir = '/data/tmp/fileserver_trash';
 
-if (!empty($array_op)) {
-    preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m);
+if (!empty($array_op) && preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m)) {
     $lev = $m[2];
     $file_id = $m[2];
 } else {
@@ -192,12 +191,9 @@ function calculateFileFolderStats($lev)
     $total_size = 0;
 
     $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status =  1 AND lev = ' . $lev;
-    $files = $db->query($sql)->fetchAll();
+    $result = $db->query($sql);
 
-    $i = 0;
-    $count = count($files);
-    while ($i < $count) {
-        $file = $files[$i];
+    while ($file = $result->fetch()) {
         if ($file['is_folder'] == 1) {
             $total_folders++;
             $folder_stats = calculateFileFolderStats($file['file_id']);
@@ -208,7 +204,6 @@ function calculateFileFolderStats($lev)
             $total_files++;
             $total_size += $file['file_size'];
         }
-        $i++;
     }
     return [
         'files' => $total_files,

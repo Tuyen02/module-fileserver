@@ -413,7 +413,7 @@ if (!empty($action)) {
 
         if (!empty($deletedFileIds)) {
             updateLog($lev);
-            nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['deleteAll_btn'], 'File id: ' . implode(',', $deletedFileIds), $admin_info['userid']);
+            nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['deleteAll_btn'], 'File id: ' . implode(',', $deletedFileIds), $user_info['userid']);
             nv_jsonOutput(['status' => 'success', 'message' => $lang_module['delete_ok'], 'redirect' => $page_url]);
         } else {
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['delete_false']]);
