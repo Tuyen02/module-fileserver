@@ -8,8 +8,8 @@
     <!-- END: success -->
 
     <div class="row">
-        <h1 class="col-xs-16">{LANG.list_item_delete}</h1>
-        <form action="" method="get" id="searchForm" class="col-xs-8 form-inline my-2 my-lg-0">
+        <h1 class="col-md-15">{LANG.list_item_delete}</h1>
+        <form action="" method="get" id="searchForm" class="col-md-9 form-inline my-2 my-lg-0">
             <input type="hidden" name="{NV_LANG_VARIABLE}" value="{NV_LANG_DATA}">
             <input type="hidden" name="{NV_NAME_VARIABLE}" value="{MODULE_NAME}">
             <input type="hidden" name="{NV_OP_VARIABLE}" value="recycle_bin">
