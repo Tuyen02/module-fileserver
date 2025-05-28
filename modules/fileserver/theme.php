@@ -153,10 +153,12 @@ function nv_fileserver_clone($row, $reponse, $selected_folder_path, $view_url, $
     $xtpl->assign('SELECTED_FOLDER_PATH', $selected_folder_path);
     $xtpl->assign('url_view', $view_url);
     $xtpl->assign('TREE_HTML', renderFolderTree($folder_tree));
+
     if ($reponse['message']) {
         $xtpl->assign('MESSAGE_CLASS', ($reponse['status'] == 'success') ? 'alert-success' : 'alert-danger');
         $xtpl->parse('main.message');
     }
+
     $xtpl->assign('url_copy', $base_url . '&copy=1');
     $xtpl->assign('url_move', $base_url . '&move=1');
     $xtpl->parse('main');
@@ -209,7 +211,7 @@ function nv_fileserver_edit_img($row, $file_type)
     return $xtpl->text('main');
 }
 
-function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $reponse, $back_url, $current_permission)
+function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $reponse, $current_permission)
 {
     global $module_file, $global_config, $lang_module, $file_types, $allowed_extensions;
 
@@ -219,11 +221,6 @@ function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $rep
     $xtpl->assign('FILE_ID', $file_id);
     $xtpl->assign('FILE_NAME', $file_name);
     $xtpl->assign('url_view', $view_url);
-
-    if (!empty($back_url)) {
-        $xtpl->assign('BACK_URL', $back_url);
-        $xtpl->parse('main.back');
-    }
 
     $can_edit = ($current_permission >= 3 || defined('NV_IS_SPADMIN'));
     $xtpl->assign('DISABLE_CLASS', $can_edit ? '' : 'readonly-editor');

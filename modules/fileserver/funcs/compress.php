@@ -143,9 +143,8 @@ if ($action == 'unzip' && $row['compressed'] != 0) {
     $message = $lang_module['unzip_false'];
 }
 
-$compressed = $row['compressed'];
-if (!empty($compressed)) {
-    $fileIds = explode(',', $compressed);
+if (!empty($row['compressed'])) {
+    $fileIds = explode(',', $row['compressed']);
     if (!empty($fileIds)) {
         $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id IN (' . implode(',', array_fill(0, count($fileIds), '?')) . ')';
         $stmt = $db->prepare($sql);

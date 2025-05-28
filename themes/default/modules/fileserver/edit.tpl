@@ -22,20 +22,20 @@
     }
     #editor {
         height: auto;
-        min-height: 800px;
+        min-height: 500px;
     }
     .CodeMirror {
-        height: 800px !important;
+        height: 500 !important;
         font-size: 14px;
         line-height: 1.6;
     }
     iframe {
         width: 100%;
-        height: 800px;
+        height: 500px;
     }
     textarea {
         width: 100%;
-        height: 800px;
+        height: 500px;
         font-size: 14px;
         line-height: 1.6;
     }
@@ -45,7 +45,7 @@
     }
     .word-content {
         width: 100%;
-        height: 800px;
+        height: 500px;
         border: 1px solid #ccc;
         padding: 20px;
         overflow-y: auto;
@@ -56,10 +56,10 @@
             width: 90%;
         }
         iframe, textarea, .word-content {
-            height: 500px;
+            height: 300px;
         }
         .CodeMirror {
-            height: 500px !important;
+            height: 300px !important;
         }
     }
 </style>

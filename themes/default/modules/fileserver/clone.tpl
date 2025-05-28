@@ -5,7 +5,7 @@
 <div class="container">
     <h3 class="my-2">{LANG.file}: {FILE_NAME}</h3>
     <br>
-    <p class="d-inline-block alert alert-info w-fit">{LANG.target_folder_not_found}</p>
+    <p class="d-inline-block alert alert-info w-fit" id="target-folder-notice" style="display: none;">{LANG.target_folder_not_found}</p>
     <p id="selected-folder-path">{LANG.target_folder} <i class="fa fa-arrow-circle-down" aria-hidden="true"></i>: 
         <span class="text-success"><u><strong>{SELECTED_FOLDER_PATH}</strong></u></span>
     </p>
@@ -49,6 +49,12 @@
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const selectedFolderPath = document.querySelector('#selected-folder-path strong').textContent;
+    const targetFolderNotice = document.getElementById('target-folder-notice');
+    if (!selectedFolderPath || selectedFolderPath.trim() === '') {
+        targetFolderNotice.style.display = 'inline-block';
+    }
+
     document.querySelectorAll('#folder-tree .folder-name').forEach(function(folder) {
         folder.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -66,6 +72,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             document.getElementById('selected-folder-path').innerHTML = 
                 'Thư mục đích: <span class="text-success"><u><strong>' + folderPath + '</strong></u></span>';
+            
+            targetFolderNotice.style.display = 'none';
             
             window.history.pushState({}, '', folderUrl);
             

@@ -49,10 +49,7 @@ if (!empty($row)) {
     $message = $lang_module['f_has_exit'];
 }
 
-$file_name = $row['file_name'];
-$file_path = $row['file_path'];
-$full_path = NV_ROOTDIR . $file_path;
-$file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+$file_extension = pathinfo($row['file_name'], PATHINFO_EXTENSION);
 
 $is_image = in_array($file_extension, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
 $is_video = in_array($file_extension, ['mp4', 'webm', 'ogg']);
