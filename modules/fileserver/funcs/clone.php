@@ -175,11 +175,13 @@ if ($move == 1) {
     }
 
     if ($db->query('SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                    WHERE status = 1 AND file_name = ' . $db->quote($file_name) . ' AND lev = ' . $target_lev . ' AND file_id != ' . $file_id)->fetchColumn() > 0) {
+                    WHERE status = 1 AND file_name = ' . $db->quote($file_name) . ' AND lev = ' . $target_lev . ' AND file_id = ' . $file_id)->fetchColumn() > 0) {
         $message = $lang_module['f_has_exit'];
     } else {
         $new_file_path = $target_url . '/' . $file_name;
-        if (rename($full_path, NV_ROOTDIR . $new_file_path)) {
+        if (file_exists(NV_ROOTDIR . $new_file_path)) {
+            $message = $lang_module['f_has_exit'];
+        } elseif (rename($full_path, NV_ROOTDIR . $new_file_path)) {
             $db->beginTransaction();
             try {
                 $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
@@ -231,7 +233,12 @@ if ($move == 1) {
     }
 }
 
-$contents = nv_fileserver_clone($row, $status, $message, $selected_folder_path, $view_url, $folder_tree, $base_url);
+$reponse = [
+    'status' => $status,
+    'message' => $message,
+];
+
+$contents = nv_fileserver_clone($row, $reponse, $selected_folder_path, $view_url, $folder_tree, $base_url);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

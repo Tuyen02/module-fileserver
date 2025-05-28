@@ -20,6 +20,8 @@ if (empty($row) || $row['is_folder'] == 1) {
     nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
 }
 
+$current_permission = get_user_permission($file_id, $row['uploaded_by']);
+
 if ($row['lev'] > 0) {
     $sql = 'SELECT lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $row['lev'];
     $parent = $db->query($sql)->fetch();
@@ -226,9 +228,12 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
         $message = $lang_module['no_changes'];
     }
 }
-$current_permission = get_user_permission($file_id, $row['uploaded_by']);
+$reponse = [
+    'status' => $status,
+    'message' => $message,
+];
 
-$contents = nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $status, $message, $back_url, $current_permission);
+$contents = nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $reponse, $back_url, $current_permission);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

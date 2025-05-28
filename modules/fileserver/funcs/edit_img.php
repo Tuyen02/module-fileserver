@@ -60,7 +60,14 @@ $is_audio = in_array($file_extension, ['mp3', 'wav', 'ogg']);
 $is_powerpoint = in_array($file_extension, ['ppt', 'pptx']);
 
 $row['file_path'] = NV_BASE_SITEURL . ltrim($row['file_path'], '/');
-$contents = nv_fileserver_edit_img($row, $is_image, $is_video, $is_audio, $is_powerpoint);
+$file_type = [
+    'is_image' => $is_image,
+    'is_video' => $is_video,
+    'is_audio' => $is_audio,
+    'is_powerpoint' => $is_powerpoint,
+];
+
+$contents = nv_fileserver_edit_img($row, $file_type);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

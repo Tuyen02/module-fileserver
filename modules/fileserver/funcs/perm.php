@@ -131,8 +131,12 @@ $perm = [
     'p_group' => $group_level,
     'p_other' => $other_level,
 ];
+$reponse = [
+    'status' => $status,
+    'message' => $message,
+];
 
-$contents = nv_fileserver_perm($row, $perm, $status, $message, $back_url);
+$contents = nv_fileserver_perm($row, $perm, $reponse, $back_url);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

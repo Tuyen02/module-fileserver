@@ -161,9 +161,13 @@ if(empty($list)){
 
 $tree = buildTree($list);
 $tree_html = displayTree($tree);
-
+$reponse = [
+    'status' => $status,
+    'message' => $message,
+];
 $current_permission = get_user_permission($lev, $row['uploaded_by']);
-$contents = nv_fileserver_compress($row, $list, $status, $message, $tree_html,$current_permission);
+
+$contents = nv_fileserver_compress($row, $list, $reponse, $tree_html,$current_permission);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

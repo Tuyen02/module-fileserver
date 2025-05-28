@@ -108,9 +108,16 @@ if ($use_elastic == 1) {
     }
 }
 
-$allowed_extensions = ['txt', 'xlsx', 'xls', 'html', 'css'];
+$allowed_extensions = ['txt', 'html', 'css'];
 $editable_extensions = ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql', 'doc', 'docx', 'xls', 'xlsx'];
 $viewable_extensions = ['png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'ppt', 'pptx'];
+$file_types = [
+    'text' => ['txt', 'html', 'css'],
+    'pdf' => ['pdf'],
+    'docx' => ['doc', 'docx'],
+    'excel' => ['xls', 'xlsx']
+];
+
 $base_dir = '/uploads/' . $module_name;
 $tmp_dir = '/data/tmp/';
 $trash_dir = $tmp_dir . '' . $module_name . '_trash';
@@ -178,7 +185,10 @@ function suggestNewName($lev, $baseName, $extension, $is_folder = null)
 {
     global $db, $module_data;
     $i = 1;
-    while (true) {
+    do {
+        if ($i <= 0) {
+            $i = 1;
+        }
         $suggestedName = $baseName . '_' . $i;
         if ($extension) {
             $suggestedName .= '.' . $extension;
@@ -197,11 +207,8 @@ function suggestNewName($lev, $baseName, $extension, $is_folder = null)
         }
         $stmt->execute();
         $count = $stmt->fetchColumn();
-        if ($count == 0) {
-            break;
-        }
         $i++;
-    }
+    } while ($count > 0);
     return $suggestedName;
 }
 
@@ -212,7 +219,7 @@ function deleteFileOrFolder($fileId)
     $sql = 'SELECT file_id, file_path, lev, is_folder, file_name, lev FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
     $row = $db->query($sql)->fetch();
 
-    if (!is_array($row) || empty($row)) {
+    if (empty($row)) {
         return false;
     }
 
@@ -296,6 +303,7 @@ function deleteFileOrFolder($fileId)
             $sqlUpdateChild = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
                              SET status = 0,
                                  deleted_at = :deleted_at,
+                                 elastic = 0,
                                  file_path = :file_path,
                                  file_name = :file_name
                              WHERE file_id = :file_id';
@@ -400,7 +408,6 @@ function compressFiles($fileIds, $zipFilePath)
             return ['status' => 'error', 'message' => $lang_module['cannot_find_file']];
         }
 
-        $hasFiles = false;
         foreach ($rows as $row) {
             $realPath = NV_ROOTDIR . $row['file_path'];
             if (!file_exists($realPath)) {
@@ -408,7 +415,6 @@ function compressFiles($fileIds, $zipFilePath)
                 return ['status' => 'error', 'message' => $lang_module['f_hasnt_exit'] . $realPath];
             }
 
-            $hasFiles = true;
             if ($row['is_folder']) {
                 $zipArchive->addEmptyDir(nv_EncString($row['file_name']));
 
@@ -430,10 +436,6 @@ function compressFiles($fileIds, $zipFilePath)
         }
 
         $zipArchive->close();
-
-        if ($hasFiles == false) {
-            return ['status' => 'error', 'message' => $lang_module['file_invalid']];
-        }
 
         if (file_exists($zipFilePath)) {
             unlink($zipFilePath);
@@ -571,7 +573,7 @@ function updateLog($lev)
         $lev = 0;
     }
 
-    $stats = calculateFileFolderStats($lev);
+    $stats = calculateFileFolderStats(intval($lev));
 
     $sqlInsert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_stats 
                   (lev, total_files, total_folders, total_size, log_time) 
@@ -590,19 +592,6 @@ function updateLog($lev)
     $stmtInsert->bindValue(':log_time', NV_CURRENTTIME, PDO::PARAM_INT);
 
     return $stmtInsert->execute();
-}
-
-function getAllChildFileIds($fileId)
-{
-    global $module_data, $db;
-    $childFileIds = [];
-    $sql = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev =' . intval($fileId);
-    $result = $db->query($sql);
-    while ($row = $result->fetch()) {
-        $childFileIds[] = $row['file_id'];
-        $childFileIds = array_merge($childFileIds, getAllChildFileIds($row['file_id']));
-    }
-    return $childFileIds;
 }
 
 function buildTree($list)
@@ -803,8 +792,8 @@ function getParentPermissions($parent_id)
     $row = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
     if ($row) {
         return [
-            'p_group' => (int)$row['p_group'],
-            'p_other' => (int)$row['p_other']
+            'p_group' => (int) $row['p_group'],
+            'p_other' => (int) $row['p_other']
         ];
     }
     return [
