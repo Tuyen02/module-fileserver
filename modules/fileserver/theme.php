@@ -42,16 +42,16 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
         foreach ($result as $row) {
             if ($logs) {
                 $row['total_size'] = isset($logs[$row['lev']]['total_size']) ? nv_convertfromBytes($logs[$row['lev']]['total_size']) : '0 B';
-                $row['total_files'] = $logs[$row['lev']]['total_files'] ?? 0;
-                $row['total_folders'] = $logs[$row['lev']]['total_folders'] ?? 0;
+                $row['total_files'] = isset($logs[$row['lev']]['total_files']) ? $logs[$row['lev']]['total_files'] : 0;
+                $row['total_folders'] = isset($logs[$row['lev']]['total_folders']) ? $logs[$row['lev']]['total_folders'] : 0;
             }
             $row['created_at'] = date('d/m/Y H:i:s', $row['created_at']);
             $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
             $row['icon_class'] = getFileIconClass($row);
 
             if ($permissions) {
-                $row['p_group'] = $permissions[$row['file_id']]['p_group'] ?? 1;
-                $row['p_other'] = $permissions[$row['file_id']]['p_other'] ?? 1;
+                $row['p_group'] = isset($permissions[$row['file_id']]['p_group']) ? $permissions[$row['file_id']]['p_group'] : 1;
+                $row['p_other'] = isset($permissions[$row['file_id']]['p_other']) ? $permissions[$row['file_id']]['p_other'] : 1;
             }
 
             $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
@@ -165,27 +165,30 @@ function nv_fileserver_clone($row, $reponse, $selected_folder_path, $view_url, $
     return $xtpl->text('main');
 }
 
-function nv_fileserver_compress($row, $list, $reponse, $tree_html, $current_permission)
+function nv_fileserver_compress($row, $list, $reponse, $tree_html, $current_permission, $can_unzip)
 {
     global $module_file, $global_config, $lang_module;
     $xtpl = new XTemplate('compress.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
     $xtpl->assign('FILE_NAME', $row['file_name']);
 
-    if ($list && (defined('NV_IS_SPADMIN') || $current_permission == 3)) {
-        $xtpl->parse('main.can_unzip');
-    }
-
-    if ($list) {
-        $xtpl->assign('TREE_HTML', $tree_html);
-        $xtpl->parse('main.tree_html');
-    }
-
     if ($reponse['message']) {
         $xtpl->assign('MESSAGE_CLASS', ($reponse['status'] == 'success') ? 'alert-success' : 'alert-danger');
         $xtpl->assign('MESSAGE', $reponse['message']);
         $xtpl->parse('main.message');
     }
+
+    if (!empty($list)) {
+        $xtpl->assign('TREE_HTML', $tree_html);
+        $xtpl->parse('main.tree_html');
+    } else {
+        $xtpl->parse('main.no_content');
+    }
+
+    if ($can_unzip && (defined('NV_IS_SPADMIN') || $current_permission == 3)) {
+        $xtpl->parse('main.can_unzip');
+    }
+
     $xtpl->parse('main');
     return $xtpl->text('main');
 }

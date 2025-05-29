@@ -176,4 +176,5 @@ $lang_module['zip_read'] = 'Lỗi đọc file zip';
 $lang_module['zip_seek'] = 'Lỗi tìm kiếm file zip';
 $lang_module['unknow_error'] = 'Lỗi không xác định';
 $lang_module['cannot_move_zip'] = ' - Không thể di chuyển file zip';
+$lang_module['not_compressed_file'] = 'Không có file được nén';
 

@@ -100,15 +100,16 @@ if ($move == 1 || $copy == 1) {
         } else {
             $new_file_path = $target_url . '/' . $file_name;
 
-            if ($move == 1) {
-                if (file_exists(NV_ROOTDIR . $new_file_path)) {
-                    if (md5_file($full_path) === md5_file(NV_ROOTDIR . $new_file_path)) {
-                        $message = $lang_module['no_changes'];
-                    } else {
-                        unlink(NV_ROOTDIR . $new_file_path);
-                    }
+            if (file_exists(NV_ROOTDIR . $new_file_path)) {
+                if (md5_file($full_path) === md5_file(NV_ROOTDIR . $new_file_path)) {
+                    $message = $lang_module['no_changes'];
+                } else {
+                    unlink(NV_ROOTDIR . $new_file_path);
                 }
-                
+            }
+
+            if ($move == 1) {
+
                 if ($message == '') {
                     if (rename($full_path, NV_ROOTDIR . $new_file_path)) {
                         $db->beginTransaction();
@@ -128,7 +129,7 @@ if ($move == 1 || $copy == 1) {
 
                                 $sql = 'DELETE FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $file_id;
                                 $db->query($sql);
-                                
+
                                 $file_id = $check_fileid;
                             } else {
                                 $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
@@ -181,14 +182,7 @@ if ($move == 1 || $copy == 1) {
                     }
                 }
             } else {
-                if (file_exists(NV_ROOTDIR . $new_file_path)) {
-                    if (md5_file($full_path) === md5_file(NV_ROOTDIR . $new_file_path)) {
-                        $message = $lang_module['no_changes'];
-                    } else {
-                        unlink(NV_ROOTDIR . $new_file_path);
-                    }
-                }
-                
+
                 if ($message == '') {
                     if (copy($full_path, NV_ROOTDIR . $new_file_path)) {
                         $check_fileid = $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
@@ -196,7 +190,7 @@ if ($move == 1 || $copy == 1) {
 
                         if ($check_fileid > 0) {
                             $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                            SET file_size = :file_size, elastic = 0, updated_at = ' . NV_CURRENTTIME .' 
+                            SET file_size = :file_size, elastic = 0, updated_at = ' . NV_CURRENTTIME . ' 
                             WHERE file_id = ' . $check_fileid;
                             $stmt = $db->prepare($sql);
                         } else {

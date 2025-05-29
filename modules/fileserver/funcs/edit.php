@@ -43,7 +43,7 @@ while ($current_lev > 0) {
     $current_lev = $_row['lev'];
 }
 $breadcrumbs = array_reverse($breadcrumbs);
-$array_mod_title = array_merge($array_mod_title ?? [], $breadcrumbs);
+$array_mod_title = array_merge(isset($array_mod_title) ? $array_mod_title : [], $breadcrumbs);
 
 $view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '&lev=' . $row['lev'];
 
