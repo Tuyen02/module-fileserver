@@ -76,7 +76,7 @@ if (empty($row['compressed'])) {
         $stmt = $db->prepare($sql);
         $stmt->execute($fileIds);
         $list = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         if (!empty($list)) {
             $can_unzip = true;
         } else {
@@ -89,17 +89,17 @@ if (empty($row['compressed'])) {
 if ($action == 'unzip' && $can_unzip) {
     $zipFilePath = NV_ROOTDIR . $row['file_path'];
     if (!file_exists($zipFilePath)) {
-        $response = [
+        nv_jsonOutput([
             'status' => 'error',
             'message' => $lang_module['file_not_found']
-        ];
+        ]);
     } else {
         $file_size = filesize($zipFilePath);
         if ($file_size > 104857600) { // 100MB
-            $response = [
+            nv_jsonOutput([
                 'status' => 'error',
                 'message' => $lang_module['file_too_large']
-            ];
+            ]);
         } else {
             if (!defined('NV_IS_SPADMIN')) {
                 $compressed_files = explode(',', $row['compressed']);
@@ -125,11 +125,11 @@ if ($action == 'unzip' && $can_unzip) {
                     $result = [];
                     foreach ($files as $file) {
                         $file_id = $file['file_id'];
-                        $permission = array_filter($permissions, function($p) use ($file_id) {
+                        $permission = array_filter($permissions, function ($p) use ($file_id) {
                             return $p['file_id'] == $file_id;
                         });
                         $permission = reset($permission);
-                        
+
                         $result[] = [
                             'file_name' => $file['file_name'],
                             'p_group' => $permission ? $permission['p_group'] : null,
@@ -142,10 +142,10 @@ if ($action == 'unzip' && $can_unzip) {
                     }), 'file_name');
 
                     if (!empty($unauthorized_files)) {
-                        $response = [
+                        nv_jsonOutput([
                             'status' => 'error',
                             'message' => $lang_module['folder_has_restricted_items'] . ': ' . implode(', ', $unauthorized_files)
-                        ];
+                        ]);
                     }
                 }
             }
@@ -169,10 +169,10 @@ if ($action == 'unzip' && $can_unzip) {
 
                 $zipArchive = new ZipArchive();
                 if ($zipArchive->open($zipFilePath) !== true) {
-                    $response = [
+                    nv_jsonOutput([
                         'status' => 'error',
                         'message' => $lang_module['cannot_open_zip']
-                    ];
+                    ]);
                 } else {
                     $numFiles = $zipArchive->numFiles;
                     $processedNames = [];
@@ -197,10 +197,10 @@ if ($action == 'unzip' && $can_unzip) {
                     }
 
                     if (!$zipArchive->extractTo($extractTo)) {
-                        $response = [
+                        nv_jsonOutput([
                             'status' => 'error',
                             'message' => $lang_module['extract_failed']
-                        ];
+                        ]);
                     } else {
                         $zipArchive->close();
 
@@ -227,19 +227,15 @@ if ($action == 'unzip' && $can_unzip) {
 
                         nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['unzip'], 'File id: ' . $new_id, $user_info['userid']);
 
-                        $response = [
+                        nv_jsonOutput([
                             'status' => 'success',
                             'message' => $lang_module['unzip_ok'],
                             'redirect' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main']
-                        ];
+                        ]);
                     }
                 }
             }
         }
-    }
-
-    if (isset($response)) {
-        nv_jsonOutput($response);
     }
 }
 
@@ -247,8 +243,9 @@ $tree = buildTree($list);
 $tree_html = displayTree($tree);
 $reponse = [
     'status' => $status,
-    'message' => $message,
+    'message' => $message
 ];
+
 
 $contents = nv_fileserver_compress($row, $list, $reponse, $tree_html, $current_permission, $can_unzip);
 
