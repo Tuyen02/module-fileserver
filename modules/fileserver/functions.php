@@ -331,7 +331,7 @@ function deleteFileOrFolder($fileId)
     $stmt->bindValue(':file_id', $fileId, PDO::PARAM_INT);
     $stmt->execute();
 
-    updateLog($row['lev']);
+    updateStat($row['lev']);
     updateParentFolderSize($row['lev']);
 
     return true;
@@ -555,7 +555,7 @@ function updateParentFolderSize($folderId)
     $stmt->bindValue(':file_id', $folderId, PDO::PARAM_INT);
     $stmt->execute();
 
-    updateLog($folderId);
+    updateStat($folderId);
 
     $sql = 'SELECT lev FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $folderId;
     $parentId = $db->query($sql)->fetchColumn();
@@ -565,7 +565,7 @@ function updateParentFolderSize($folderId)
     }
 }
 
-function updateLog($lev)
+function updateStat($lev)
 {
     global $db, $module_data;
 

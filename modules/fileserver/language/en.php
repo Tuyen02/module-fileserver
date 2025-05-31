@@ -102,7 +102,7 @@ $lang_module['choose_folder'] = 'Choose folder';
 $lang_module['file_extension_not_allowed'] = 'File extension not allowed. List of allowed extensions: docx, pdf, png, mp3, mp4, ...';
 $lang_module['copy_or_move'] = 'Copy or move';
 $lang_module['target_folder_not_found'] = 'Please select a destination folder below before proceeding.';
-
+$lang_module['select_target_folder'] = 'Please select a destination folder before proceeding.';
 $lang_module['compress'] = 'Compress';
 
 $lang_module['edit_img'] = 'Edit image';

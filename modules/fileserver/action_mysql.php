@@ -34,7 +34,7 @@ $sql_create_module[] = 'CREATE TABLE ' . $db_config['prefix'] . '_' . $lang . '_
     is_folder TINYINT(2) NOT NULL DEFAULT 1,
     status TINYINT(4) NOT NULL DEFAULT 1,
     lev TINYINT(4) NOT NULL DEFAULT 0,
-    compressed VARCHAR(50) NOT NULL DEFAULT 0,
+    compressed text NOT NULL DEFAULT 0,
     elastic INT(11) NOT NULL DEFAULT 0,
     PRIMARY KEY (file_id),
    UNIQUE KEY alias (alias)

@@ -196,7 +196,7 @@ if (empty($status) && $nv_Request->get_int('file_id', 'post') > 0) {
         $stmt->bindValue(':elastic', 0, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
-            updateLog($row['lev']);
+            updateStat($row['lev']);
             nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['edit'], 'File id: ' . $file_id, $user_info['userid']);
 
             if ($row['lev'] > 0) {

@@ -314,10 +314,19 @@ function calculateFolderSize($folderId)
 {
     global $db, $module_data;
 
-    $sql = 'SELECT SUM(file_size) as total_size 
-            FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-            WHERE lev = ' . $folderId . ' AND status = 1';
-    return $db->query($sql)->fetchColumn();
+    $totalSize = 0;
+
+    $sql = 'SELECT file_id, is_folder, file_size FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND lev = ' . $folderId;
+    $result = $db->query($sql);
+
+    while ($file = $result->fetch()) {
+        if ($file['is_folder'] == 1) {
+            $totalSize += calculateFolderSize($file['file_id']);
+        } else {
+            $totalSize += intval($file['file_size']);
+        }
+    }
+    return $totalSize;
 }
 
 function updateParentFolderSize($folderId)
@@ -354,6 +363,10 @@ function restoreFileOrFolder($fileId)
 
     if (empty($row) || $row['status'] == 1) {
         return false;
+    }
+
+    if ($row['lev'] > 0) {
+        updateParentFolderSize($row['lev']);
     }
 
     $deleted_at = $row['deleted_at'];
@@ -533,11 +546,12 @@ function restoreFileOrFolder($fileId)
     $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
     $stmt->execute();
 
-    updateParentFolderSize($row['lev']);
     nv_insert_logs(NV_LANG_DATA, $module_name, 'Restore from trash', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
 
     return true;
 }
+
+
 
 
 // function pr($a)

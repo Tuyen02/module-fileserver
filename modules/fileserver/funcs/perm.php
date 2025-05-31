@@ -36,28 +36,6 @@ if (!empty($row_perm)) {
     $row['p_other'] = 0;
 }
 
-if ($row['lev'] > 0) {
-    $sql = 'SELECT lev, alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $row['lev'];
-    $stmt = $db->prepare($sql);
-    $stmt->execute();
-    $parent = $stmt->fetch();
-    
-    if ($parent) {
-        $back_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name;
-        if ($parent['lev'] > 0) {
-            $sql = 'SELECT alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $parent['lev'];
-            $stmt = $db->prepare($sql);
-            $stmt->execute();
-            $parent_alias = $stmt->fetchColumn();
-            
-            if ($parent_alias) {
-                $op = $module_info['alias']['main'];
-                $back_url .= '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $parent_alias;
-            }
-        }
-    }
-}
-
 $base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
 
 $breadcrumbs[] = [
@@ -153,7 +131,7 @@ $reponse = [
     'message' => $message,
 ];
 
-$contents = nv_fileserver_perm($row, $perm, $reponse, $back_url);
+$contents = nv_fileserver_perm($row, $perm, $reponse);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

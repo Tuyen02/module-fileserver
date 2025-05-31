@@ -178,7 +178,7 @@ function nv_fileserver_compress($row, $list, $reponse, $tree_html, $current_perm
         $xtpl->parse('main.message');
     }
 
-    if (!empty($list)) {
+    if (!empty($tree_html)) {
         $xtpl->assign('TREE_HTML', $tree_html);
         $xtpl->parse('main.tree_html');
     } else {
@@ -256,17 +256,13 @@ function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $rep
     return $xtpl->text('main');
 }
 
-function nv_fileserver_perm($row, $perm, $reponse, $back_url)
+function nv_fileserver_perm($row, $perm, $reponse)
 {
     global $module_file, $global_config, $lang_module;
     $xtpl = new XTemplate('perm.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
     $xtpl->assign('FILE_NAME', $row['file_name']);
     $xtpl->assign('FILE_PATH', $row['file_path']);
-    if ($back_url) {
-        $xtpl->assign('BACK_URL', $back_url);
-        $xtpl->parse('main.back');
-    }
     $xtpl->assign('GROUP_LEVEL_1', $perm['p_group'] == 1 ? 'selected' : '');
     $xtpl->assign('GROUP_LEVEL_2', $perm['p_group'] == 2 ? 'selected' : '');
     $xtpl->assign('GROUP_LEVEL_3', $perm['p_group'] == 3 ? 'selected' : '');

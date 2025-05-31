@@ -6,7 +6,9 @@
 <h1>Nội dung file nén: {FILE_NAME}</h1>
 
 <!-- BEGIN: tree_html -->
-<div class="tree well">{TREE_HTML}</div>
+<div class="tree well">
+    {TREE_HTML}
+</div>
 <!-- END: tree_html -->
 
 <!-- BEGIN: no_content -->
