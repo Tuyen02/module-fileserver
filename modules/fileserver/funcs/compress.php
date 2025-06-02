@@ -23,10 +23,6 @@ $permission_info = $stmt_permission->fetch();
 
 $row = array_merge($file_info, $permission_info ?: ['p_group' => null, 'p_other' => null]);
 
-if (empty($row)) {
-    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
-}
-
 $current_permission = get_user_permission($lev, $row['uploaded_by']);
 
 if ($current_permission < 3) {
@@ -70,9 +66,8 @@ if (empty($row['compressed'])) {
     
 } else {
     $compressed_data = json_decode($row['compressed'], true);
-    if (json_last_error() === JSON_ERROR_NONE && isset($compressed_data['tree_html']) && isset($compressed_data['file_ids'])) {
+    if (isset($compressed_data['tree_html'])) {
         $tree_html = $compressed_data['tree_html'];
-        $file_ids = $compressed_data['file_ids'];
         
         $zipFilePath = NV_ROOTDIR . $row['file_path'];
         if (file_exists($zipFilePath)) {
@@ -123,58 +118,6 @@ if ($action == 'unzip' && $can_unzip) {
             'status' => 'error',
             'message' => $lang_module['file_too_large']
         ]);
-    }
-
-    if (!defined('NV_IS_SPADMIN')) {
-        $compressed_data = json_decode($row['compressed'], true);
-        if (json_last_error() == JSON_ERROR_NONE && isset($compressed_data['file_ids'])) {
-            $compressed_files = $compressed_data['file_ids'];
-            if (!empty($compressed_files)) {
-                $compressed_placeholders = [];
-                for ($i = 0; $i < count($compressed_files); $i++) {
-                    $compressed_placeholders[] = '?';
-                }
-                $compressed_placeholders_str = implode(',', $compressed_placeholders);
-
-                $sql_files = 'SELECT file_id, file_name FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                            WHERE file_id IN (' . $compressed_placeholders_str . ')';
-                $stmt_files = $db->prepare($sql_files);
-                $stmt_files->execute($compressed_files);
-                $files = $stmt_files->fetchAll(PDO::FETCH_ASSOC);
-
-                $sql_permissions = 'SELECT file_id, p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions 
-                                WHERE file_id IN (' . $compressed_placeholders_str . ')';
-                $stmt_permissions = $db->prepare($sql_permissions);
-                $stmt_permissions->execute($compressed_files);
-                $permissions = $stmt_permissions->fetchAll(PDO::FETCH_ASSOC);
-
-                $result = [];
-                foreach ($files as $file) {
-                    $file_id = $file['file_id'];
-                    $permission = array_filter($permissions, function ($p) use ($file_id) {
-                        return $p['file_id'] == $file_id;
-                    });
-                    $permission = reset($permission);
-
-                    $result[] = [
-                        'file_name' => $file['file_name'],
-                        'p_group' => $permission ? $permission['p_group'] : null,
-                        'p_other' => $permission ? $permission['p_other'] : null
-                    ];
-                }
-
-                $unauthorized_files = array_column(array_filter($result, function ($file) {
-                    return $file['p_group'] < 3;
-                }), 'file_name');
-
-                if (!empty($unauthorized_files)) {
-                    nv_jsonOutput([
-                        'status' => 'error',
-                        'message' => $lang_module['folder_has_restricted_items'] . ': ' . implode(', ', $unauthorized_files)
-                    ]);
-                }
-            }
-        }
     }
 
     $parent_dir = dirname($row['file_path']);
@@ -251,30 +194,16 @@ if ($action == 'unzip' && $can_unzip) {
     addToDatabase($extractTo, $new_id);
 
     $compressed_data = json_decode($row['compressed'], true);
-    if (json_last_error() === JSON_ERROR_NONE && isset($compressed_data['file_ids'])) {
-        $file_ids = $compressed_data['file_ids'];
-        if (!empty($file_ids)) {
-            $sql = 'SELECT file_id, compressed FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                    WHERE file_id IN (' . implode(',', $file_ids) . ')';
+    foreach ($compressed_data as $key => $value) {
+        if ($key !== 'tree_html') {
+            $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
+                        SET compressed = :compressed 
+                        WHERE file_path LIKE :path AND file_name = :file_name';
             $stmt = $db->prepare($sql);
+            $stmt->bindParam(':compressed', $value, PDO::PARAM_STR);
+            $stmt->bindValue(':path', $new_path . '/%', PDO::PARAM_STR);
+            $stmt->bindParam(':file_name', $key, PDO::PARAM_STR);
             $stmt->execute();
-            $original_files = $stmt->fetchAll();
-
-            foreach ($original_files as $original_file) {
-                if (!empty($original_file['compressed'])) {
-                    $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                            SET compressed = :compressed 
-                            WHERE file_path LIKE :path AND file_name = (
-                                SELECT file_name FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                                WHERE file_id = :file_id
-                            )';
-                    $stmt = $db->prepare($sql);
-                    $stmt->bindParam(':compressed', $original_file['compressed'], PDO::PARAM_STR);
-                    $stmt->bindValue(':path', $new_path . '/%', PDO::PARAM_STR);
-                    $stmt->bindParam(':file_id', $original_file['file_id'], PDO::PARAM_INT);
-                    $stmt->execute();
-                }
-            }
         }
     }
 

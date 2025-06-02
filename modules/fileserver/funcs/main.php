@@ -603,10 +603,17 @@ if (!empty($action)) {
 
             $tree = buildTree($list);
             $tree_html = displayTree($tree);
-            $compressed = json_encode([
-                'file_ids' => $allFileIds,
-                'tree_html' => $tree_html
-            ]);
+            
+            $compressed = [];
+            foreach ($fileIds as $fileId) {
+                $sql = 'SELECT file_name, compressed FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
+                $row = $db->query($sql)->fetch();
+                if ($row && !empty($row['compressed'])) {
+                    $compressed[$row['file_name']] = $row['compressed'];
+                }
+            }
+            $compressed['tree_html'] = $tree_html;
+            $compressed = json_encode($compressed);
 
             $compressResult = compressFiles($fileIds, $zipFullPath);
             if ($compressResult['status'] == 'success') {

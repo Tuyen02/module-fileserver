@@ -66,44 +66,51 @@ $breadcrumbs = array_reverse($breadcrumbs);
 $array_mod_title = array_merge(isset($array_mod_title) ? $array_mod_title : [], $breadcrumbs);
 $folder_tree = buildFolderTree($user_info, $page_url, 0);
 
-if ($rank > 0) {
-    $lev = $rank;
-    $base_url .= '&rank=' . $rank;
-    $sql = 'SELECT file_name, file_path, file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $rank;
-    $target_folder = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
-    $selected_folder_path = $target_folder['file_name'];
-    if (!empty($target_folder)) {
-        $target_url = $target_folder['file_path'];
-        $target_lev = $target_folder['file_id'];
-        $permissions = $db->query('SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $target_lev)
-            ->fetch(PDO::FETCH_ASSOC);
-    } 
-} elseif ($root == 1) {
+$target_lev = 0;
+$target_url = '';
+$selected_folder_path = '';
+$permissions = ['p_group' => 3, 'p_other' => 3];
+
+if ($root == 1) {
     $lev = 0;
     $base_url .= '&root=1';
     $selected_folder_path = $lang_module['root'];
     $target_url = $base_dir;
-    $target_lev = 0;
-    $permissions = ['p_group' => 3, 'p_other' => 3];
+} elseif ($rank > 0) {
+    $lev = $rank;
+    $base_url .= '&rank=' . $rank;
+    $sql = 'SELECT file_name, file_path, file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $rank;
+    $target_folder = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
+    if (!empty($target_folder)) {
+        $selected_folder_path = $target_folder['file_name'];
+        $target_url = $target_folder['file_path'];
+        $target_lev = $target_folder['file_id'];
+        $permissions = $db->query('SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $target_lev)
+            ->fetch(PDO::FETCH_ASSOC);
+    }
 }
 
-if (($move == 1 || $copy == 1) && $message == '') {
-    if (empty($target_lev)) {
+if (($move == 1 || $copy == 1)) {
+    if (empty($target_url)) {
         $message = $lang_module['target_folder_not_found'];
+        goto end_process;
     }
+
     $new_file_path = $target_url . '/' . $file_name;
 
     if (file_exists(NV_ROOTDIR . $new_file_path)) {
         if (md5_file($full_path) === md5_file(NV_ROOTDIR . $new_file_path)) {
             $message = $lang_module['no_changes'];
+            goto end_process;
         } else {
             unlink(NV_ROOTDIR . $new_file_path);
         }
     }
 
-    if ($move == 1 && $message == '') {
+    if ($move == 1) {
         if (!file_exists($full_path)) {
             $message = $lang_module['file_not_found'];
+            goto end_process;
         }
         if (rename($full_path, NV_ROOTDIR . $new_file_path)) {
             $db->beginTransaction();
@@ -156,7 +163,6 @@ if (($move == 1 || $copy == 1) && $message == '') {
                     }
                 }
 
-
                 nv_insert_logs(NV_LANG_DATA, $module_name, 'move', $action_note, $user_info['userid']);
                 if ($target_lev > 0) {
                     updateParentFolderSize($target_lev);
@@ -175,7 +181,7 @@ if (($move == 1 || $copy == 1) && $message == '') {
             }
         }
     } else {
-        if ($message == '' && copy($full_path, NV_ROOTDIR . $new_file_path)) {
+        if (copy($full_path, NV_ROOTDIR . $new_file_path)) {
             $check_fileid = $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
                         WHERE status = 1 AND file_name = ' . $db->quote($file_name) . ' AND lev = ' . $target_lev)->fetchColumn();
 
@@ -250,6 +256,7 @@ if (($move == 1 || $copy == 1) && $message == '') {
     }
 }
 
+end_process:
 $reponse = [
     'status' => $status,
     'message' => $message,
