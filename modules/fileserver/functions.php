@@ -456,7 +456,7 @@ function compressFiles($fileIds, $zipFilePath)
 
 function addToDatabase($dir, $parent_id = 0)
 {
-    global $module_data, $db;
+    global $module_data, $db, $user_info;
 
     $files = scandir($dir);
     foreach ($files as $file) {
@@ -470,8 +470,8 @@ function addToDatabase($dir, $parent_id = 0)
         $created_at = NV_CURRENTTIME;
 
         $insert_sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                       (file_name, file_path, file_size, is_folder, created_at, lev, compressed, elastic) 
-                       VALUES (:file_name, :file_path, :file_size, :is_folder, :created_at, :lev, 0, 0)';
+                       (file_name, file_path, file_size, is_folder, created_at, lev, compressed, elastic, uploaded_by) 
+                       VALUES (:file_name, :file_path, :file_size, :is_folder, :created_at, :lev, 0, 0, :uploaded_by)';
         $insert_stmt = $db->prepare($insert_sql);
         $file_name = basename($filePath);
         $relativePath = str_replace(NV_ROOTDIR, '', $filePath);
@@ -481,6 +481,7 @@ function addToDatabase($dir, $parent_id = 0)
         $insert_stmt->bindParam(':is_folder', $isFolder, PDO::PARAM_INT);
         $insert_stmt->bindValue(':created_at', $created_at, PDO::PARAM_INT);
         $insert_stmt->bindParam(':lev', $parent_id, PDO::PARAM_INT);
+        $insert_stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_INT);
         $insert_stmt->execute();
 
         $file_id = $db->lastInsertId();
@@ -944,3 +945,8 @@ function getFileIconClass($file)
         }
     }
 }
+
+// function pr($a)
+// {
+//     exit('<pre><code>' . htmlspecialchars(print_r($a, true)) . '</code></pre>');
+// }

@@ -179,14 +179,15 @@ if ($action == 'unzip' && $can_unzip) {
     $parent_id = $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_path = ' . $db->quote($parent_dir) . ' AND is_folder = 1 AND status = 1')->fetchColumn() ?: 0;
 
     $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-            (file_name, file_path, file_size, is_folder, compressed, created_at, lev) 
-            VALUES (:new_name, :new_path, :file_size, 1, 0, :created_at, :lev)';
+            (file_name, file_path, file_size, is_folder, compressed, created_at, lev, uploaded_by) 
+            VALUES (:new_name, :new_path, :file_size, 1, 0, :created_at, :lev, :uploaded_by)';
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':new_name', $new_name, PDO::PARAM_STR);
     $stmt->bindParam(':new_path', $new_path, PDO::PARAM_STR);
     $stmt->bindParam(':file_size', $file_size_zip, PDO::PARAM_INT);
     $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
     $stmt->bindValue(':lev', $parent_id, PDO::PARAM_INT);
+    $stmt->bindValue(':uploaded_by', $user_info['userid'], PDO::PARAM_INT);
     $stmt->execute();
 
     $new_id = $db->lastInsertId();

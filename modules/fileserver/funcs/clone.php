@@ -126,7 +126,7 @@ if (($move == 1 || $copy == 1)) {
                     $stmt->bindParam(':file_size', $row['file_size'], PDO::PARAM_INT);
                     $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                     $stmt->execute();
-                    $action_note = 'Replace file_id: ' . $file_id . ' to ' . $rank;
+                    $action_note = 'Replace file_id: ' . $file_id . ' to ' . $check_fileid;
 
                     $db->exec('UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET status = 0 WHERE file_id = ' . $file_id);
                     $file_id = $check_fileid;
@@ -140,7 +140,7 @@ if (($move == 1 || $copy == 1)) {
                     $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
                     $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                     $stmt->execute();
-                    $action_note = 'Move file_id: ' . $file_id;
+                    $action_note = 'Move file_id: ' . $file_id . ' to ' . $target_lev;
                 }
 
                 if ($use_elastic == 1 && $client != null) {
@@ -190,7 +190,7 @@ if (($move == 1 || $copy == 1)) {
                             SET file_size = :file_size, elastic = 0, updated_at = ' . NV_CURRENTTIME . ' 
                             WHERE file_id = ' . $check_fileid;
                 $stmt = $db->prepare($sql);
-                $action_note = 'Replace file_id: ' . $file_id . ' to ' . $rank;
+                $action_note = 'Replace file_id: ' . $file_id . ' to ' . $check_fileid;
             } else {
                 $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev) 
                         VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)';
@@ -200,12 +200,12 @@ if (($move == 1 || $copy == 1)) {
                 $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_INT);
                 $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 $stmt->bindParam(':lev', $target_lev, PDO::PARAM_INT);
+                $action_note = 'Copy file_id: ' . $file_id . ' to ' . $rank;
             }
 
             $stmt->bindParam(':file_size', $row['file_size'], PDO::PARAM_INT);
 
             if ($stmt->execute()) {
-                $action_note = 'Copy file_id: ' . $file_id . ' to ' . $check_fileid;
                 $new_file_id = $db->lastInsertId();
                 updateAlias($new_file_id, $file_name);
 
