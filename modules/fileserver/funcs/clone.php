@@ -8,20 +8,21 @@ $rank = $nv_Request->get_int('rank', 'get', 0);
 $copy = $nv_Request->get_int('copy', 'get', 0);
 $move = $nv_Request->get_int('move', 'get', 0);
 $root = $nv_Request->get_int('root', 'get', 0);
-$page = $nv_Request->get_int('page', 'get', 1);
 
 $sql = 'SELECT file_id, file_name, file_path, file_size, is_folder, lev, alias, uploaded_by FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE is_folder != 1 AND file_id = ' . $file_id;
 $row = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
 
+$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name;
+
 if (empty($row)) {
-    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
+    nv_redirect_location($base_url);
 }
 
 if (!defined('NV_IS_SPADMIN')) {
     $is_group_user = !empty($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
     $current_permission = get_user_permission($lev, $row['uploaded_by']);
     if ($current_permission < 3 || empty($user_info)) {
-        nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
+        nv_redirect_location($base_url);
     }
 }
 
@@ -30,9 +31,8 @@ $file_path = $row['file_path'];
 $full_path = NV_ROOTDIR . $file_path;
 $lev = $row['lev'];
 
-$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
-$page_url = $base_url;
-$view_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '/' . $row['alias'] . '-lev=' . $lev;
+$page_url = $base_url . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
+$view_url = $base_url . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '/' . $row['alias'] . '-lev=' . $lev;
 
 $selected_folder_path = '';
 $status = 'error';
@@ -44,7 +44,7 @@ $target_url = '';
 $breadcrumbs[] = [
     'catid' => $row['lev'],
     'title' => $row['file_name'],
-    'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias']
+    'link' => $page_url
 ];
 $current_lev = $row['lev'];
 
@@ -58,12 +58,12 @@ while ($current_lev > 0) {
     $breadcrumbs[] = [
         'catid' => $current_lev,
         'title' => $_row['file_name'],
-        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $_row['alias']
+        'link' => $base_url . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $_row['alias']
     ];
     $current_lev = $_row['lev'];
 }
 $breadcrumbs = array_reverse($breadcrumbs);
-$array_mod_title = array_merge(isset($array_mod_title) ? $array_mod_title : [], $breadcrumbs);
+$array_mod_title =  $breadcrumbs;
 $folder_tree = buildFolderTree($user_info, $page_url, 0);
 
 $target_lev = 0;
@@ -98,20 +98,20 @@ if (($move == 1 || $copy == 1)) {
 
     $new_file_path = $target_url . '/' . $file_name;
 
+    if (!file_exists($full_path)) {
+        $message = $lang_module['file_not_found'];
+        goto end_process;
+    }
+
     if (file_exists(NV_ROOTDIR . $new_file_path)) {
         if (md5_file($full_path) === md5_file(NV_ROOTDIR . $new_file_path)) {
             $message = $lang_module['no_changes'];
             goto end_process;
-        } else {
-            unlink(NV_ROOTDIR . $new_file_path);
         }
+        unlink(NV_ROOTDIR . $new_file_path);
     }
 
     if ($move == 1) {
-        if (!file_exists($full_path)) {
-            $message = $lang_module['file_not_found'];
-            goto end_process;
-        }
         if (rename($full_path, NV_ROOTDIR . $new_file_path)) {
             $db->beginTransaction();
             try {
@@ -164,13 +164,9 @@ if (($move == 1 || $copy == 1)) {
                 }
 
                 nv_insert_logs(NV_LANG_DATA, $module_name, 'move', $action_note, $user_info['userid']);
-                if ($target_lev > 0) {
-                    updateParentFolderSize($target_lev);
-                }
                 if ($row['lev'] > 0) {
                     updateParentFolderSize($row['lev']);
                 }
-                updateStat($target_lev);
 
                 $db->commit();
                 $status = 'success';
@@ -244,16 +240,16 @@ if (($move == 1 || $copy == 1)) {
                 }
 
                 nv_insert_logs(NV_LANG_DATA, $module_name, 'copy', $action_note, $user_info['userid']);
-                if ($target_lev > 0) {
-                    updateParentFolderSize($target_lev);
-                }
-                updateStat($target_lev);
 
                 $status = 'success';
                 $message = $lang_module['copy_ok'];
             }
         }
     }
+    if ($target_lev > 0) {
+        updateParentFolderSize($target_lev);
+    }
+    updateStat($target_lev);
 }
 
 end_process:

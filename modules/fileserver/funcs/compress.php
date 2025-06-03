@@ -21,7 +21,11 @@ $stmt_permission = $db->prepare($sql_permission);
 $stmt_permission->execute();
 $permission_info = $stmt_permission->fetch();
 
-$row = array_merge($file_info, $permission_info ?: ['p_group' => null, 'p_other' => null]);
+if (empty($permission_info)) {
+    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
+}
+
+$row = array_merge($file_info, $permission_info);
 
 $current_permission = get_user_permission($lev, $row['uploaded_by']);
 
@@ -52,18 +56,16 @@ while ($current_lev > 0) {
 }
 
 $breadcrumbs = array_reverse($breadcrumbs);
-$array_mod_title = array_merge(isset($array_mod_title) ? $array_mod_title : [], $breadcrumbs);
+$array_mod_title =  $breadcrumbs;
 
-$status = '';
+$status = 'error';
 $message = '';
 $list = [];
 $file_size_zip = 0;
 $can_unzip = false;
 
 if (empty($row['compressed'])) {
-    $status = 'error';
     $message = $lang_module['not_compressed_file'];
-    
 } else {
     $compressed_data = json_decode($row['compressed'], true);
     if (isset($compressed_data['tree_html'])) {
@@ -89,16 +91,14 @@ if (empty($row['compressed'])) {
                 
                 $zipArchive->close();
                 $can_unzip = true;
+                $status = '';
             } else {
-                $status = 'error';
                 $message = $lang_module['cannot_open_zip'];
             }
         } else {
-            $status = 'error';
             $message = $lang_module['file_not_found'];
         }
     } else {
-        $status = 'error';
         $message = $lang_module['invalid_compressed_data'];
     }
 }
@@ -176,7 +176,7 @@ if ($action == 'unzip' && $can_unzip) {
     $zipArchive->close();
 
     $file_size_zip = $file_size;
-    $parent_id = $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_path = ' . $db->quote($parent_dir) . ' AND is_folder = 1 AND status = 1')->fetchColumn() ?: 0;
+    $parent_id = $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_path = ' . $db->quote($parent_dir) . ' AND is_folder = 1 AND status = 1')->fetchColumn();
 
     $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files 
             (file_name, file_path, file_size, is_folder, compressed, created_at, lev, uploaded_by) 

@@ -201,14 +201,8 @@ function nv_fileserver_edit_img($row, $file_type)
     $xtpl->assign('FILE_ID', $row);
     $xtpl->assign('FILE_NAME', $row['file_name']);
     $xtpl->assign('FILE_PATH', $row['file_path']);
-    if ($file_type['is_audio']) {
-        $xtpl->parse('main.audio');
-    } elseif ($file_type['is_video']) {
-        $xtpl->parse('main.video');
-    } elseif ($file_type['is_image']) {
-        $xtpl->parse('main.img');
-    } elseif ($file_type['is_powerpoint']) {
-        $xtpl->parse('main.powerpoint');
+    if (!empty($file_type)) {
+        $xtpl->parse('main.' . $file_type);
     }
     $xtpl->parse('main');
     return $xtpl->text('main');
