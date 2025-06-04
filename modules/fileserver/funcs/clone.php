@@ -33,7 +33,6 @@ $lev = $row['lev'];
 
 $page_url = $base_url . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
 $view_url = $base_url . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '/' . $row['alias'] . '-lev=' . $lev;
-
 $selected_folder_path = '';
 $status = 'error';
 $message = '';
@@ -54,11 +53,10 @@ while ($current_lev > 0) {
     if (empty($_row)) {
         break;
     }
-    $op = $_row['is_folder'] == 1 ? $module_info['alias']['main'] : $op;
     $breadcrumbs[] = [
         'catid' => $current_lev,
         'title' => $_row['file_name'],
-        'link' => $base_url . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $_row['alias']
+        'link' => $base_url . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '/' . $_row['alias']
     ];
     $current_lev = $_row['lev'];
 }
@@ -76,6 +74,7 @@ if ($root == 1) {
     $base_url .= '&root=1';
     $selected_folder_path = $lang_module['root'];
     $target_url = $base_dir;
+    $alias = '';
 } elseif ($rank > 0) {
     $lev = $rank;
     $base_url .= '&rank=' . $rank;
@@ -88,6 +87,7 @@ if ($root == 1) {
         $permissions = $db->query('SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $target_lev)
             ->fetch(PDO::FETCH_ASSOC);
     }
+    $alias = change_alias($selected_folder_path . '_' . $target_lev);
 }
 
 if (($move == 1 || $copy == 1)) {
@@ -250,6 +250,7 @@ if (($move == 1 || $copy == 1)) {
         updateParentFolderSize($target_lev);
     }
     updateStat($target_lev);
+    nv_redirect_location($base_url . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '/' . $alias);
 }
 
 end_process:

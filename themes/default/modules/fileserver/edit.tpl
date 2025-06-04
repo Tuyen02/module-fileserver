@@ -25,9 +25,11 @@
         min-height: 500px;
     }
     .CodeMirror {
-        height: 500 !important;
+        height: 500px !important;
         font-size: 14px;
         line-height: 1.6;
+        border: 1px solid #ddd;
+        border-radius: 4px;
     }
     iframe {
         width: 100%;
@@ -122,11 +124,17 @@
     });
     const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
         lineNumbers: true,
-        mode: 'css',
+        mode: 'htmlmixed',
         theme: 'monokai',
         readOnly: {READONLY},
         lineWrapping: true,
-        viewportMargin: Infinity
+        viewportMargin: Infinity,
+        autoCloseTags: true,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        indentUnit: 4,
+        tabSize: 4,
+        indentWithTabs: false
     });
 
     function changeMode() {

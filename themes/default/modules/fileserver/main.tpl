@@ -24,10 +24,10 @@
     <form action="" method="post" enctype="multipart/form-data" id="uploadForm" class="form-inline my-2 my-lg-0">
         <!-- BEGIN: can_create -->
         <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">{LANG.create_btn}</a>
-        <button type="button" class="btn btn-primary" id="uploadButton">{LANG.upload_btn}</button>
+        <button type="button" class="btn btn-success" id="uploadButton">{LANG.upload_btn}</button>
         <!-- END: can_create -->
         <!-- BEGIN: back -->
-        <a href="{BACK_URL}" class="btn btn-info">
+        <a href="{BACK_URL}" class="btn btn btn-info">
             <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
         </a>
         <!-- END: back -->
