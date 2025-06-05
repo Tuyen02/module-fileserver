@@ -60,6 +60,7 @@
                         <button type="button" class="btn btn-info" id="sync_elastic_btn" onclick="syncElastic()" disabled>
                             <i class="fa fa-refresh"></i> {LANG.sync_elastic}
                         </button>
+                        <span class="text_middle">{LANG.sync_elastic_desc}</span>
                     </td>
                 </tr>
             </tbody>
