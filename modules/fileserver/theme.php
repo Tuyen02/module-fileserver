@@ -71,16 +71,16 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
 
             $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
             $xtpl->assign('DOWNLOAD', $row['url_download']);
-            $xtpl->parse('main.file_row.download');
+            $xtpl->parse('main.has_data.file_row.download');
 
             $view_urls = [];
             $is_zip_uncompressed = (strtolower($fileInfo) == 'zip' && empty($row['compressed']));
 
             if (defined('NV_IS_SPADMIN') || $current_permission == 3) {
-                $xtpl->parse('main.file_row.delete');
-                $xtpl->parse('main.file_row.rename');
+                $xtpl->parse('main.has_data.file_row.delete');
+                $xtpl->parse('main.has_data.file_row.rename');
                 if (defined('NV_IS_SPADMIN'))
-                    $xtpl->parse('main.file_row.share');
+                    $xtpl->parse('main.has_data.file_row.share');
                 if (!$row['is_folder']) {
                     $view_urls[] = $row['url_edit'];
                     if ($row['compressed'] || $is_zip_uncompressed) {
@@ -88,12 +88,12 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
                     }
                     if (in_array($fileInfo, $editable_extensions)) {
                         $xtpl->assign('EDIT', $row['url_edit']);
-                        $xtpl->parse('main.file_row.edit');
+                        $xtpl->parse('main.has_data.file_row.edit');
                     } elseif (in_array($fileInfo, $viewable_extensions)) {
                         $view_urls[] = $row['url_edit_img'];
                     }
                     $xtpl->assign('COPY', $row['url_clone']);
-                    $xtpl->parse('main.file_row.copy');
+                    $xtpl->parse('main.has_data.file_row.copy');
                 } else {
                     $view_urls[] = $row['url_view'];
                 }
@@ -115,20 +115,21 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
 
             foreach ($view_urls as $view_url) {
                 $xtpl->assign('VIEW', $view_url);
-                $xtpl->parse('main.file_row.view');
+                $xtpl->parse('main.has_data.file_row.view');
             }
-            $xtpl->parse('main.file_row');
+            $xtpl->parse('main.has_data.file_row');
         }
         if (defined('NV_IS_SPADMIN')) {
-            $xtpl->parse('main.stats');
+            $xtpl->parse('main.has_data.stats');
         }
         if ($show_create_buttons) {
-            $xtpl->parse('main.can_compress');
-            $xtpl->parse('main.can_delete_all');
+            $xtpl->parse('main.has_data.can_compress');
+            $xtpl->parse('main.has_data.can_delete_all');
         }
+        $xtpl->parse('main.has_data');
     }
 
-    if (!empty($module_config[$module_name]['use_captcha'])) {
+    if (!empty($module_config[$module_name]['captcha_type'])) {
         $xtpl->assign('GFX_WIDTH', NV_GFX_WIDTH);
         $xtpl->assign('GFX_HEIGHT', NV_GFX_HEIGHT);
         $xtpl->assign('NV_BASE_SITEURL', NV_BASE_SITEURL);

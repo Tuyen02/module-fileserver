@@ -16,7 +16,7 @@ $array_config = [];
 if ($nv_Request->isset_request('submit', 'post')) {
     $array_config = [
         'use_elastic' => $nv_Request->get_int('use_elastic', 'post', 0),
-        'use_captcha' => $nv_Request->get_int('use_captcha', 'post', 0)
+        // 'use_captcha' => $nv_Request->get_int('use_captcha', 'post', 0)
     ];
 
     if ($array_config['use_elastic']) {
@@ -176,7 +176,7 @@ $xtpl->assign('NV_OP_VARIABLE', NV_OP_VARIABLE);
 $xtpl->assign('MODULE_NAME', $module_name);
 $xtpl->assign('OP', $op);
 $xtpl->assign('CONFIG', $array_config);
-$xtpl->assign('USE_CAPTCHA_CHECKED', $array_config['use_captcha'] == 1 ? ' checked="checked"' : '');
+// $xtpl->assign('USE_CAPTCHA_CHECKED', $array_config['use_captcha'] == 1 ? ' checked="checked"' : '');
 
 if ($message != '') {
     $xtpl->assign('MESSAGE', $message);

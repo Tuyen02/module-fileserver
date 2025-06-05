@@ -53,6 +53,7 @@ $error = '';
 $success = '';
 $admin_info['allow_files_type'][] = 'text';
 
+
 if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['uploadfile']) && is_uploaded_file($_FILES['uploadfile']['tmp_name'])) {
     $file_extension = strtolower(pathinfo($_FILES['uploadfile']['name'], PATHINFO_EXTENSION));
     if ($file_extension == 'zip') {
@@ -290,7 +291,7 @@ if (!empty($action)) {
             nv_jsonOutput(['status' => $status, 'message' => $lang_module['file_name_empty'], 'refresh_captcha' => true]);
         }
 
-        if ($module_config[$module_name]['use_captcha'] == 1) {
+        if ($module_config[$module_name]['captcha_type'] == 'captcha' || $module_config[$module_name]['captcha_type'] == 'recaptcha') {
             $fcaptcha = $nv_Request->get_title('fcode', 'post', '');
             if (empty($fcaptcha) || !nv_capcha_txt($fcaptcha, 'captcha')) {
                 nv_jsonOutput(['status' => $status, 'message' => $lang_global['securitycodeincorrect'], 'refresh_captcha' => true]);
@@ -778,8 +779,7 @@ if (!empty($action)) {
     nv_jsonOutput(['status' => $status, 'message' => $mess]);
 }
 
-$download = $nv_Request->get_int('download', 'get', 0);
-if ($download == 1) {
+if ($nv_Request->get_int('download', 'get', 0) == 1) {
     $file_id = $nv_Request->get_int('file_id', 'get', 0);
     $token = $nv_Request->get_title('token', 'get', '');
 

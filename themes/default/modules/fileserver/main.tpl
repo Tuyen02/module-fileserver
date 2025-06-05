@@ -8,6 +8,7 @@
     <!-- BEGIN: success -->
     <div class="alert alert-success">{SUCCESS}</div>
     <!-- END: success -->
+    <div class="d-flex align-items-center flex-wrap">
     <form action="" method="get" id="searchForm" class="form-inline my-2 my-lg-0">
         <input type="hidden" name="lev" value="{ROW.lev}">
         <input type="text" class="form-control" placeholder="{LANG.search}" id="searchInput" name="search"
@@ -35,8 +36,10 @@
         <input type="hidden" name="lev" id="lev" value="{ROW.lev}">
         <input type="hidden" name="submit_upload" value="1">
     </form>
+    </div>  
 
     <hr>
+    <!-- BEGIN: has_data -->
     <table class="table table-hover">
         <thead class="thead-dark">
             <tr>
@@ -48,11 +51,6 @@
             </tr>
         </thead>
         <tbody>
-            <!-- BEGIN: no_data -->
-            <tr>
-                <td colspan="5" class="text-center">{LANG.no_data}</td>
-            </tr>
-            <!-- END: no_data -->
             <!-- BEGIN: file_row -->
             <tr>
                 <td>
@@ -137,6 +135,12 @@
         <i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}
     </button>
     <!-- END: can_delete_all -->
+    <!-- END: has_data -->
+    <!-- BEGIN: no_data -->
+    <div class="text-center">
+        <p><i class="fa fa-info-circle"></i> {LANG.no_data}</p>
+    </div>
+    <!-- END: no_data -->
 </div>
 <div class="text-center">{GENERATE_PAGE}</div>
 

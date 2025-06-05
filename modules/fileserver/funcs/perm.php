@@ -50,13 +50,15 @@ while ($current_lev > 0) {
     $breadcrumbs[] = [
         'catid' => $current_lev,
         'title' => $_row['file_name'],
-        'link' => $page_url
+        'link' => $base_url . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $_row['alias']
     ];  
     $current_lev = $_row['lev'];
 }
 
 $breadcrumbs = array_reverse($breadcrumbs);
-$array_mod_title = array_merge(isset($array_mod_title) ? $array_mod_title : [], $breadcrumbs);
+foreach ($breadcrumbs as $breadcrumb) {
+    $array_mod_title[] = $breadcrumb;
+}
 
 if ($nv_Request->isset_request('submit', 'post')) {
     $group_permission = $nv_Request->get_int('group_permission', 'post', 0);

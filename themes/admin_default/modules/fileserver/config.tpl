@@ -5,13 +5,17 @@
 </div>
 <!-- END: message -->
 <form action="{NV_BASE_ADMINURL}index.php?{NV_NAME_VARIABLE}={MODULE_NAME}&{NV_OP_VARIABLE}={OP}" method="post">
-    <div class="table-responsive">
+    <!-- <div class="table-responsive">
         <table class="table table-striped table-bordered table-hover">
             <caption>{LANG.config}</caption>
+            <colgroup>
+                <col style="width: 40%" />
+                <col style="width: 60%" />
+            </colgroup>
             <tbody>
-                <tr class="row">
-                    <td class="col-sm-6">{LANG.use_captcha}</td>
-                    <td class="col-sm-18">
+                <tr>
+                    <td>{LANG.use_captcha}</td>
+                    <td>
                         <label>
                             <input type="checkbox" name="use_captcha" id="use_captcha" value="1"
                                 {USE_CAPTCHA_CHECKED} />
@@ -20,10 +24,14 @@
                 </tr>
             </tbody>
         </table>
-    </div>
+    </div> -->
     <div class="table-responsive">
         <table class="table table-striped table-bordered table-hover">
             <caption>{LANG.config_elastic}</caption>
+             <colgroup>
+                                <col style="width: 40%" />
+                                <col style="width: 60%" />
+                            </colgroup>
             <tbody>
                 <tr>
                     <td>{LANG.use_elastic}</td>

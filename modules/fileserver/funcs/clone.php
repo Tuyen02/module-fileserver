@@ -60,8 +60,12 @@ while ($current_lev > 0) {
     ];
     $current_lev = $_row['lev'];
 }
+
 $breadcrumbs = array_reverse($breadcrumbs);
-$array_mod_title =  $breadcrumbs;
+foreach ($breadcrumbs as $breadcrumb) {
+    $array_mod_title[] = $breadcrumb;
+}
+
 $folder_tree = buildFolderTree($user_info, $page_url, 0);
 
 $target_lev = 0;

@@ -6,10 +6,7 @@ if (!defined('NV_SYSTEM')) {
 
 define('NV_IS_MOD_FILESERVER', true);
 
-require 'vendor/autoload.php';
-
 use Elastic\Elasticsearch\ClientBuilder;
-
 $use_elastic = $module_config['fileserver']['use_elastic'];
 
 $client = null;
@@ -165,6 +162,12 @@ if (!defined('NV_IS_SPADMIN')) {
     }
 }
 
+/**
+ * Cập nhật alias cho file
+ * @param int $file_id ID của file
+ * @param string $file_name Tên của file
+ * @return bool True nếu cập nhật thành công, false nếu có lỗi
+ */
 function updateAlias($file_id, $file_name)
 {
     global $db, $module_data, $lang_module;

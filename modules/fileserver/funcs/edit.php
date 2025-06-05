@@ -41,16 +41,18 @@ while ($current_lev > 0) {
     if (empty($_row)) {
         break;
     }
-    $op = $_row['is_folder'] == 1 ? $module_info['alias']['main'] : $op;
+    $op =  $module_info['alias']['main'] ;
     $breadcrumbs[] = [
         'catid' => $current_lev,
         'title' => $_row['file_name'],
-        'link' => $page_url
+        'link' => $base_url . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $_row['alias']
     ];
     $current_lev = $_row['lev'];
 }
 $breadcrumbs = array_reverse($breadcrumbs);
-$array_mod_title = $breadcrumbs;
+foreach ($breadcrumbs as $breadcrumb) {
+    $array_mod_title[] = $breadcrumb;
+}
 
 $view_url = $base_url . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '&lev=' . $row['lev'];
 
@@ -152,7 +154,7 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
                 }
             }
         } elseif (in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
-            $file_content = $nv_Request->get_string('file_content', 'post');
+            $file_content = $nv_Request->get_string('file_content', 'post', '', 0); 
             $old_md5 = md5(trim($old_content));
             $new_md5 = md5(trim($file_content));
             $has_changes = ($old_md5 !== $new_md5);
