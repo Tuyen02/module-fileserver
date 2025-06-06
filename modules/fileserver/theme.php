@@ -4,7 +4,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
-function nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page)
+function nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page, $tree_html)
 {
     global $module_file, $global_config, $lang_module, $module_name, $module_config, $lang_global, $editable_extensions, $viewable_extensions, $op;
 
@@ -17,6 +17,7 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
     $xtpl->assign('SELECTED_FILE', $selected['file']);
     $xtpl->assign('SELECTED_FOLDER', $selected['folder']);
     $xtpl->assign('GENERATE_PAGE', $generate_page);
+    $xtpl->assign('TREE', $tree_html);
 
     if (!empty($back_url)) {
         $xtpl->assign('BACK_URL', $back_url);

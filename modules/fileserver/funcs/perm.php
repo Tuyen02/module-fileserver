@@ -25,9 +25,13 @@ if (empty($row)) {
 $status = '';
 $message = '';
 
-$current_permission = get_user_permission($file_id, $row['uploaded_by']);
-$row['p_group'] = $current_permission;
-$row['p_other'] = $current_permission;
+$sql_perm = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
+$stmt_perm = $db->prepare($sql_perm);
+$stmt_perm->execute();
+$row_perm = $stmt_perm->fetch();
+
+$row['p_group'] = $row_perm ? $row_perm['p_group'] : 1;
+$row['p_other'] = $row_perm ? $row_perm['p_other'] : 1;
 
 $breadcrumbs[] = [
     'catid' => $row['lev'],

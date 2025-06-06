@@ -9,132 +9,150 @@
     <div class="alert alert-success">{SUCCESS}</div>
     <!-- END: success -->
     <div class="d-flex align-items-center flex-wrap">
-    <form action="" method="get" id="searchForm" class="form-inline my-2 my-lg-0">
-        <input type="hidden" name="lev" value="{ROW.lev}">
-        <input type="text" class="form-control" placeholder="{LANG.search}" id="searchInput" name="search"
-            value="{SEARCH_TERM}">
-        <select class="form-control ml-2" name="search_type">
-            <option value="all" {SELECTED_ALL}>{LANG.all}</option>
-            <option value="file" {SELECTED_FILE}>{LANG.file}</option>
-            <option value="folder" {SELECTED_FOLDER}>{LANG.folder}</option>
-        </select>
-        <button type="submit" class="btn btn-primary ml-2">{LANG.search_btn}</button>
-    </form>
+        <form action="" method="get" id="searchForm" class="form-inline my-2 my-lg-0">
+            <input type="hidden" name="lev" value="{ROW.lev}">
+            <input type="text" class="form-control" placeholder="{LANG.search}" id="searchInput" name="search"
+                value="{SEARCH_TERM}">
+            <select class="form-control ml-2" name="search_type">
+                <option value="all" {SELECTED_ALL}>{LANG.all}</option>
+                <option value="file" {SELECTED_FILE}>{LANG.file}</option>
+                <option value="folder" {SELECTED_FOLDER}>{LANG.folder}</option>
+            </select>
+            <button type="submit" class="btn btn-primary ml-2">{LANG.search_btn}</button>
+        </form>
 
-    <br>
-    <form action="" method="post" enctype="multipart/form-data" id="uploadForm" class="form-inline my-2 my-lg-0">
-        <!-- BEGIN: can_create -->
-        <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">{LANG.create_btn}</a>
-        <button type="button" class="btn btn-success" id="uploadButton">{LANG.upload_btn}</button>
-        <!-- END: can_create -->
-        <!-- BEGIN: back -->
-        <a href="{BACK_URL}" class="btn btn btn-info">
-            <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
-        </a>
-        <!-- END: back -->
-        <input type="file" name="uploadfile" id="uploadfile" required style="display: none;">
-        <input type="hidden" name="lev" id="lev" value="{ROW.lev}">
-        <input type="hidden" name="submit_upload" value="1">
-    </form>
-    </div>  
+        <br>
+        <form action="" method="post" enctype="multipart/form-data" id="uploadForm" class="form-inline my-2 my-lg-0">
+            <!-- BEGIN: can_create -->
+            <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">{LANG.create_btn}</a>
+            <button type="button" class="btn btn-success" id="uploadButton">{LANG.upload_btn}</button>
+            <!-- END: can_create -->
+            <!-- BEGIN: back -->
+            <a href="{BACK_URL}" class="btn btn btn-info">
+                <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
+            </a>
+            <!-- END: back -->
+            <input type="file" name="uploadfile" id="uploadfile" required style="display: none;">
+            <input type="hidden" name="lev" id="lev" value="{ROW.lev}">
+            <input type="hidden" name="submit_upload" value="1">
+        </form>
+    </div>
 
     <hr>
     <!-- BEGIN: has_data -->
-    <table class="table table-hover">
-        <thead class="thead-dark">
-            <tr>
-                <th scope="col"><input class="form-check-input" type="checkbox" value="" id="defaultCheck1"></th>
-                <th scope="col">{LANG.f_name}</th>
-                <th scope="col">{LANG.f_size}</th>
-                <th scope="col">{LANG.created_at}</th>
-                <th scope="col">{LANG.option}</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- BEGIN: file_row -->
-            <tr>
-                <td>
-                    <input type="checkbox" name="files[]" value="{ROW.file_id}" data-checksess="{ROW.checksess}">
-                </td>
-                <td>
-                    <a href="{VIEW}">
-                        <i class="fa {ROW.icon_class}" aria-hidden="true"></i>
-                        {ROW.file_name}
-                    </a>
-                </td>
-                <td>{ROW.file_size}</td>
-                <td>{ROW.created_at}</td>
-                <td>
-                    <!-- BEGIN: delete -->
-                    <button class="btn btn-sm btn-danger delete" data-file-id="{ROW.file_id}"
-                        data-checksess="{CHECK_SESS}" data-url="{ROW.url_delete}" title="{LANG.delete_btn}">
-                        <i class="fa fa-trash-o"></i>
-                    </button>
-                    <!-- END: delete -->
+    <div class="row">
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="tree">
+                {TREE}
+            </div>
+        </div>
+        <div class="col-md-18 col-lg-20">
+            <table class="table table-hover">
+                <thead class="thead-dark">
+                    <tr>
+                        <th scope="col"><input class="form-check-input" type="checkbox" value="" id="defaultCheck1">
+                        </th>
+                        <th scope="col">{LANG.f_name}</th>
+                        <th scope="col">{LANG.f_size}</th>
+                        <th scope="col">{LANG.created_at}</th>
+                        <th scope="col">{LANG.option}</th>
+                    </tr>
+                </thead>
+                <colgroup>
+                    <col style="width: 3%;">
+                    <col style="width: 40%;">
+                    <col style="width: 12%;">
+                    <col style="width: 12%;">
+                    <col style="width: 32%;">
+                </colgroup>
+                <tbody>
+                    <!-- BEGIN: file_row -->
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="files[]" value="{ROW.file_id}"
+                                data-checksess="{ROW.checksess}">
+                        </td>
+                        <td class="text-break" style="max-width:220px; word-break:break-all;">
+                            <a href="{VIEW}">
+                                <i class="fa {ROW.icon_class}" aria-hidden="true"></i>
+                                {ROW.file_name}
+                            </a>
+                        </td>
+                        <td>{ROW.file_size}</td>
+                        <td>{ROW.created_at}</td>
+                        <td>
+                            <!-- BEGIN: delete -->
+                            <button class="btn btn-sm btn-danger delete" data-file-id="{ROW.file_id}"
+                                data-checksess="{CHECK_SESS}" data-url="{ROW.url_delete}" title="{LANG.delete_btn}">
+                                <i class="fa fa-trash-o"></i>
+                            </button>
+                            <!-- END: delete -->
 
-                    <!-- BEGIN: rename -->
-                    <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}"
-                        data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal"
-                        title="{LANG.rename_btn}">
-                        <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
-                    </button>
-                    <!-- END: rename -->
+                            <!-- BEGIN: rename -->
+                            <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}"
+                                data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal"
+                                title="{LANG.rename_btn}">
+                                <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+                            </button>
+                            <!-- END: rename -->
 
-                    <!-- BEGIN: share -->
-                    <a href="{ROW.url_perm}" class="btn btn-sm btn-info share" title="{LANG.perm_btn}">
-                        <i class="fa fa-link"></i>
-                    </a>
-                    <!-- END: share -->
+                            <!-- BEGIN: share -->
+                            <a href="{ROW.url_perm}" class="btn btn-sm btn-info share" title="{LANG.perm_btn}">
+                                <i class="fa fa-link"></i>
+                            </a>
+                            <!-- END: share -->
 
-                    <!-- BEGIN: download -->
-                    <a href="{DOWNLOAD}" class="btn btn-sm btn-success download" data-file-id="{ROW.file_id}"
-                        title="{LANG.download_btn}">
-                        <i class="fa fa-download" aria-hidden="true"></i>
-                    </a>
-                    <!-- END: download -->
+                            <!-- BEGIN: download -->
+                            <a href="{DOWNLOAD}" class="btn btn-sm btn-success download" data-file-id="{ROW.file_id}"
+                                title="{LANG.download_btn}">
+                                <i class="fa fa-download" aria-hidden="true"></i>
+                            </a>
+                            <!-- END: download -->
 
-                    <!-- BEGIN: edit -->
-                    <a href="{EDIT}" class="btn btn-sm btn-info" title="{LANG.edit_btn}">
-                        <i class="fa fa-pencil-square"></i>
-                    </a>
-                    <!-- END: edit -->
+                            <!-- BEGIN: edit -->
+                            <a href="{EDIT}" class="btn btn-sm btn-info" title="{LANG.edit_btn}">
+                                <i class="fa fa-pencil-square"></i>
+                            </a>
+                            <!-- END: edit -->
 
-                    <!-- BEGIN: copy -->
-                    <a href="{COPY}" class="btn btn-sm btn-info" title="{LANG.copy}">
-                        <i class="fa fa-clone"></i>
-                    </a>
-                    <!-- END: copy -->
-                </td>
-            </tr>
-            <!-- END: file_row -->
-        </tbody>
-        <!-- BEGIN: stats -->
-        <tfoot>
-            <tr>
-                <td class="gray" colspan="7">
-                    <strong>{LANG.full_size}</strong>
-                    <span class="badge text-bg-light border-radius-0">{ROW.total_size}</span>
-                    <strong>- {LANG.file}:</strong>
-                    <span class="badge badge-secondary">{ROW.total_files}</span>
-                    <strong>- {LANG.folder}:</strong>
-                    <span class="badge badge-secondary">{ROW.total_folders}</span>
-                </td>
-            </tr>
-        </tfoot>
-        <!-- END: stats -->
-    </table>
+                            <!-- BEGIN: copy -->
+                            <a href="{COPY}" class="btn btn-sm btn-info" title="{LANG.copy}">
+                                <i class="fa fa-clone"></i>
+                            </a>
+                            <!-- END: copy -->
+                        </td>
+                    </tr>
+                    <!-- END: file_row -->
+                </tbody>
+                <!-- BEGIN: stats -->
+                <tfoot>
+                    <tr>
+                        <td class="gray" colspan="7">
+                            <strong>{LANG.full_size}</strong>
+                            <span class="badge text-bg-light border-radius-0">{ROW.total_size}</span>
+                            <strong>- {LANG.file}:</strong>
+                            <span class="badge badge-secondary">{ROW.total_files}</span>
+                            <strong>- {LANG.folder}:</strong>
+                            <span class="badge badge-secondary">{ROW.total_folders}</span>
+                        </td>
+                    </tr>
+                </tfoot>
+                <!-- END: stats -->
+            </table>
+            <!-- BEGIN: can_compress -->
+            <a href="#" class="btn btn-primary" id="compressButton" data-toggle="modal" data-target="#compressModal">
+                <i class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}
+            </a>
+            <!-- END: can_compress -->
 
-    <!-- BEGIN: can_compress -->
-    <a href="#" class="btn btn-primary" id="compressButton" data-toggle="modal" data-target="#compressModal">
-        <i class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}
-    </a>
-    <!-- END: can_compress -->
-
-    <!-- BEGIN: can_delete_all -->
-    <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll">
-        <i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}
-    </button>
-    <!-- END: can_delete_all -->
+            <!-- BEGIN: can_delete_all -->
+            <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll">
+                <i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}
+            </button>
+            <!-- END: can_delete_all -->
+        </div>
+    </div>
+    <div class="text-center">{GENERATE_PAGE}</div>
     <!-- END: has_data -->
     <!-- BEGIN: no_data -->
     <div class="text-center">
@@ -142,7 +160,7 @@
     </div>
     <!-- END: no_data -->
 </div>
-<div class="text-center">{GENERATE_PAGE}</div>
+<br>
 
 <div class="modal fade" id="compressModal" tabindex="-1" role="dialog" aria-labelledby="compressModalLabel"
     aria-hidden="true">
@@ -263,6 +281,60 @@
     </div>
 </div>
 
+<style>
+    .tree {
+        list-style-type: none;
+        padding: 0 20px 0 5px;
+        margin: 0 5px 0 5px;
+        border-right: 1px solid #ccc;
+        overflow-x: auto;
+        word-break: break-all;
+        white-space: pre-line;
+    }
+
+    .tree li {
+        margin: 5px 0;
+        cursor: pointer;
+    }
+
+    .tree li a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .tree li a:hover {
+        color: #007bff;
+    }
+
+    .tree li.active {
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        padding: 2px 5px;
+    }
+
+    .tree li.active > a {
+        color: #007bff;
+        font-weight: bold;
+    }
+
+    .tree li span {
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .tree ul {
+        margin-left: 5px;
+        padding-left: 10px;
+        border-left: 1px dashed #ccc;
+    }
+
+    .tree i {
+        font-size: 14px;
+    }
+</style>
+
 <script>
     function submitCreateForm(event) {
         event.preventDefault();
@@ -304,7 +376,7 @@
                     } else if (res.refresh_captcha) {
                         if ($("#createForm").data('recaptcha3')) {
                             grecaptcha.ready(function () {
-                                grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', { action: 'create' });
+                                grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', {action: 'create'});
                             });
                         } else if ($(".g-recaptcha").length) {
                             grecaptcha.reset();
@@ -318,7 +390,7 @@
                     alert(xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Đã có lỗi xảy ra.');
                     if ($("#createForm").data('recaptcha3')) {
                         grecaptcha.ready(function () {
-                            grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', { action: 'create' });
+                            grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', {action: 'create'});
                         });
                     } else if ($(".g-recaptcha").length) {
                         grecaptcha.reset();
@@ -332,7 +404,7 @@
         if (typeof grecaptcha !== 'undefined') {
             if ($("#createForm").data('recaptcha3')) {
                 grecaptcha.ready(function () {
-                    grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', { action: 'create' }).then(function (token) {
+                    grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', {action: 'create'}).then(function (token) {
                         sendRequest(token);
                     });
                 });

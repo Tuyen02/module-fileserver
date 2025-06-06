@@ -634,6 +634,46 @@ function displayTree($tree)
     return $output;
 }
 
+function displayAllTree($tree, $current_lev, $is_root = true) {
+    global $module_name, $op, $global_config, $editable_extensions, $viewable_extensions;
+    $html = '<ul>';
+    
+    if ($is_root) {
+        $isActive = ($current_lev == 0) ? ' active' : '';
+        $html .= '<li class="' . $isActive . '">';
+        $html .= '<a href="' . NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '"><i class="fa fa-home"></i> ...</a>';
+        $html .= '</li>';
+    }
+
+    foreach ($tree as $node) {
+        $isActive = ($node['file_id'] == $current_lev) ? ' active' : '';
+        $html .= '<li class="' . $isActive . '">';
+        
+        if ($node['is_folder']) {
+            $current_op = $op;
+        } else {
+            $fileInfo = pathinfo($node['file_name'], PATHINFO_EXTENSION);
+            if (in_array($fileInfo, $editable_extensions)) {
+                $current_op = 'edit';
+            } elseif (in_array($fileInfo, $viewable_extensions)) {
+                $current_op = 'edit_img';
+            } else {
+                $current_op = 'main';
+            }
+        }
+        
+        $url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $current_op . '/' . $node['alias'];
+        
+        $html .= '<a href="' . $url . '"><i class="fa ' . getFileIconClass($node) . '"></i> ' . $node['file_name'] . '</a>';
+        if (!empty($node['children'])) {
+            $html .= displayAllTree($node['children'], $current_lev, false);
+        }
+        $html .= '</li>';
+    }
+    $html .= '</ul>';
+    return $html;
+}
+
 function buildFolderTree($user_info, $page_url, $parent_id = 0)
 {
     global $db, $module_data, $lang_module;

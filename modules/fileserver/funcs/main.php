@@ -956,8 +956,27 @@ if ($total > $perpage) {
     $generate_page = nv_generate_page($page_url, $total, $perpage, $page);
 }
 
+$sql_all = 'SELECT f.*, p.p_group, p.p_other 
+    FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
+    LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id 
+    WHERE f.status = 1';
+$result_all = $db->query($sql_all)->fetchAll(PDO::FETCH_ASSOC);
+
+$is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
+$filtered = array_filter($result_all, function($item) use ($is_group_user) {
+    if ($is_group_user) {
+        return isset($item['p_group']) && $item['p_group'] >= 2;
+    } else {
+        return isset($item['p_other']) && $item['p_other'] >= 2;
+    }
+});
+$filtered = array_values($filtered);
+
+$tree = buildTree($filtered);
+$tree_html = displayAllTree($tree, $lev, true);
+
 $nv_BotManager->setFollow()->setNoIndex();
-$contents = nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page);
+$contents = nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page, $tree_html);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);
