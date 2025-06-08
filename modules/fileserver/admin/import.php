@@ -71,7 +71,7 @@ function importSheetData($sheet, $parent_id, &$importedSheets, $parent_path = '/
     $Totalrow = $sheet->getHighestRow();
 
     for ($i = 5; $i <= $Totalrow; $i++) {
-        $file_name = $sheet->getCell('B' . $i)->getValue();
+        $file_name = nv_EncString($sheet->getCell('B' . $i)->getValue());
         $drive_url = $sheet->getCell('C' . $i)->getValue();
         if (empty($file_name)) continue;
 

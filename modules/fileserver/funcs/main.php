@@ -964,6 +964,9 @@ $result_all = $db->query($sql_all)->fetchAll(PDO::FETCH_ASSOC);
 
 $is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
 $filtered = array_filter($result_all, function($item) use ($is_group_user) {
+    if (defined('NV_IS_SPADMIN')) {
+        return true; 
+    }
     if ($is_group_user) {
         return isset($item['p_group']) && $item['p_group'] >= 2;
     } else {

@@ -69,15 +69,15 @@ if ($use_elastic == 1) {
                     'body' => [
                         'file_id' => $row['file_id'],
                         'file_name' => $row['file_name'],
-                        'file_path' => $row['file_path'] ?? '',
-                        'file_size' => $row['file_size'] ?? 0,
-                        'uploaded_by' => $row['uploaded_by'] ?? '',
+                        'file_path' => (isset($row['file_path']) ? $row['file_path'] : ''),
+                        'file_size' => (isset($row['file_size']) ? $row['file_size'] : 0),
+                        'uploaded_by' => (isset($row['uploaded_by']) ? $row['uploaded_by'] : ''),
                         'is_folder' => $row['is_folder'],
                         'status' => $row['status'],
                         'lev' => $row['lev'],
                         'created_at' => $row['created_at'],
-                        'updated_at' => $row['updated_at'] ?? NV_CURRENTTIME,
-                        'compressed' => $row['compressed'] ?? ''
+                        'updated_at' => (isset($row['updated_at']) ? $row['updated_at'] : NV_CURRENTTIME),
+                        'compressed' => (isset($row['compressed']) ? $row['compressed'] : '')
                     ]
                 ];
                 $client->index($params);
@@ -184,6 +184,14 @@ function updateAlias($file_id, $file_name)
     return true;
 }
 
+/**
+ * Tạo tên mới cho file/thư mục
+ * @param int $lev ID của thư mục cha
+ * @param string $baseName Tên của file/thư mục
+ * @param string $extension Phần mở rộng của file
+ * @param int|null $is_folder 1 nếu là thư mục, 0 nếu là file
+ * @return string Tên mới đã đề xuất
+ */
 function suggestNewName($lev, $baseName, $extension, $is_folder = null)
 {
     global $db, $module_data;
@@ -215,6 +223,11 @@ function suggestNewName($lev, $baseName, $extension, $is_folder = null)
     return $suggestedName;
 }
 
+/**
+ * Xóa file hoặc thư mục
+ * @param int $fileId ID của file/thư mục
+ * @return bool True nếu xóa thành công, false nếu có lỗi
+ */
 function deleteFileOrFolder($fileId)
 {
     global $db, $module_data, $trash_dir;
@@ -340,6 +353,11 @@ function deleteFileOrFolder($fileId)
     return true;
 }
 
+/**
+ * Kiểm tra xem thư mục cha có tồn tại không
+ * @param int $lev ID của thư mục cha
+ * @return int 1 nếu là thư mục, 0 nếu không phải thư mục
+ */
 function checkIfParentIsFolder($lev)
 {
     global $lang_module, $module_data, $db;
@@ -352,6 +370,12 @@ function checkIfParentIsFolder($lev)
     return $data;
 }
 
+/**
+ * Nén các file thành file zip
+ * @param array $fileIds ID của các file cần nén
+ * @param string $zipFilePath Đường dẫn đến file zip
+ * @return array Mảng chứa kết quả nén
+ */
 function compressFiles($fileIds, $zipFilePath)
 {
     global $db, $lang_module, $module_data, $tmp_dir;
@@ -457,6 +481,11 @@ function compressFiles($fileIds, $zipFilePath)
     }
 }
 
+/**
+ * Thêm file/thư mục vào cơ sở dữ liệu
+ * @param string $dir Đường dẫn đến thư mục
+ * @param int $parent_id ID của thư mục cha
+ */
 function addToDatabase($dir, $parent_id = 0)
 {
     global $module_data, $db, $user_info;
@@ -496,6 +525,11 @@ function addToDatabase($dir, $parent_id = 0)
     }
 }
 
+/**
+ * Tính toán kích thước của thư mục
+ * @param int $folderId ID của thư mục
+ * @return int Kích thước của thư mục
+ */
 function calculateFolderSize($folderId)
 {
     global $db, $module_data;
@@ -516,6 +550,11 @@ function calculateFolderSize($folderId)
 }
 
 
+/**
+ * Tính toán thống kê file/thư mục
+ * @param int $lev ID của thư mục
+ * @return array Mảng chứa thống kê
+ */
 function calculateFileFolderStats($lev)
 {
     global $db, $module_data;
@@ -544,6 +583,10 @@ function calculateFileFolderStats($lev)
     ];
 }
 
+/**
+ * Cập nhật kích thước của thư mục cha
+ * @param int $folderId ID của thư mục
+ */
 function updateParentFolderSize($folderId)
 {
     global $db, $module_data;
@@ -569,6 +612,10 @@ function updateParentFolderSize($folderId)
     }
 }
 
+/**
+ * Cập nhật thống kê của thư mục
+ * @param int $lev ID của thư mục
+ */
 function updateStat($lev)
 {
     global $db, $module_data;
@@ -598,6 +645,11 @@ function updateStat($lev)
     return $stmtInsert->execute();
 }
 
+/**
+ * Xây dựng cây từ danh sách file/thư mục
+ * @param array $list Danh sách file/thư mục
+ * @return array Cây file/thư mục
+ */
 function buildTree($list)
 {
     $tree = [];
@@ -620,6 +672,11 @@ function buildTree($list)
     return $tree;
 }
 
+/**
+ * Hiển thị cây file/thư mục
+ * @param array $tree Cây file/thư mục
+ * @return string HTML hiển thị cây
+ */
 function displayTree($tree)
 {
     $output = '<ul>';
@@ -634,6 +691,13 @@ function displayTree($tree)
     return $output;
 }
 
+/**
+ * Hiển thị toàn bộ cây file/thư mục
+ * @param array $tree Cây file/thư mục
+ * @param int $current_lev ID của thư mục hiện tại
+ * @param bool $is_root True nếu là nút gốc
+ * @return string HTML hiển thị cây
+ */
 function displayAllTree($tree, $current_lev, $is_root = true) {
     global $module_name, $op, $global_config, $editable_extensions, $viewable_extensions;
     $html = '<ul>';
@@ -652,7 +716,7 @@ function displayAllTree($tree, $current_lev, $is_root = true) {
         if ($node['is_folder']) {
             $current_op = $op;
         } else {
-            $fileInfo = pathinfo($node['file_name'], PATHINFO_EXTENSION);
+            $fileInfo = strtolower(pathinfo($node['file_name'], PATHINFO_EXTENSION));
             if (in_array($fileInfo, $editable_extensions)) {
                 $current_op = 'edit';
             } elseif (in_array($fileInfo, $viewable_extensions)) {
@@ -674,6 +738,13 @@ function displayAllTree($tree, $current_lev, $is_root = true) {
     return $html;
 }
 
+/**
+ * Xây dựng cây thư mục
+ * @param array $user_info Thông tin người dùng
+ * @param string $page_url URL hiện tại
+ * @param int $parent_id ID của thư mục cha
+ * @return array Cây thư mục
+ */
 function buildFolderTree($user_info, $page_url, $parent_id = 0)
 {
     global $db, $module_data, $lang_module;
@@ -718,6 +789,11 @@ function buildFolderTree($user_info, $page_url, $parent_id = 0)
     return $tree;
 }
 
+/**
+ * Hiển thị cây thư mục
+ * @param array $tree Cây thư mục
+ * @return string HTML hiển thị cây
+ */
 function renderFolderTree($tree)
 {
     $html = '<ul>';
@@ -733,6 +809,12 @@ function renderFolderTree($tree)
     return $html;
 }
 
+/**
+ * Lấy tất cả file và thư mục
+ * @param int $folder_id ID của thư mục
+ * @param string $base_path Đường dẫn cơ sở
+ * @return array Danh sách file và thư mục
+ */
 function getAllFilesAndFolders($folder_id, $base_path)
 {
     global $db, $module_data;
@@ -770,6 +852,11 @@ function getAllFilesAndFolders($folder_id, $base_path)
     return $items;
 }
 
+/**
+ * Lấy tất cả ID file
+ * @param int $parent_id ID của thư mục cha
+ * @param array $file_ids Danh sách ID file
+ */
 function getAllFileIds($parent_id, &$file_ids)
 {
     global $db, $module_data;
@@ -784,6 +871,11 @@ function getAllFileIds($parent_id, &$file_ids)
     }
 }
 
+/**
+ * Kiểm tra quyền của các file con
+ * @param int $folder_id ID của thư mục
+ * @return bool True nếu có file con không có quyền, false nếu không
+ */
 function checkChildrenPermissions($folder_id)
 {
     global $db, $module_data, $user_info;
@@ -819,6 +911,11 @@ function checkChildrenPermissions($folder_id)
     return false;
 }
 
+/**
+ * Lấy quyền của thư mục cha
+ * @param int $parent_id ID của thư mục cha
+ * @return array Mảng chứa quyền của thư mục cha
+ */
 function getParentPermissions($parent_id)
 {
     global $db, $module_data;
@@ -846,6 +943,12 @@ function getParentPermissions($parent_id)
     ];
 }
 
+/**
+ * Lấy quyền của người dùng
+ * @param int $file_id ID của file
+ * @param int $userid ID của người dùng
+ * @return int Quyền của người dùng
+ */
 function get_user_permission($file_id, $userid)
 {
     global $module_config, $module_name, $user_info, $module_data, $db;
@@ -871,6 +974,12 @@ function get_user_permission($file_id, $userid)
     return isset($perm['p_other']) ? intval($perm['p_other']) : 1;
 }
 
+/**
+ * Cập nhật quyền của file/thư mục
+ * @param int $parent_id ID của thư mục cha
+ * @param int $p_group Quyền của nhóm
+ * @param int $p_other Quyền của người dùng
+ */
 function updatePermissions($parent_id, $p_group, $p_other)
 {
     global $db, $module_data;
@@ -899,7 +1008,12 @@ function updatePermissions($parent_id, $p_group, $p_other)
     }
 }
 
-
+/**
+ * Kiểm tra quyền của thư mục
+ * @param array $directory Thông tin thư mục
+ * @param array $user_info Thông tin người dùng
+ * @return bool True nếu có quyền, false nếu không
+ */
 function checkPermission($directory, $user_info)
 {
     if (defined('NV_IS_SPADMIN')) {
@@ -916,6 +1030,11 @@ function checkPermission($directory, $user_info)
     return false;
 }
 
+/**
+ * Kiểm tra tên file hợp lệ
+ * @param string $filename Tên file
+ * @return bool True nếu hợp lệ, false nếu không
+ */
 function isValidFileName($filename)
 {
     $filename = rtrim($filename, " .");
@@ -938,6 +1057,11 @@ function isValidFileName($filename)
     return true;
 }
 
+/**
+ * Lấy class icon của file
+ * @param array $file Thông tin file
+ * @return string Class icon của file
+ */
 function getFileIconClass($file)
 {
     $file_icons = [
