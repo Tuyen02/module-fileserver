@@ -32,6 +32,12 @@ if (!empty($array_op) && preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1
     $lev = $nv_Request->get_int('lev', 'get,post', 0);
 }
 
+/**
+ * Chuyển ký tự cột từ dạng chữ cái sang dạng số
+ * @param mixed $cell_char_from
+ * @param mixed $arr_header_row
+ * @return bool|float|int|string
+ */
 function get_cell_code_to($cell_char_from = 'A', $arr_header_row = [])
 {
     if (preg_match('/[A-z]/', $cell_char_from)) {
@@ -45,6 +51,12 @@ function get_cell_code_to($cell_char_from = 'A', $arr_header_row = [])
     }
 }
 
+/**
+ * Lấy khoảng cột từ cột đầu đến cột cuối
+ * @param mixed $min
+ * @param mixed $max
+ * @return array
+ */
 function getcolumnrange($min, $max)
 {
     $pointer = strtoupper($min);
@@ -56,6 +68,12 @@ function getcolumnrange($min, $max)
     return $output;
 }
 
+/**
+ * So sánh hai giá trị cột
+ * @param mixed $a
+ * @param mixed $b
+ * @return int
+ */
 function positionalcomparison($a, $b)
 {
     $a1 = stringtointvalue($a);
@@ -70,6 +88,11 @@ function positionalcomparison($a, $b)
     }
 }
 
+/**
+ * Chuyển đổi chuỗi ký tự sang giá trị số tương ứng
+ * @param mixed $str
+ * @return int
+ */
 function stringtointvalue($str)
 {
     $amount = 0;
@@ -81,6 +104,11 @@ function stringtointvalue($str)
     return $amount;
 }
 
+/**
+ * Chuyển đổi giá trị số sang chuỗi ký tự tương ứng
+ * @param mixed $int
+ * @return string
+ */
 function intvaluetostring($int)
 {
     $start = 'A';
@@ -91,6 +119,11 @@ function intvaluetostring($int)
     return $end;
 }
 
+/**
+ * Lấy class icon cho file dựa trên định dạng file
+ * @param array $file
+ * @return string
+ */
 function getFileIconClass($file)
 {
     if ($file['is_folder']) {
@@ -120,6 +153,11 @@ function getFileIconClass($file)
     return isset($iconClasses[$extension]) ? $iconClasses[$extension] : 'fa fa-file-o';
 }
 
+/**
+ * Cập nhật quyền truy cập cho file
+ * @param int $file_id
+ * @return bool
+ */
 function updatePerm($file_id)
 {
     global $db, $module_data, $lang_module;
@@ -139,6 +177,12 @@ function updatePerm($file_id)
     }
 }
 
+/**
+ * Cập nhật alias cho file dựa trên tên file và ID
+ * @param int $file_id
+ * @param string $file_name
+ * @return bool
+ */
 function updateAlias($file_id, $file_name)
 {
     global $db, $module_data, $lang_module;
@@ -153,6 +197,11 @@ function updateAlias($file_id, $file_name)
     }
 }
 
+/**
+ * Cập nhật thống kê file và thư mục
+ * @param int $lev
+ * @return bool
+ */
 function updateLog($lev)
 {
     global $db, $module_data, $lang_module;
@@ -182,6 +231,11 @@ function updateLog($lev)
     }
 }
 
+/**
+ * Tính toán thống kê file và thư mục trong một cấp độ
+ * @param int $lev
+ * @return array
+ */
 function calculateFileFolderStats($lev)
 {
     global $db, $module_data;
@@ -212,6 +266,11 @@ function calculateFileFolderStats($lev)
     ];
 }
 
+/**
+ * Xóa file hoặc thư mục từ thùng rác
+ * @param int $fileId
+ * @return bool
+ */
 function deleteFileOrFolder($fileId)
 {
     global $db, $module_data, $admin_info, $module_name, $trash_dir;
@@ -310,6 +369,12 @@ function deleteFileOrFolder($fileId)
 
     return false;
 }
+
+/**
+ * Tính toán kích thước của thư mục và các tệp con
+ * @param int $folderId
+ * @return int
+ */
 function calculateFolderSize($folderId)
 {
     global $db, $module_data;
@@ -329,6 +394,10 @@ function calculateFolderSize($folderId)
     return $totalSize;
 }
 
+/**
+ * Cập nhật kích thước của thư mục cha sau khi thay đổi kích thước của thư mục con
+ * @param int $folderId
+ */
 function updateParentFolderSize($folderId)
 {
     global $db, $module_data;
@@ -354,6 +423,11 @@ function updateParentFolderSize($folderId)
     }
 }
 
+/**
+ * Khôi phục file hoặc thư mục từ thùng rác
+ * @param int $fileId
+ * @return bool
+ */
 function restoreFileOrFolder($fileId)
 {
     global $db, $module_data, $admin_info, $module_name, $trash_dir;
