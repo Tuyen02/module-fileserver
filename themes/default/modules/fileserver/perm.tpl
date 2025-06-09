@@ -15,6 +15,11 @@
                     <th class="text-center">{LANG.other}</th>
                 </tr>
             </thead>
+            <colgroup>
+                <col style="width: 20%;">
+                <col style="width: 40%;">
+                <col style="width: 40%;">
+            </colgroup>
             <tbody>
                 <tr>
                     <td>{LANG.permission_level}</td>

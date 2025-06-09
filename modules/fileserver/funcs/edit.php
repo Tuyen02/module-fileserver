@@ -55,6 +55,7 @@ foreach ($breadcrumbs as $breadcrumb) {
 }
 
 $view_url = $base_url . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '&lev=' . $row['lev'];
+$back_url = $view_url;
 
 $file_name = $row['file_name'];
 $file_path = $row['file_path'];
@@ -154,7 +155,7 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
                 }
             }
         } elseif (in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
-            $file_content = $nv_Request->get_string('file_content', 'post', '', 0); 
+            $file_content = $nv_Request->get_textarea('file_content', '', NV_ALLOWED_HTML_TAGS);
             $old_md5 = md5(trim($old_content));
             $new_md5 = md5(trim($file_content));
             $has_changes = ($old_md5 !== $new_md5);
@@ -165,7 +166,7 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
                 }
             }
         } else if ($file_extension != 'pdf') {
-            $file_content = $nv_Request->get_string('file_content', 'post');
+            $file_content = $nv_Request->get_textarea('file_content', '', NV_ALLOWED_HTML_TAGS);
             $old_md5 = md5(trim($old_content));
             $new_md5 = md5(trim($file_content));
             $has_changes = ($old_md5 !== $new_md5);
@@ -210,7 +211,7 @@ $reponse = [
     'message' => $message,
 ];
 
-$contents = nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $reponse, $current_permission);
+$contents = nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $reponse, $current_permission, $back_url);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

@@ -962,17 +962,23 @@ $sql_all = 'SELECT f.*, p.p_group, p.p_other
     WHERE f.status = 1';
 $result_all = $db->query($sql_all)->fetchAll(PDO::FETCH_ASSOC);
 
-$is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
+$is_group_user = false;
+if (defined('NV_IS_USER') && isset($user_info['in_groups']) && !empty($module_config[$module_name]['group_admin_fileserver'])) {
+    $admin_groups = explode(',', $module_config[$module_name]['group_admin_fileserver']);
+    $is_group_user = !empty(array_intersect($user_info['in_groups'], $admin_groups));
+}
+
 $filtered = array_filter($result_all, function($item) use ($is_group_user) {
     if (defined('NV_IS_SPADMIN')) {
-        return true; 
+        return true;
     }
     if ($is_group_user) {
         return isset($item['p_group']) && $item['p_group'] >= 2;
     } else {
-        return isset($item['p_other']) && $item['p_other'] >= 2;
+        return isset($item['p_other']) && $item['p_other'] == 2;
     }
 });
+
 $filtered = array_values($filtered);
 
 $tree = buildTree($filtered);

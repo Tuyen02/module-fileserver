@@ -71,9 +71,11 @@
 <!-- END: message -->
 
 <!-- BEGIN: back -->
-<a href="{BACK_URL}" class="btn btn-info">
-    <i class="fa fa-chevron-circle-left"></i> {LANG.back_btn}
-</a>
+<div class="mb-3">
+    <a href="{BACK_URL}" class="btn btn-info">
+        <i class="fa fa-chevron-circle-left"></i> {LANG.back_btn}
+    </a>
+</div>
 <!-- END: back -->
 
 <div class="editor-container">

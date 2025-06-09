@@ -109,7 +109,7 @@ if (($move == 1 || $copy == 1)) {
 
     if (file_exists(NV_ROOTDIR . $new_file_path)) {
         if (md5_file($full_path) === md5_file(NV_ROOTDIR . $new_file_path)) {
-            $message = $lang_module['no_changes'];
+            $message = $lang_module['file_has_exit_1'];
             goto end_process;
         }
         unlink(NV_ROOTDIR . $new_file_path);

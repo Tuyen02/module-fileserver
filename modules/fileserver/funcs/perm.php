@@ -25,14 +25,6 @@ if (empty($row)) {
 $status = '';
 $message = '';
 
-$sql_perm = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
-$stmt_perm = $db->prepare($sql_perm);
-$stmt_perm->execute();
-$row_perm = $stmt_perm->fetch();
-
-$row['p_group'] = $row_perm ? $row_perm['p_group'] : 1;
-$row['p_other'] = $row_perm ? $row_perm['p_other'] : 1;
-
 $breadcrumbs[] = [
     'catid' => $row['lev'],
     'title' => $row['file_name'],
@@ -68,13 +60,9 @@ if ($nv_Request->isset_request('submit', 'post')) {
     $group_permission = $nv_Request->get_int('group_permission', 'post', 0);
     $other_permission = $nv_Request->get_int('other_permission', 'post', 0);
 
-    $sql_perm = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $file_id;
-    $stmt_perm = $db->prepare($sql_perm);
-    $stmt_perm->execute();
-    $row_perm = $stmt_perm->fetch();
-
-    $old_group_level = $row_perm ? $row_perm['p_group'] : 0;
-    $old_other_level = $row_perm ? $row_perm['p_other'] : 0;
+    $row_perm = getParentPermissions($file_id);
+    $old_group_level = $row_perm['p_group'];
+    $old_other_level = $row_perm['p_other'];
 
     if ($group_permission == $old_group_level && $other_permission == $old_other_level) {
         $status = 'error';
@@ -90,7 +78,6 @@ if ($nv_Request->isset_request('submit', 'post')) {
                     p_group = VALUES(p_group), 
                     p_other = VALUES(p_other), 
                     updated_at = VALUES(updated_at)';
-                    
             $upsert_stmt = $db->prepare($sql_upsert);
             $upsert_stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
             $upsert_stmt->bindParam(':p_group', $group_permission, PDO::PARAM_INT);
@@ -99,13 +86,9 @@ if ($nv_Request->isset_request('submit', 'post')) {
             $upsert_stmt->execute();
 
             updatePermissions($file_id, $group_permission, $other_permission);
-            
-            $current_permission = get_user_permission($file_id, $row['uploaded_by']);
-            $row['p_group'] = $current_permission;
-            $row['p_other'] = $current_permission;
 
             nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['perm'], 
-                'File id: ' . $file_id . '. Nhóm người dùng mức: ' . $row['p_group'] . '. Nhóm khác mức: ' . $row['p_other'], 
+                'File id: ' . $file_id . '. Nhóm người dùng mức: ' . $group_permission . '. Nhóm khác mức: ' . $other_permission, 
                 $user_info['userid']
             );
 
@@ -120,9 +103,10 @@ if ($nv_Request->isset_request('submit', 'post')) {
     }
 }
 
+$row_perm = getParentPermissions($file_id);
 $perm = [
-    'p_group' => $row['p_group'],
-    'p_other' => $row['p_other'],
+    'p_group' => $row_perm['p_group'],
+    'p_other' => $row_perm['p_other']
 ];
 
 $reponse = [

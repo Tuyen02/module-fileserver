@@ -210,7 +210,7 @@ function nv_fileserver_edit_img($row, $file_type)
     return $xtpl->text('main');
 }
 
-function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $reponse, $current_permission)
+function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $reponse, $current_permission, $back_url)
 {
     global $module_file, $global_config, $lang_module, $file_types, $allowed_extensions;
 
@@ -220,6 +220,7 @@ function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $rep
     $xtpl->assign('FILE_ID', $file_id);
     $xtpl->assign('FILE_NAME', $file_name);
     $xtpl->assign('url_view', $view_url);
+    $xtpl->assign('BACK_URL', $back_url);
 
     $can_edit = ($current_permission >= 3 || defined('NV_IS_SPADMIN'));
     $xtpl->assign('DISABLE_CLASS', $can_edit ? '' : 'readonly-editor');
@@ -246,6 +247,10 @@ function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $rep
             $xtpl->parse('main.' . $type);
             break;
         }
+    }
+
+    if (!empty($back_url)) {
+        $xtpl->parse('main.back');
     }
 
     $xtpl->parse('main');

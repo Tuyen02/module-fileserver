@@ -88,8 +88,8 @@ $lang_module['submit_btn'] = 'Xác nhận';
 $lang_module['perm_title'] = 'Thay đổi quyền cho';
 $lang_module['perm_btn'] = 'Phân quyền';
 $lang_module['f_path'] = 'Đường dẫn ';
-$lang_module['group'] = 'Nhóm người dùng';
-$lang_module['other'] = 'Nhóm khác';
+$lang_module['group'] = 'Nhóm người dùng <p>(Vd: nhóm lập trình viên, thành viên mới, ...)</p>';
+$lang_module['other'] = 'Nhóm khác <p>(User chưa đăng nhập)</p>';
 $lang_module['permission_level'] = 'Mức quyền';
 $lang_module['level_1'] = 'Không cho phép xem';
 $lang_module['level_2'] = 'Cho phép xem';
@@ -177,6 +177,7 @@ $lang_module['zip_seek'] = 'Lỗi tìm kiếm file zip';
 $lang_module['unknow_error'] = 'Lỗi không xác định';
 $lang_module['cannot_move_zip'] = ' - Không thể di chuyển file zip';
 $lang_module['not_compressed_file'] = 'Không có file được nén';
-$lang_module['tree_title'] = 'Cây dữ liệu';
-$lang_module['table_title'] = 'Bảng dữ liệu';
+$lang_module['file_has_exit_1'] = 'File đã tồn tại không cho phép sao chép hoặc di chuyển';
+
+
 
