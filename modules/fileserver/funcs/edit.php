@@ -155,7 +155,7 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
                 }
             }
         } elseif (in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
-            $file_content = $nv_Request->get_textarea('file_content', '', NV_ALLOWED_HTML_TAGS);
+           $file_content = $nv_Request->get_textarea('file_content',  '', NV_ALLOWED_HTML_TAGS);
             $old_md5 = md5(trim($old_content));
             $new_md5 = md5(trim($file_content));
             $has_changes = ($old_md5 !== $new_md5);

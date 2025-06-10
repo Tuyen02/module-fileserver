@@ -216,7 +216,7 @@ function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $rep
 
     $xtpl = new XTemplate('edit.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
-    $xtpl->assign('FILE_CONTENT', htmlspecialchars($file_content));
+    $xtpl->assign('FILE_CONTENT', $file_content);
     $xtpl->assign('FILE_ID', $file_id);
     $xtpl->assign('FILE_NAME', $file_name);
     $xtpl->assign('url_view', $view_url);

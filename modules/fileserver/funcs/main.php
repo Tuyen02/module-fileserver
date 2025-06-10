@@ -53,7 +53,6 @@ $error = '';
 $success = '';
 $admin_info['allow_files_type'][] = 'text';
 
-
 if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['uploadfile']) && is_uploaded_file($_FILES['uploadfile']['tmp_name'])) {
     $file_extension = strtolower(pathinfo($_FILES['uploadfile']['name'], PATHINFO_EXTENSION));
     if ($file_extension == 'zip') {
@@ -62,11 +61,19 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
         if (!defined('NV_IS_SPADMIN')) {
             if (empty($arr_full_per)) {
                 $error = $lang_module['not_thing_to_do'];
-            } else {
-                if (!in_array($lev, $arr_full_per)) {
-                    $error = $lang_module['not_thing_to_do'];
-                }
+            } elseif (!in_array($lev, $arr_full_per)) {
+                $error = $lang_module['not_thing_to_do'];
             }
+        }
+    }
+
+    $tmp_file_path = '';
+    if (empty($error)) {
+        $tmp_file_path = NV_ROOTDIR . '/' . NV_TEMP_DIR . '/' . nv_genpass(10) . '_' . basename($_FILES['uploadfile']['name']);
+        if (!nv_copyfile($_FILES['uploadfile']['tmp_name'], $tmp_file_path)) {
+            $error = 'Không thể tạo bản sao file tạm để xử lý.';
+        } else {
+            $_FILES['uploadfile']['tmp_name'] = $tmp_file_path;
         }
     }
 
@@ -79,8 +86,15 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
             NV_MAX_WIDTH,
             NV_MAX_HEIGHT
         );
+        
         $upload->setLanguage($lang_global);
+
         $upload_info = $upload->save_file($_FILES['uploadfile'], NV_ROOTDIR . $base_dir, false, $global_config['nv_auto_resize']);
+
+        if (!empty($tmp_file_path) && file_exists($tmp_file_path)) {
+            @unlink($tmp_file_path);
+        }
+
         if ($upload_info['error'] == '') {
             $full_path = $upload_info['name'];
             chmod($full_path, 0777);
@@ -103,19 +117,24 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
             if ($stmt->execute()) {
                 $file_id = $db->lastInsertId();
                 updateAlias($file_id, $file_name);
+
                 $sql_insert = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at) 
-                        VALUES (' . $file_id . ', 1, 1, ' . NV_CURRENTTIME . ')';
+                               VALUES (' . $file_id . ', 1, 1, ' . NV_CURRENTTIME . ')';
                 $db->query($sql_insert);
+
                 updateStat($lev);
-                nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['upload_btn'], 'File id: ' . $file_id, $user_info['userid']);
                 updateParentFolderSize($lev);
+
+                nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['upload_btn'], 'File id: ' . $file_id, $user_info['userid']);
             }
+
             $success = $lang_module['upload_ok'];
         } else {
             $error = $upload_info['error'];
         }
     }
 }
+
 
 if ($use_elastic == 1) {
     try {
