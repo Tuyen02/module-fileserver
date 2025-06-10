@@ -210,13 +210,14 @@ function nv_fileserver_edit_img($row, $file_type)
     return $xtpl->text('main');
 }
 
-function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $reponse, $current_permission, $back_url)
+function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $reponse, $current_permission, $back_url)
 {
-    global $module_file, $global_config, $lang_module, $file_types, $allowed_extensions;
+    global $module_file, $global_config, $lang_module, $allowed_create_extensions;
 
     $xtpl = new XTemplate('edit.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
     $xtpl->assign('FILE_CONTENT', $file_content);
+    $xtpl->assign('FILE_URL',  NV_MY_DOMAIN . NV_BASE_SITEURL . ltrim($row['file_path'], '/'));
     $xtpl->assign('FILE_ID', $file_id);
     $xtpl->assign('FILE_NAME', $file_name);
     $xtpl->assign('url_view', $view_url);
@@ -227,9 +228,9 @@ function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $rep
     $xtpl->assign('DISABLE_ATTR', $can_edit ? '' : 'readonly');
     $xtpl->assign('READONLY', $can_edit ? 'false' : 'true');
 
-    $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+    $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
-    if ($can_edit && in_array($file_extension, $allowed_extensions)) {
+    if ($can_edit && in_array($file_extension, $allowed_create_extensions)) {
         $xtpl->parse('main.can_save');
     } else {
         $xtpl->parse('main.cannt_save');
@@ -241,12 +242,14 @@ function nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $rep
         $xtpl->parse('main.message');
     }
 
-    foreach ($file_types as $type => $extensions) {
-        if (in_array($file_extension, $extensions)) {
-            $xtpl->assign($type, '');
-            $xtpl->parse('main.' . $type);
-            break;
-        }
+    if ($file_extension == 'pdf') {
+        $xtpl->parse('main.pdf');
+    } elseif (in_array($file_extension, ['doc', 'docx'])) {
+        $xtpl->parse('main.docx');
+    } elseif (in_array($file_extension, ['xls', 'xlsx'])) {
+        $xtpl->parse('main.xlsx');
+    } else {
+        $xtpl->parse('main.text');
     }
 
     if (!empty($back_url)) {

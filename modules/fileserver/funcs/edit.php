@@ -3,8 +3,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
-use PhpOffice\PhpWord\IOFactory;
-use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
+define('NV_ALLOWED_HTML_TAGS', NV_ALLOWED_HTML_TAGS . ',html,head,body,style');
 
 $page_title = $lang_module['edit'];
 
@@ -67,51 +66,9 @@ if (file_exists($full_path)) {
     if ($file_extension == 'pdf') {
         $file_content = NV_BASE_SITEURL . ltrim($file_path, '/');
     } elseif (in_array($file_extension, ['doc', 'docx'])) {
-        if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpword')) {
-            trigger_error('No phpword lib. Run command "composer require phpoffice/phpword" to install', 256);
-        }
-        try {
-            $phpWord = IOFactory::load($full_path);
-            $text = '';
-            foreach ($phpWord->getSections() as $section) {
-                $elements = $section->getElements();
-                foreach ($elements as $element) {
-                    if (method_exists($element, 'getText')) {
-                        $text .= $element->getText() . "\n";
-                    }
-                }
-            }
-            $file_content = $text;
-        } catch (Exception $e) {
-            $file_content = '';
-            $status = $lang_module['error'];
-            $message = $lang_module['cannot_open_word_file'] . $e->getMessage();
-        }
+        $file_content = NV_BASE_SITEURL . ltrim($file_path, '/');
     } elseif (in_array($file_extension, ['xls', 'xlsx'])) {
-        if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpspreadsheet')) {
-            trigger_error('No phpspreadsheet lib. Run command "composer require phpoffice/phpspreadsheet" to install', 256);
-        }
-        try {
-            $spreadsheet = SpreadsheetIOFactory::load($full_path);
-            $worksheet = $spreadsheet->getActiveSheet();
-            $text = '';
-
-            foreach ($worksheet->getRowIterator() as $row) {
-                $cellIterator = $row->getCellIterator();
-                $cellIterator->setIterateOnlyExistingCells(false);
-
-                $rowData = [];
-                foreach ($cellIterator as $cell) {
-                    $rowData[] = $cell->getValue();
-                }
-                $text .= implode("\t", $rowData) . "\n";
-            }
-            $file_content = $text;
-        } catch (Exception $e) {
-            $file_content = '';
-            $status = $lang_module['error'];
-            $message = $lang_module['cannot_open_excel_file'] . $e->getMessage();
-        }
+        $file_content = NV_BASE_SITEURL . ltrim($file_path, '/');
     } else {
         $file_content = file_get_contents($full_path);
     }
@@ -146,7 +103,7 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
                 try {
                     $phpWord = new \PhpOffice\PhpWord\PhpWord();
                     $section = $phpWord->addSection();
-                    $section->addText($file_content);
+                    \PhpOffice\PhpWord\Shared\Html::addHtml($section, $file_content);
                     $writer = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
                     $writer->save($full_path);
                 } catch (Exception $e) {
@@ -155,7 +112,7 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
                 }
             }
         } elseif (in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
-           $file_content = $nv_Request->get_textarea('file_content',  '', NV_ALLOWED_HTML_TAGS);
+            $file_content = $nv_Request->get_textarea('file_content', '', NV_ALLOWED_HTML_TAGS);
             $old_md5 = md5(trim($old_content));
             $new_md5 = md5(trim($file_content));
             $has_changes = ($old_md5 !== $new_md5);
@@ -211,7 +168,7 @@ $reponse = [
     'message' => $message,
 ];
 
-$contents = nv_fileserver_edit($file_content, $file_id, $file_name, $view_url, $reponse, $current_permission, $back_url);
+$contents = nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $reponse, $current_permission, $back_url);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

@@ -105,7 +105,8 @@ if ($use_elastic == 1) {
     }
 }
 
-$allowed_extensions = ['txt', 'html', 'css'];
+$allowed_create_extensions = ['txt','html','css'];
+$allowed_rename_extensions = ['txt', 'html', 'css','png','jpg','mp3','mp4','ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx', 'pdf', 'zip', 'rar'];
 $editable_extensions = ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql', 'doc', 'docx', 'xls', 'xlsx'];
 $viewable_extensions = ['png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'ppt', 'pptx'];
 $file_types = [
