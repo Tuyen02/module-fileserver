@@ -195,7 +195,7 @@ function nv_fileserver_compress($row, $list, $reponse, $tree_html, $current_perm
     return $xtpl->text('main');
 }
 
-function nv_fileserver_edit_img($row, $file_type)
+function nv_fileserver_edit_img($row, $file_type, $back_url)
 {
     global $module_file, $global_config, $lang_module;
     $xtpl = new XTemplate('edit_img.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
@@ -203,9 +203,16 @@ function nv_fileserver_edit_img($row, $file_type)
     $xtpl->assign('FILE_ID', $row);
     $xtpl->assign('FILE_NAME', $row['file_name']);
     $xtpl->assign('FILE_PATH', $row['file_path']);
+    $xtpl->assign('BACK_URL', $back_url);
+
     if (!empty($file_type)) {
         $xtpl->parse('main.' . $file_type);
     }
+
+    if (!empty($back_url)) {
+        $xtpl->parse('main.back');
+    }
+    
     $xtpl->parse('main');
     return $xtpl->text('main');
 }
@@ -222,6 +229,7 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
     $xtpl->assign('FILE_NAME', $file_name);
     $xtpl->assign('url_view', $view_url);
     $xtpl->assign('BACK_URL', $back_url);
+    
 
     $can_edit = ($current_permission >= 3 || defined('NV_IS_SPADMIN'));
     $xtpl->assign('DISABLE_CLASS', $can_edit ? '' : 'readonly-editor');

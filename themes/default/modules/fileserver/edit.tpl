@@ -175,8 +175,7 @@
         <div class="form-group">
             <label>{LANG.f_name}: {FILE_NAME}</label>
             <!-- BEGIN: text -->
-            <textarea id="editor" class="form-control {DISABLE_CLASS}" name="file_content"
-                {DISABLE_ATTR}>{FILE_CONTENT}</textarea>
+            <textarea id="editor" class="form-control {DISABLE_CLASS}" name="file_content" {DISABLE_ATTR}>{FILE_CONTENT}</textarea>
             <!-- END: text -->
             <!-- BEGIN: pdf -->
             <div id="pdfContainer">

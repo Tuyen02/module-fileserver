@@ -43,6 +43,9 @@ foreach ($breadcrumbs as $breadcrumb) {
     $array_mod_title[] = $breadcrumb;
 }
 
+$view_url = $base_url . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '&lev=' . $row['lev'];
+$back_url = $view_url;
+
 $file_extension = pathinfo($row['file_name'], PATHINFO_EXTENSION);
 
 $arr_check_type = [
@@ -68,7 +71,7 @@ $row['file_path'] = NV_BASE_SITEURL . ltrim($row['file_path'], '/');
 
 $file_type = $arr_check_type[$file_extension];
 
-$contents = nv_fileserver_edit_img($row, $file_type);
+$contents = nv_fileserver_edit_img($row, $file_type, $back_url);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

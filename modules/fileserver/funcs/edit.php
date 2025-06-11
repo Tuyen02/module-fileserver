@@ -3,7 +3,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
-define('NV_ALLOWED_HTML_TAGS', NV_ALLOWED_HTML_TAGS . ',html,head,body,style');
+$allowed_html_tags = (NV_ALLOWED_HTML_TAGS . ', html, title, meta, link, style, script');
 
 $page_title = $lang_module['edit'];
 
@@ -87,7 +87,7 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
         $status = $lang_module['error'];
         $message = $lang_module['cannot_edit_excel_file_'];
         $has_changes = false;
-    } elseif (in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
+    } elseif (in_array($file_extension, $allowed_create_extensions)) {
         $old_content = file_get_contents($full_path);
     } else if ($file_extension != 'pdf') {
         $old_content = file_get_contents($full_path);
@@ -112,12 +112,12 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
                 }
             }
         } elseif (in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
-            $file_content = $nv_Request->get_textarea('file_content', '', NV_ALLOWED_HTML_TAGS);
+            $file_content = $nv_Request->get_textarea('file_content', '', '');
             $old_md5 = md5(trim($old_content));
             $new_md5 = md5(trim($file_content));
             $has_changes = ($old_md5 !== $new_md5);
             if ($has_changes) {
-                if (file_put_contents($full_path, $file_content) === false) {
+                if (file_put_contents($full_path, $file_content) == false) {
                     $status = $lang_module['error'];
                     $message = $lang_module['cannot_save_file'];
                 }
@@ -128,7 +128,7 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
             $new_md5 = md5(trim($file_content));
             $has_changes = ($old_md5 !== $new_md5);
             if ($has_changes) {
-                if (file_put_contents($full_path, $file_content) === false) {
+                if (file_put_contents($full_path, $file_content) == false) {
                     $status = $lang_module['error'];
                     $message = $lang_module['cannot_save_file'];
                 }
