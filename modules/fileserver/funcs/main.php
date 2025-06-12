@@ -135,7 +135,6 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
     }
 }
 
-
 if ($use_elastic == 1) {
     try {
         $searchParams = [

@@ -107,7 +107,7 @@ if ($use_elastic == 1) {
 
 $allowed_create_extensions = ['txt','html','css'];
 $allowed_rename_extensions = ['txt', 'html', 'css','png','jpg','mp3','mp4','ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx', 'pdf', 'zip', 'rar'];
-$editable_extensions = ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql', 'doc', 'docx', 'xls', 'xlsx'];
+$editable_extensions = ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql', 'doc', 'docx', 'xls', 'xlsx','pdf'];
 $viewable_extensions = ['png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'ppt', 'pptx'];
 $file_types = [
     'text' => ['txt', 'html', 'css'],
@@ -473,12 +473,26 @@ function compressFiles($fileIds, $zipFilePath)
             return ['status' => 'error', 'message' => $lang_module['zip_false'] . $lang_module['cannot_move_zip']];
         }
 
+        // Kiểm tra file zip sau khi tạo
+        $testZip = new ZipArchive();
+        if ($testZip->open($zipFilePath) !== TRUE) {
+            unlink($zipFilePath);
+            return ['status' => 'error', 'message' => $lang_module['zip_false'] . $lang_module['zip_corrupted']];
+        }
+        $testZip->close();
+
         return ['status' => 'success', 'message' => $lang_module['zip_ok']];
     } catch (Exception $e) {
         if (isset($zipArchive) && $zipArchive instanceof ZipArchive) {
             $zipArchive->close();
         }
-        return ['status' => 'error', 'message' => $lang_module['zip_false']];
+        if (file_exists($tmpZipPath)) {
+            unlink($tmpZipPath);
+        }
+        if (file_exists($zipFilePath)) {
+            unlink($zipFilePath);
+        }
+        return ['status' => 'error', 'message' => $lang_module['zip_false'] . ' - ' . $e->getMessage()];
     }
 }
 
@@ -753,17 +767,6 @@ function buildFolderTree($user_info, $page_url, $parent_id = 0)
 
     if (defined('NV_IS_SPADMIN')) {
         $user_info['in_groups'] = [1];
-    }
-
-    if ($parent_id == 0) {
-        $root_node = [
-            'file_id' => 0,
-            'file_name' => $lang_module['root'],
-            'url' => $page_url . '&root=1',
-            'path' => $lang_module['root'],
-            'children' => []
-        ];
-        $tree[] = $root_node;
     }
 
     $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 

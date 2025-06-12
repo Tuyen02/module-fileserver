@@ -73,7 +73,7 @@
                                 data-checksess="{ROW.checksess}">
                         </td>
                         <td class="text-break" style="max-width:220px; word-break:break-all;">
-                            <a href="{VIEW}">
+                            <a href="{VIEW}" {PREVIEW_LINK_ATTRIBUTES}>
                                 <i class="fa {ROW.icon_class}" aria-hidden="true"></i>
                                 {ROW.file_name}
                             </a>
@@ -281,6 +281,26 @@
     </div>
 </div>
 
+<div class="modal fade" id="previewModal" tabindex="-1" role="dialog" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex justify-content-between align-items-start w-100">
+                    <h5 class="modal-title flex-grow-1" id="previewModalLabel">{LANG.f_name}: <span id="previewFileName" class="text-break"></span></h5>
+                    <button type="button" class="close ml-2" data-dismiss="modal" aria-label="{LANG.close_btn}">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body" id="previewModalBody">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">{LANG.close_btn}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .tree {
         list-style-type: none;
@@ -333,6 +353,17 @@
     .tree i {
         font-size: 14px;
     }
+
+    #previewModalBody img,
+    #previewModalBody video,
+    #previewModalBody audio {
+        max-width: 100%;
+        height: auto;
+        display: block; 
+        margin: 0 auto; 
+        max-height: 500px;
+    }
+
 </style>
 
 <script>
@@ -636,7 +667,8 @@
                             $('#zipWarning').hide();
                             isZipNameValid = true;
                         }
-                    },
+                        $(this).data('lastResponse', res);
+                    }.bind(this),
                     error: function (xhr) {
                         $('#zipWarning').text('Có lỗi xảy ra khi kiểm tra tên file zip').show();
                         $('#zipSuccess').hide();
@@ -651,22 +683,18 @@
         });
 
         $('#compressForm').on('submit', function (e) {
+            e.preventDefault();
+            
             if (!isZipNameValid) {
-                e.preventDefault();
                 alert('Tên file zip không hợp lệ hoặc đã tồn tại. Vui lòng kiểm tra lại!');
                 return false;
             }
+
             var zipFileName = $('#zipFileName').val();
             const selectedFiles = [];
             document.querySelectorAll('input[name="files[]"]:checked').forEach(input => {
                 selectedFiles.push(input.value);
             });
-
-            var lastResponse = $('#zipFileName').data('lastResponse');
-            if (lastResponse && lastResponse.status == 'error') {
-                alert(lastResponse.message);
-                return false;
-            }
 
             if (zipFileName && selectedFiles.length > 0) {
                 $.ajax({
@@ -792,6 +820,36 @@
             $('#renameSuccess').hide();
         }
     });
+
+    function togglePreview(event, element) {
+        event.preventDefault(); 
+        console.log('Toggle Preview triggered.');
+
+        var fileName = $(element).text().trim();
+        var filePath = $(element).data('filepath');
+        var fileType = $(element).data('filetype');
+
+        var modalBody = $('#previewModalBody');
+        modalBody.empty(); 
+
+        $('#previewFileName').text(fileName); 
+
+        if (fileType === 'img') {
+            modalBody.append('<img src="' + filePath + '" class="img-fluid" alt="' + fileName + '">');
+        } else if (fileType === 'video') {
+            modalBody.append('<video width="100%" controls><source src="' + filePath + '" type="video/mp4">{LANG.browser_support_video}</video>');
+        } else if (fileType === 'audio') {
+            modalBody.append('<audio controls><source src="' + filePath + '" type="audio/mpeg">{LANG.browser_support_audio}</audio>');
+        } else if (fileType === 'powerpoint') {
+            modalBody.append('<div class="alert alert-warning text-center">{LANG.download_to_view}</div>');
+        } else if (fileType === 'zip') {
+            modalBody.append('<div class="alert alert-info text-center">{LANG.download_to_view_zip}</div>');
+        } else {
+            modalBody.append('<p>{LANG.cannot_preview_file}</p>');
+        }
+
+        $('#previewModal').modal('show');
+    }
 
 </script>
 <!-- END: main -->

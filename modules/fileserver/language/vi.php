@@ -178,6 +178,8 @@ $lang_module['unknow_error'] = 'Lỗi không xác định';
 $lang_module['cannot_move_zip'] = ' - Không thể di chuyển file zip';
 $lang_module['not_compressed_file'] = 'Không có file được nén';
 $lang_module['file_has_exit_1'] = 'File đã tồn tại không cho phép sao chép hoặc di chuyển';
-
+$lang_module['confirm_overwrite'] = 'Xác nhận ghi đè';
+$lang_module['file_exists_confirm'] = 'File đích đã tồn tại. Bạn có muốn ghi đè không?';
+$lang_module['file_already_in_location'] = 'File đã tồn tại tại vị trí này. Vui lòng chọn vị trí khác.';
 
 

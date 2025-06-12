@@ -4,10 +4,11 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
     exit('Stop!!!');
 }
 
-$rank = $nv_Request->get_int('rank', 'get', 0);
-$copy = $nv_Request->get_int('copy', 'get', 0);
-$move = $nv_Request->get_int('move', 'get', 0);
-$root = $nv_Request->get_int('root', 'get', 0);
+$rank = $nv_Request->get_int('rank', 'post', 0);
+$root = $nv_Request->get_int('root', 'post', 0);
+$action = $nv_Request->get_string('action', 'post', '');
+$copy = ($action == 'copy') ? 1 : 0;
+$move = ($action == 'move') ? 1 : 0;
 
 $sql = 'SELECT file_id, file_name, file_path, file_size, is_folder, lev, alias, uploaded_by FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE is_folder != 1 AND file_id = ' . $file_id;
 $row = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
@@ -33,10 +34,10 @@ $lev = $row['lev'];
 
 $page_url = $base_url . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
 $view_url = $base_url . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '/' . $row['alias'] . '-lev=' . $lev;
+
 $selected_folder_path = '';
 $status = 'error';
 $message = '';
-$reponse = [];
 $action_note = '';
 $target_url = '';
 
@@ -97,22 +98,34 @@ if ($root == 1) {
 if (($move == 1 || $copy == 1)) {
     if (empty($target_url)) {
         $message = $lang_module['target_folder_not_found'];
-        goto end_process;
+        nv_jsonOutput(['status' => 'error', 'message' => $message]);
     }
 
     $new_file_path = $target_url . '/' . $file_name;
 
     if (!file_exists($full_path)) {
         $message = $lang_module['file_not_found'];
-        goto end_process;
+        nv_jsonOutput(['status' => 'error', 'message' => $message]);
+    }
+
+    if (realpath($full_path) == realpath(NV_ROOTDIR . $new_file_path)) {
+        $message = $lang_module['file_already_in_location'];
+        nv_jsonOutput(['status' => 'error', 'message' => $message]);
     }
 
     if (file_exists(NV_ROOTDIR . $new_file_path)) {
-        if (md5_file($full_path) === md5_file(NV_ROOTDIR . $new_file_path)) {
-            $message = $lang_module['file_has_exit_1'];
-            goto end_process;
+        $overwrite = $nv_Request->get_int('overwrite', 'post', 0);
+        if ($overwrite == 0) {
+            nv_jsonOutput([
+                'status' => 'warning',
+                'message' => $lang_module['file_exists_confirm'],
+                'requires_overwrite_confirmation' => true
+            ]);            
         }
-        unlink(NV_ROOTDIR . $new_file_path);
+        if (!unlink(NV_ROOTDIR . $new_file_path)) {
+            $message = $lang_module['error_delete_file'] . ': ' . $new_file_path;
+            nv_jsonOutput(['status' => 'error', 'message' => $message]);
+        }
     }
 
     if ($move == 1) {
@@ -178,45 +191,61 @@ if (($move == 1 || $copy == 1)) {
             } catch (Exception $e) {
                 $db->rollBack();
                 $message = $e->getMessage();
+                nv_jsonOutput(['status' => 'error', 'message' => $message]);
             }
+        } else {
+            $message = $lang_module['error_move_file'];
+            nv_jsonOutput(['status' => 'error', 'message' => $message]);            
         }
-    } else {
-        if (copy($full_path, NV_ROOTDIR . $new_file_path)) {
+    } else { 
+        $file_info = pathinfo($file_name);
+        $base_name = $file_info['filename'];
+        $extension = isset($file_info['extension']) ? $file_info['extension'] : '';
+
+        $actual_new_file_path = $new_file_path;
+        $file_name_for_db = $file_name;
+
+        if (realpath($full_path) === realpath(NV_ROOTDIR . $new_file_path) || file_exists(NV_ROOTDIR . $new_file_path)) {
+            $suggested_file_name = suggestNewName($target_lev, $base_name, $extension, 0);
+            $actual_new_file_path = $target_url . '/' . $suggested_file_name;
+            $file_name_for_db = $suggested_file_name;
+        }
+
+        if (copy($full_path, NV_ROOTDIR . $actual_new_file_path)) {
             $check_fileid = $db->query('SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                        WHERE status = 1 AND file_name = ' . $db->quote($file_name) . ' AND lev = ' . $target_lev)->fetchColumn();
+                        WHERE status = 1 AND file_name = ' . $db->quote($file_name_for_db) . ' AND lev = ' . $target_lev)->fetchColumn();
 
             if ($check_fileid > 0) {
                 $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
                             SET file_size = :file_size, elastic = 0, updated_at = ' . NV_CURRENTTIME . ' 
                             WHERE file_id = ' . $check_fileid;
                 $stmt = $db->prepare($sql);
+                $stmt->bindParam(':file_size', $row['file_size'], PDO::PARAM_INT);
+                $stmt->execute();
                 $action_note = 'Replace file_id: ' . $file_id . ' to ' . $check_fileid;
             } else {
                 $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_files (file_name, file_path, file_size, uploaded_by, is_folder, created_at, lev) 
                         VALUES (:file_name, :file_path, :file_size, :uploaded_by, 0, :created_at, :lev)';
                 $stmt = $db->prepare($sql);
-                $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
-                $stmt->bindParam(':file_path', $new_file_path, PDO::PARAM_STR);
+                $stmt->bindParam(':file_name', $file_name_for_db, PDO::PARAM_STR);
+                $stmt->bindParam(':file_path', $actual_new_file_path, PDO::PARAM_STR);
+                $stmt->bindParam(':file_size', $row['file_size'], PDO::PARAM_INT);
                 $stmt->bindParam(':uploaded_by', $user_info['userid'], PDO::PARAM_INT);
                 $stmt->bindValue(':created_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 $stmt->bindParam(':lev', $target_lev, PDO::PARAM_INT);
-                $action_note = 'Copy file_id: ' . $file_id . ' to ' . $rank;
-            }
-
-            $stmt->bindParam(':file_size', $row['file_size'], PDO::PARAM_INT);
-
-            if ($stmt->execute()) {
-                $new_file_id = $db->lastInsertId();
-                updateAlias($new_file_id, $file_name);
+                $stmt->execute();
+                $new_file_id_inserted = $db->lastInsertId();
+                updateAlias($new_file_id_inserted, $file_name_for_db);
+                $action_note = 'Copy file_id: ' . $file_id . ' to ' . $new_file_id_inserted;
 
                 if ($use_elastic == 1 && $client != null) {
                     try {
                         $client->index([
                             'index' => 'fileserver',
-                            'id' => $new_file_id,
+                            'id' => $new_file_id_inserted,
                             'body' => [
-                                'file_name' => $file_name,
-                                'file_path' => $new_file_path,
+                                'file_name' => $file_name_for_db,
+                                'file_path' => $actual_new_file_path,
                                 'file_size' => $row['file_size'],
                                 'uploaded_by' => $user_info['userid'],
                                 'created_at' => NV_CURRENTTIME,
@@ -231,39 +260,46 @@ if (($move == 1 || $copy == 1)) {
                     }
                 }
 
-                $check_permission = $db->query('SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $new_file_id)->fetchColumn();
+                $check_permission = $db->query('SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $new_file_id_inserted)->fetchColumn();
                 if ($check_permission == 0) {
                     $sql = 'INSERT INTO ' . NV_PREFIXLANG . '_' . $module_data . '_permissions (file_id, p_group, p_other, updated_at)
                                 VALUES (:file_id, :p_group, :p_other, :updated_at)';
                     $stmt = $db->prepare($sql);
-                    $stmt->bindParam(':file_id', $new_file_id, PDO::PARAM_INT);
+                    $stmt->bindParam(':file_id', $new_file_id_inserted, PDO::PARAM_INT);
                     $stmt->bindParam(':p_group', $permissions['p_group'], PDO::PARAM_INT);
                     $stmt->bindParam(':p_other', $permissions['p_other'], PDO::PARAM_INT);
                     $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                     $stmt->execute();
                 }
-
-                nv_insert_logs(NV_LANG_DATA, $module_name, 'copy', $action_note, $user_info['userid']);
-
-                $status = 'success';
-                $message = $lang_module['copy_ok'];
             }
+            nv_insert_logs(NV_LANG_DATA, $module_name, 'copy', $action_note, $user_info['userid']);
+            $message = $lang_module['copy_ok'];
+        } else {
+            $message = $lang_module['error_copy_file'];
+            nv_jsonOutput(['status' => 'error', 'message' => $message]);
         }
     }
     if ($target_lev > 0) {
         updateParentFolderSize($target_lev);
     }
     updateStat($target_lev);
-    nv_redirect_location($base_url . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '/' . $alias);
+
+    $redirect_url = '';
+    if ($root == 1) {
+        $redirect_url = $base_url . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'];
+    } else {
+        $sql = 'SELECT alias FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $target_lev;
+        $target_alias = $db->query($sql)->fetchColumn();
+        if (!empty($target_alias)) {
+            $redirect_url = $base_url . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '/' . $target_alias;
+        } else {
+            $redirect_url = $base_url . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'];
+        }
+    }
+    nv_jsonOutput(['status' => 'success', 'message' => $message, 'redirect' => $redirect_url]);
 }
 
-end_process:
-$reponse = [
-    'status' => $status,
-    'message' => $message,
-];
-
-$contents = nv_fileserver_clone($row, $reponse, $selected_folder_path, $view_url, $folder_tree, $base_url);
+$contents = nv_fileserver_clone($row, $selected_folder_path, $view_url, $folder_tree, $base_url);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

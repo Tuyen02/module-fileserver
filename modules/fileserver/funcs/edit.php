@@ -77,6 +77,7 @@ if (file_exists($full_path)) {
 if ($nv_Request->get_int('file_id', 'post') > 0) {
     $old_content = '';
     $has_changes = false;
+    $file_content = '';
 
     if (in_array($file_extension, ['doc', 'docx'])) {
         $old_content = file_get_contents($full_path);
@@ -96,10 +97,23 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
     if (empty($status)) {
         if (in_array($file_extension, ['doc', 'docx'])) {
             $file_content = $nv_Request->get_string('file_content', 'post');
+        } elseif (in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
+            $file_content = $nv_Request->get_textarea('file_content', '', '');
+        } else if ($file_extension != 'pdf') {
+            $file_content = $nv_Request->get_textarea('file_content', '', NV_ALLOWED_HTML_TAGS);
+        }
+
+        if (!empty($file_content)) {
             $old_md5 = md5(trim($old_content));
             $new_md5 = md5(trim($file_content));
             $has_changes = ($old_md5 !== $new_md5);
-            if ($has_changes) {
+        }
+
+        if (!$has_changes) {
+            $status = $lang_module['error'];
+            $message = $lang_module['no_changes'];
+        } else {
+            if (in_array($file_extension, ['doc', 'docx'])) {
                 try {
                     $phpWord = new \PhpOffice\PhpWord\PhpWord();
                     $section = $phpWord->addSection();
@@ -110,55 +124,40 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
                     $status = $lang_module['error'];
                     $message = $lang_module['cannot_save_file'] . $e->getMessage();
                 }
-            }
-        } elseif (in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
-            $file_content = $nv_Request->get_textarea('file_content', '', '');
-            $old_md5 = md5(trim($old_content));
-            $new_md5 = md5(trim($file_content));
-            $has_changes = ($old_md5 !== $new_md5);
-            if ($has_changes) {
+            } elseif (in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
+                if (file_put_contents($full_path, $file_content) == false) {
+                    $status = $lang_module['error'];
+                    $message = $lang_module['cannot_save_file'];
+                }
+            } else if ($file_extension != 'pdf') {
                 if (file_put_contents($full_path, $file_content) == false) {
                     $status = $lang_module['error'];
                     $message = $lang_module['cannot_save_file'];
                 }
             }
-        } else if ($file_extension != 'pdf') {
-            $file_content = $nv_Request->get_textarea('file_content', '', NV_ALLOWED_HTML_TAGS);
-            $old_md5 = md5(trim($old_content));
-            $new_md5 = md5(trim($file_content));
-            $has_changes = ($old_md5 !== $new_md5);
-            if ($has_changes) {
-                if (file_put_contents($full_path, $file_content) == false) {
-                    $status = $lang_module['error'];
-                    $message = $lang_module['cannot_save_file'];
+
+            if (empty($status)) {
+                $file_size = filesize($full_path);
+
+                $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET updated_at = :updated_at, file_size = :file_size, elastic = :elastic WHERE file_id = :file_id';
+                $stmt = $db->prepare($sql);
+                $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
+                $stmt->bindValue(':file_size', $file_size, PDO::PARAM_INT);
+                $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
+                $stmt->bindValue(':elastic', 0, PDO::PARAM_INT);
+
+                if ($stmt->execute()) {
+                    updateStat($row['lev']);
+                    nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['edit'], 'File id: ' . $file_id, $user_info['userid']);
+
+                    if ($row['lev'] > 0) {
+                        updateParentFolderSize($row['lev']);
+                    }
+
+                    $status = $lang_module['success'];
+                    $message = $lang_module['update_ok'];
                 }
             }
-        }
-
-        if ($has_changes && empty($status)) {
-            $file_size = filesize($full_path);
-
-            $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET updated_at = :updated_at, file_size = :file_size, elastic = :elastic WHERE file_id = :file_id';
-            $stmt = $db->prepare($sql);
-            $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
-            $stmt->bindValue(':file_size', $file_size, PDO::PARAM_INT);
-            $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-            $stmt->bindValue(':elastic', 0, PDO::PARAM_INT);
-
-            if ($stmt->execute()) {
-                updateStat($row['lev']);
-                nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['edit'], 'File id: ' . $file_id, $user_info['userid']);
-
-                if ($row['lev'] > 0) {
-                    updateParentFolderSize($row['lev']);
-                }
-
-                $status = $lang_module['success'];
-                $message = $lang_module['update_ok'];
-            }
-        } else if (empty($status)) {
-            $status = $lang_module['error'];
-            $message = $lang_module['no_changes'];
         }
     }
 }

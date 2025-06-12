@@ -47,86 +47,72 @@ foreach ($breadcrumbs as $breadcrumb) {
 }
 
 $sql = 'SELECT f.* FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f WHERE f.status = 0';
+$stmt = $db->prepare($sql);
+$stmt->execute();
+$all_deleted_items = $stmt->fetchAll();
+
+$pre_filtered_items = [];
 
 if ($lev > 0) {
-    $sql .= ' AND f.lev = ' . $lev;
-}
+    // If viewing a specific deleted folder, show its direct children
+    $pre_filtered_items = array_filter($all_deleted_items, function ($item) use ($lev) {
+        return $item['lev'] == $lev;
+    });
+} else {
+    // If viewing the root of the recycle bin, apply logic to show top-level deleted items
+    $root_items = array_filter($all_deleted_items, function ($item) {
+        return $item['lev'] == 0;
+    });
 
-if (!empty($search_term)) {
-    if (!empty($search_type) && $search_type == 'file') {
-        $sql .= ' AND f.file_name LIKE :search_term AND f.is_folder = 0 AND NOT EXISTS (
-            SELECT 1 FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files p 
-            WHERE p.file_id = f.lev 
-            AND p.status = 0 
-            AND p.deleted_at = f.deleted_at
-        )';
-    } else {
-        $sql .= ' AND f.file_name LIKE :search_term';
-    }
-}
+    $other_items = array_filter($all_deleted_items, function ($item) {
+        return $item['lev'] > 0;
+    });
 
-if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
-    $is_folder = ($search_type == 'file') ? 0 : 1;
-    $sql .= ' AND f.is_folder = :is_folder';
-}
+    $pre_filtered_items = $root_items;
 
-$stmt = $db->prepare($sql);
-if (!empty($search_term)) {
-    $quoted_search = $db->quote('%' . $search_term . '%');
-    $stmt->bindValue(':search_term', trim($quoted_search, "'"), PDO::PARAM_STR);
-}
-if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
-    $stmt->bindValue(':is_folder', $is_folder, PDO::PARAM_INT);
-}
-$stmt->execute();
-$all_items = $stmt->fetchAll();
+    foreach ($other_items as $item) {
+        $show = true;
+        $current_parent_id = $item['lev'];
 
-$root_items = array_filter($all_items, function ($item) {
-    return $item['lev'] == 0;
-});
+        while ($current_parent_id > 0) {
+            $parent = null;
+            foreach ($all_deleted_items as $potential_parent) {
+                if ($potential_parent['file_id'] == $current_parent_id && $potential_parent['is_folder'] == 1) {
+                    $parent = $potential_parent;
+                    break;
+                }
+            }
 
-$root_by_deleted_at = [];
-foreach ($root_items as $item) {
-    $root_by_deleted_at[$item['deleted_at']][] = $item['file_id'];
-}
-
-$other_items = array_filter($all_items, function ($item) {
-    return $item['lev'] > 0;
-});
-
-$display_items = $root_items;
-foreach ($other_items as $item) {
-    $show = true;
-    $current = $item;
-    while ($current['lev'] > 0) {
-        $parent = null;
-        foreach ($all_items as $potential_parent) {
-            if ($potential_parent['file_id'] == $current['lev']) {
-                $parent = $potential_parent;
+            if ($parent) {
+                if ($parent['deleted_at'] == $item['deleted_at']) {
+                    $show = false;
+                    break;
+                }
+                $current_parent_id = $parent['lev'];
+            } else {
                 break;
             }
         }
-        if ($parent) {
-            if ($parent['status'] == 0) {
-                $show = false;
-                break;
-            }
-            if ($parent['lev'] == 0 && $parent['deleted_at'] == $item['deleted_at']) {
-                $show = false;
-                break;
-            }
-            if ($parent['deleted_at'] == $item['deleted_at']) {
-                $show = false;
-                break;
-            }
-            $current = $parent;
-        } else {
-            break;
+        if ($show) {
+            $pre_filtered_items[] = $item;
         }
     }
-    if ($show) {
-        $display_items[] = $item;
-    }
+}
+
+$display_items = $pre_filtered_items;
+
+if (!empty($search_term)) {
+    $search_term_lower = mb_strtolower($search_term, 'UTF-8');
+    $display_items = array_filter($display_items, function ($item) use ($search_term_lower) {
+        return mb_stripos($item['file_name'], $search_term_lower, 0, 'UTF-8') !== false;
+    });
+}
+
+if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
+    $target_is_folder = ($search_type == 'folder') ? 1 : 0;
+    $display_items = array_filter($display_items, function ($item) use ($target_is_folder) {
+        return $item['is_folder'] == $target_is_folder;
+    });
 }
 
 usort($display_items, function ($a, $b) {
@@ -135,12 +121,6 @@ usort($display_items, function ($a, $b) {
 
 $total = count($display_items);
 $display_items = array_slice($display_items, ($page - 1) * $perpage, $perpage);
-
-if ($lev > 0) {
-    $base_dir = $db->query('SELECT file_path FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 0 AND file_id = ' . $lev)->fetchColumn();
-    $full_dir = NV_ROOTDIR . $base_dir;
-    $page_url .= '&lev=' . $lev;
-}
 
 $action = $nv_Request->get_title('action', 'post', '');
 $fileIds = $nv_Request->get_array('files', 'post', []);
@@ -250,7 +230,7 @@ $selected_folder = ($search_type == 'folder') ? ' selected' : '';
 $nv_BotManager->setFollow()->setNoIndex();
 
 if ($total > $perpage) {
-    $page_url = $base_url . '&lev=' . $lev . '&search=' . $search_term . '&search_type=' . $search_type;
+    $page_url = $base_url . '&lev=' . $lev . '&search=' . urlencode($search_term) . '&search_type=' . $search_type;
     $generate_page = nv_generate_page($page_url, $total, $perpage, $page);
 }
 
@@ -271,7 +251,7 @@ $xtpl->parse('main.generate_page');
 if (!empty($display_items)) {
     $xtpl->parse('main.has_items');
     foreach ($display_items as $row) {
-        $row['deleted_at'] = date('d/m/Y H:i:s', $row['created_at']);
+        $row['deleted_at'] = date('d/m/Y H:i:s', $row['deleted_at']);
         $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
         $row['icon_class'] = getFileIconClass($row);
         $row['url_delete'] = $base_url . '&file_id=' . $row['file_id'] . '&action=delete&checksess=' . $row['checksess'];

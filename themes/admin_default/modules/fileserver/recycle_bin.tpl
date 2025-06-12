@@ -37,6 +37,14 @@
                 <th scope="col">{LANG.option}</th>
             </tr>
         </thead>
+        <colgroup>
+            <col style="width: 5%;">
+            <col style="width: 35%;">
+            <col style="width: 25%;">
+            <col style="width: 10%;">
+            <col style="width: 15%;">
+            <col style="width: 10%;">
+        </colgroup>
         <tbody>
             <!-- BEGIN: no_data -->
             <tr>
