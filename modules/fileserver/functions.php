@@ -730,20 +730,38 @@ function displayAllTree($tree, $current_lev, $is_root = true) {
         
         if ($node['is_folder']) {
             $current_op = $op;
+            $url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $current_op . '/' . $node['alias'];
+            $html .= '<a href="' . $url . '"><i class="fa ' . getFileIconClass($node) . '"></i> ' . $node['file_name'] . '</a>';
         } else {
             $fileInfo = strtolower(pathinfo($node['file_name'], PATHINFO_EXTENSION));
-            if (in_array($fileInfo, $editable_extensions)) {
-                $current_op = 'edit';
-            } elseif (in_array($fileInfo, $viewable_extensions)) {
-                $current_op = 'edit_img';
-            } else {
-                $current_op = 'main';
+            $file_type = '';
+            $preview_attributes = '';
+            
+            if (in_array($fileInfo, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'])) {
+                $file_type = 'img';
+            } elseif (in_array($fileInfo, ['mp4', 'webm', 'ogg'])) {
+                $file_type = 'video';
+            } elseif (in_array($fileInfo, ['mp3', 'wav', 'ogg'])) {
+                $file_type = 'audio';
             }
+            
+            if ($file_type) {
+                $preview_attributes = 'onclick="togglePreview(event, this)" data-filetype="' . $file_type . '" data-filepath="' . NV_MY_DOMAIN . NV_BASE_SITEURL . ltrim($node['file_path'], '/') . '"';
+                $url = 'javascript:void(0);';
+            } else {
+                if (in_array($fileInfo, $editable_extensions)) {
+                    $current_op = 'edit';
+                } elseif (in_array($fileInfo, $viewable_extensions)) {
+                    $current_op = 'edit_img';
+                } else {
+                    $current_op = 'main';
+                }
+                $url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $current_op . '/' . $node['alias'];
+            }
+            
+            $html .= '<a href="' . $url . '" ' . $preview_attributes . '><i class="fa ' . getFileIconClass($node) . '"></i> ' . $node['file_name'] . '</a>';
         }
         
-        $url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $current_op . '/' . $node['alias'];
-        
-        $html .= '<a href="' . $url . '"><i class="fa ' . getFileIconClass($node) . '"></i> ' . $node['file_name'] . '</a>';
         if (!empty($node['children'])) {
             $html .= displayAllTree($node['children'], $current_lev, false);
         }

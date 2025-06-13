@@ -52,18 +52,18 @@
                     <tr>
                         <th scope="col"><input class="form-check-input" type="checkbox" value="" id="defaultCheck1">
                         </th>
-                        <th scope="col">{LANG.f_name}</th>
-                        <th scope="col">{LANG.f_size}</th>
-                        <th scope="col">{LANG.created_at}</th>
+                        <th scope="col" class="sortable" data-sort="file_name">{LANG.f_name} <i class="fa fa-sort"></i></th>
+                        <th scope="col" class="sortable" data-sort="file_size">{LANG.f_size} <i class="fa fa-sort"></i></th>
+                        <th scope="col" class="sortable" data-sort="created_at">{LANG.created_at} <i class="fa fa-sort"></i></th>
                         <th scope="col">{LANG.option}</th>
                     </tr>
                 </thead>
                 <colgroup>
-                    <col style="width: 3%;">
-                    <col style="width: 40%;">
-                    <col style="width: 12%;">
-                    <col style="width: 12%;">
-                    <col style="width: 32%;">
+                    <col style="width: 5%;">
+                    <col style="width: 35%;">
+                    <col style="width: 15%;">
+                    <col style="width: 15%;">
+                    <col style="width: 30%;">
                 </colgroup>
                 <tbody>
                     <!-- BEGIN: file_row -->
@@ -362,6 +362,16 @@
         display: block; 
         margin: 0 auto; 
         max-height: 500px;
+    }
+
+    .sortable {
+        cursor: pointer;
+    }
+    .sortable:hover {
+        background-color: #f8f9fa;
+    }
+    .fa-sort-up, .fa-sort-down {
+        margin-left: 5px;
     }
 </style>
 
@@ -848,6 +858,71 @@
         }
 
         $('#previewModal').modal('show');
+    }
+
+    $(document).ready(function() {
+        $('.sortable').click(function() {
+            var sortField = $(this).data('sort');
+            var currentOrder = $(this).find('i').hasClass('fa-sort-up') ? 'desc' : 'asc';
+            
+            $('.sortable i').removeClass('fa-sort-up fa-sort-down').addClass('fa-sort');
+            
+            $(this).find('i').removeClass('fa-sort').addClass(currentOrder === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
+            
+            sortTable(sortField, currentOrder);
+        });
+    });
+
+    function sortTable(field, order) {
+        var tbody = $('table tbody');
+        var rows = tbody.find('tr').toArray();
+        
+        rows.sort(function(a, b) {
+            var aVal = $(a).find('td').eq(getColumnIndex(field)).text().trim();
+            var bVal = $(b).find('td').eq(getColumnIndex(field)).text().trim();
+            
+            if (field === 'file_size') {
+                aVal = convertFileSizeToBytes(aVal);
+                bVal = convertFileSizeToBytes(bVal);
+            } else if (field === 'created_at') {
+                aVal = new Date(aVal).getTime();
+                bVal = new Date(bVal).getTime();
+            }
+            
+            if (order === 'asc') {
+                return aVal > bVal ? 1 : -1;
+            } else {
+                return aVal < bVal ? 1 : -1;
+            }
+        });
+        
+        tbody.append(rows);
+    }
+
+    function getColumnIndex(field) {
+        switch(field) {
+            case 'file_name': return 1;
+            case 'file_size': return 2;
+            case 'created_at': return 3;
+            default: return 0;
+        }
+    }
+
+    function convertFileSizeToBytes(sizeStr) {
+        var units = {
+            'B': 1,
+            'KB': 1024,
+            'MB': 1024 * 1024,
+            'GB': 1024 * 1024 * 1024
+        };
+        
+        var match = sizeStr.match(/^([\d.]+)\s*([A-Z]+)$/);
+        if (match) {
+            var size = parseFloat(match[1]);
+            var unit = match[2];
+            return size * units[unit];
+        }
+        return 0;
     }
 
 </script>
