@@ -97,7 +97,7 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
     if (empty($status)) {
         if (in_array($file_extension, ['doc', 'docx'])) {
             $file_content = $nv_Request->get_string('file_content', 'post');
-        } elseif (in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
+        } elseif (in_array($file_extension, $allowed_create_extensions)) {
             $file_content = $nv_Request->get_textarea('file_content', '', '');
         } else if ($file_extension != 'pdf') {
             $file_content = $nv_Request->get_textarea('file_content', '', NV_ALLOWED_HTML_TAGS);
@@ -124,7 +124,7 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
                     $status = $lang_module['error'];
                     $message = $lang_module['cannot_save_file'] . $e->getMessage();
                 }
-            } elseif (in_array($file_extension, ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql'])) {
+            } elseif (in_array($file_extension, $allowed_create_extensions)) {
                 if (file_put_contents($full_path, $file_content) == false) {
                     $status = $lang_module['error'];
                     $message = $lang_module['cannot_save_file'];

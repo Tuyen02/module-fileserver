@@ -284,13 +284,13 @@
 <div class="modal fade" id="previewModal" tabindex="-1" role="dialog" aria-labelledby="previewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <div class="d-flex justify-content-between align-items-start w-100">
-                    <h5 class="modal-title flex-grow-1" id="previewModalLabel">{LANG.f_name}: <span id="previewFileName" class="text-break"></span></h5>
-                    <button type="button" class="close ml-2" data-dismiss="modal" aria-label="{LANG.close_btn}">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
+            <div class="modal-header" style="overflow: hidden;">
+                <h4 class="modal-title pull-left" style="margin-top: 0;">
+                    {LANG.f_name}: <span id="previewFileName" class="text-break"></span>
+                </h4>
+                <button type="button" class="close pull-right" data-dismiss="modal" aria-label="{LANG.close_btn}" style="font-size: 30px; line-height: 1;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <div class="modal-body" id="previewModalBody">
             </div>
@@ -363,7 +363,6 @@
         margin: 0 auto; 
         max-height: 500px;
     }
-
 </style>
 
 <script>
