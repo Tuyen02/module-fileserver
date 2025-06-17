@@ -39,7 +39,6 @@
     </div>
 
     <hr>
-    <!-- BEGIN: has_data -->
     <div class="row">
         <div class="col-md-6 col-lg-4 mb-3">
             <div class="tree">
@@ -47,6 +46,7 @@
             </div>
         </div>
         <div class="col-md-18 col-lg-20">
+            <!-- BEGIN: has_data_content -->
             <table class="table table-hover">
                 <thead class="thead-dark">
                     <tr>
@@ -150,16 +150,15 @@
                 <i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}
             </button>
             <!-- END: can_delete_all -->
+            <div class="text-center">{GENERATE_PAGE}</div>
+            <!-- END: has_data_content -->
+            <!-- BEGIN: no_search_result -->
+            <div class="text-center">
+                <p><i class="fa fa-info-circle"></i> {LANG.no_data}</p>
+            </div>
+            <!-- END: no_search_result -->
         </div>
     </div>
-    <div class="text-center">{GENERATE_PAGE}</div>
-    <!-- END: has_data -->
-    <!-- BEGIN: no_data -->
-    <div class="text-center">
-        <p><i class="fa fa-info-circle"></i> {LANG.no_data}</p>
-    </div>
-    <!-- END: no_data -->
-</div>
 <br>
 
 <div class="modal fade" id="compressModal" tabindex="-1" role="dialog" aria-labelledby="compressModalLabel"
@@ -848,7 +847,7 @@
         } else if (fileType === 'video') {
             modalBody.append('<video width="100%" controls><source src="' + filePath + '" type="video/mp4">{LANG.browser_support_video}</video>');
         } else if (fileType === 'audio') {
-            modalBody.append('<audio controls><source src="' + filePath + '" type="audio/mpeg">{LANG.browser_support_audio}</audio>');
+            modalBody.append('<div class="text-center"><audio controls style="width: 100%; min-height: 50px;"><source src="' + filePath + '" type="audio/mpeg">{LANG.browser_support_audio}</audio></div>');
         } else if (fileType === 'powerpoint') {
             modalBody.append('<div class="alert alert-warning text-center">{LANG.download_to_view}</div>');
         } else if (fileType === 'zip') {
@@ -910,16 +909,21 @@
 
     function convertFileSizeToBytes(sizeStr) {
         var units = {
-            'B': 1,
-            'KB': 1024,
-            'MB': 1024 * 1024,
-            'GB': 1024 * 1024 * 1024
+            'b': 1,
+            'bytes': 1,
+            'kb': 1024,
+            'mb': 1024 * 1024,
+            'gb': 1024 * 1024 * 1024
         };
         
-        var match = sizeStr.match(/^([\d.]+)\s*([A-Z]+)$/);
+        if (sizeStr.toLowerCase() == '0 bytes') {
+            return 0;
+        }
+
+        var match = sizeStr.match(/^([\d.]+)\s*([A-Z]+)$/i);
         if (match) {
             var size = parseFloat(match[1]);
-            var unit = match[2];
+            var unit = match[2].toLowerCase();
             return size * units[unit];
         }
         return 0;

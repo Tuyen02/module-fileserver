@@ -1,7 +1,7 @@
 <!-- BEGIN: main -->
 <div class="container">
     <h2>{LANG.file}: {FILE_NAME}</h2>
-    <p class="d-inline-block alert alert-info w-fit" id="target-folder-notice" style="display: none;">{LANG.target_folder_not_found}</p>
+    <p class="d-inline-block alert alert-info w-fit" id="target-folder-notice">{LANG.target_folder_not_found}</p>
     <p id="selected-folder-path">{LANG.target_folder} <i class="fa fa-arrow-circle-down" aria-hidden="true"></i>:
         <span class="text-success"><u><strong>{SELECTED_FOLDER_PATH}</strong></u></span>
     </p>

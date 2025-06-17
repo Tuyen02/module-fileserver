@@ -37,9 +37,7 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
         $xtpl->parse('main.can_create');
     }
 
-    if (empty($result) && $lev == 0) {
-        $xtpl->parse('main.no_data');
-    } else {
+    if (!empty($result)) {
         foreach ($result as $row) {
             if ($logs) {
                 $row['total_size'] = isset($logs[$row['lev']]['total_size']) ? nv_convertfromBytes($logs[$row['lev']]['total_size']) : '0 B';
@@ -72,7 +70,7 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
 
             $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
             $xtpl->assign('DOWNLOAD', $row['url_download']);
-            $xtpl->parse('main.has_data.file_row.download');
+            $xtpl->parse('main.has_data_content.file_row.download');
 
             $view_href = $row['url_view']; 
             $preview_link_attributes = ''; 
@@ -80,20 +78,20 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
             $is_zip_uncompressed = (strtolower($fileInfo) == 'zip' && empty($row['compressed']));
 
             if (defined('NV_IS_SPADMIN') || $current_permission == 3) {
-                $xtpl->parse('main.has_data.file_row.delete');
-                $xtpl->parse('main.has_data.file_row.rename');
+                $xtpl->parse('main.has_data_content.file_row.delete');
+                $xtpl->parse('main.has_data_content.file_row.rename');
                 if (defined('NV_IS_SPADMIN'))
-                    $xtpl->parse('main.has_data.file_row.share');
+                    $xtpl->parse('main.has_data_content.file_row.share');
                 if (!$row['is_folder']) {
                     if (in_array($fileInfo, $editable_extensions)) {
                         $xtpl->assign('EDIT', $row['url_edit']);
-                        $xtpl->parse('main.has_data.file_row.edit');
+                        $xtpl->parse('main.has_data_content.file_row.edit');
                         $view_href = $row['url_edit']; 
                     }
                     if ($row['compressed'] || $is_zip_uncompressed) {
                         $xtpl->assign('VIEW', $row['url_compress']);
                         $view_href = $row['url_compress'];
-                        $xtpl->parse('main.has_data.file_row.compress_btn');
+                        $xtpl->parse('main.has_data_content.file_row.compress_btn');
                     }
                     
                     if (in_array($fileInfo, $viewable_extensions)) {
@@ -111,25 +109,25 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
                         if ($file_type) {
                             $xtpl->assign('FILE_TYPE', $file_type);
                             $xtpl->assign('FILE_PATH', NV_MY_DOMAIN . NV_BASE_SITEURL . ltrim($row['file_path'], '/'));
-                            $xtpl->parse('main.has_data.file_row.preview');
+                            $xtpl->parse('main.has_data_content.file_row.preview');
                             $view_href = 'javascript:void(0);';
                             $preview_link_attributes = 'onclick="togglePreview(event, this)" data-filetype="' . $file_type . '" data-filepath="' . NV_MY_DOMAIN . NV_BASE_SITEURL . ltrim($row['file_path'], '/') . '"';
                         }
                     }
                     $xtpl->assign('COPY', $row['url_clone']);
-                    $xtpl->parse('main.has_data.file_row.copy');
+                    $xtpl->parse('main.has_data_content.file_row.copy');
                 } 
             } elseif ($current_permission == 2) {
                 if (!$row['is_folder']) {
                     if (in_array($fileInfo, $editable_extensions)) {
                         $xtpl->assign('EDIT', $row['url_edit']);
-                        $xtpl->parse('main.has_data.file_row.edit');
+                        $xtpl->parse('main.has_data_content.file_row.edit');
                         $view_href = $row['url_edit']; 
                     }
                     if ($row['compressed'] || $is_zip_uncompressed) {
                          $xtpl->assign('VIEW', $row['url_compress']);
                          $view_href = $row['url_compress'];
-                         $xtpl->parse('main.has_data.file_row.compress_btn');
+                         $xtpl->parse('main.has_data_content.file_row.compress_btn');
                     }
                     if (in_array($fileInfo, $viewable_extensions)) {
                         $file_type = '';
@@ -146,7 +144,7 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
                         if ($file_type) {
                             $xtpl->assign('FILE_TYPE', $file_type);
                             $xtpl->assign('FILE_PATH', NV_MY_DOMAIN . NV_BASE_SITEURL . ltrim($row['file_path'], '/'));
-                            $xtpl->parse('main.has_data.file_row.preview');
+                            $xtpl->parse('main.has_data_content.file_row.preview');
                             $view_href = 'javascript:void(0);';
                             $preview_link_attributes = 'onclick="togglePreview(event, this)" data-filetype="' . $file_type . '" data-filepath="' . NV_MY_DOMAIN . NV_BASE_SITEURL . ltrim($row['file_path'], '/') . '"';
                         }
@@ -156,17 +154,19 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
 
             $xtpl->assign('VIEW', $view_href);
             $xtpl->assign('PREVIEW_LINK_ATTRIBUTES', $preview_link_attributes);
-            $xtpl->parse('main.has_data.file_row.view');
-            $xtpl->parse('main.has_data.file_row');
+            $xtpl->parse('main.has_data_content.file_row.view');
+            $xtpl->parse('main.has_data_content.file_row');
         }
         if (defined('NV_IS_SPADMIN')) {
-            $xtpl->parse('main.has_data.stats');
+            $xtpl->parse('main.has_data_content.stats');
         }
         if ($show_create_buttons) {
-            $xtpl->parse('main.has_data.can_compress');
-            $xtpl->parse('main.has_data.can_delete_all');
+            $xtpl->parse('main.has_data_content.can_compress');
+            $xtpl->parse('main.has_data_content.can_delete_all');
         }
-        $xtpl->parse('main.has_data');
+        $xtpl->parse('main.has_data_content');
+    } elseif (!empty($search_term)) {
+        $xtpl->parse('main.no_search_result');
     }
 
     if (!empty($module_config[$module_name]['captcha_type'])) {
