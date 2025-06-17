@@ -2,12 +2,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/monokai.min.css">
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-        background-color: #f5f5f5;
-    }
-
     .editor-container {
         width: 100%;
         max-width: 1200px;
@@ -78,12 +72,6 @@
         margin: 10px 0;
     }
 
-    .word-content table {
-        border-collapse: collapse;
-        width: 100%;
-        margin: 10px 0;
-    }
-
     .word-content table, .word-content th, .word-content td {
         border: 1px solid #ddd;
         padding: 8px;
@@ -91,59 +79,62 @@
 
     .excel-content {
         padding: 10px;
+        overflow: auto;
     }
 
-    .excel-content .tabs {
+    .sheet-tabs {
         display: flex;
         border-bottom: 1px solid #ddd;
         margin-bottom: 10px;
+        overflow-x: auto;
+        white-space: nowrap;
     }
 
-    .excel-content .tab {
+    .tab {
         padding: 10px 20px;
         cursor: pointer;
         background: #f2f2f2;
         margin-right: 5px;
         border-radius: 4px 4px 0 0;
+        border: 1px solid #ddd;
+        border-bottom: none;
     }
 
-    .excel-content .tab.active {
+    .tab.active {
         background: #fff;
         border-bottom: 2px solid #007bff;
     }
 
-    .excel-content .tab-content {
+    .tab-content {
         display: none;
+        overflow: auto;
     }
 
-    .excel-content .tab-content.active {
+    .tab-content.active {
         display: block;
     }
 
-    .excel-content table {
+    .excel-table {
         width: 100%;
         border-collapse: collapse;
         font-family: Arial, sans-serif;
         font-size: 14px;
     }
 
-    .excel-content th, .excel-content td {
+    .excel-table td {
         border: 1px solid #ddd;
         padding: 8px;
-        text-align: left;
+        min-width: 100px;
+        position: relative;
     }
 
-    .excel-content th {
+    .excel-table td:hover {
+        background-color: #f8f9fa;
+    }
+
+    .excel-table tr:first-child td {
         background-color: #f2f2f2;
         font-weight: bold;
-    }
-
-    .excel-content tr:nth-child(even) {
-        background-color: #f9f9f9;
-    }
-
-    .excel-content tr:hover {
-        background-color: #f1f1f1;
     }
 
     @media (max-width: 768px) {
@@ -221,23 +212,19 @@
             <!-- BEGIN: xlsx -->
             <div id="xlsxContainer" class="file-content-container">
                 <div id="xlsx-output" class="excel-content">
-                    <div id="tabs"></div>
+                    <div id="tabs" class="sheet-tabs"></div>
                     <div id="tab-content"></div>
                 </div>
             </div>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
             <script>
-                fetch("{FILE_URL}")
-                    .then(response => response.arrayBuffer())
-                    .then(arrayBuffer => {
-                        var data = new Uint8Array(arrayBuffer);
-                        var workbook = XLSX.read(data, { type: 'array' });
-                        var tabsContainer = document.getElementById('tabs');
-                        var contentContainer = document.getElementById('tab-content');
-
-                        workbook.SheetNames.forEach((sheetName, index) => {
-                            // Create tab
-                            var tab = document.createElement('div');
+                document.addEventListener('DOMContentLoaded', function() {
+                    try {
+                        const sheetData = JSON.parse('{FILE_CONTENT}');
+                        const tabsContainer = document.getElementById('tabs');
+                        const contentContainer = document.getElementById('tab-content');
+                        
+                        Object.keys(sheetData).forEach((sheetName, index) => {
+                            const tab = document.createElement('div');
                             tab.className = 'tab' + (index === 0 ? ' active' : '');
                             tab.textContent = sheetName;
                             tab.onclick = () => {
@@ -248,18 +235,33 @@
                             };
                             tabsContainer.appendChild(tab);
 
-                            // Create tab content
-                            var content = document.createElement('div');
+                            const content = document.createElement('div');
                             content.id = 'sheet-' + index;
                             content.className = 'tab-content' + (index === 0 ? ' active' : '');
-                            content.innerHTML = XLSX.utils.sheet_to_html(workbook.Sheets[sheetName], { editable: false });
+                            
+                            const table = document.createElement('table');
+                            table.className = 'excel-table';
+                            
+                            sheetData[sheetName].forEach((row, rowIndex) => {
+                                const tr = document.createElement('tr');
+                                row.forEach((cell, cellIndex) => {
+                                    const td = document.createElement('td');
+                                    td.textContent = cell !== null ? cell : '';
+                                    td.setAttribute('data-row', rowIndex);
+                                    td.setAttribute('data-col', cellIndex);
+                                    tr.appendChild(td);
+                                });
+                                table.appendChild(tr);
+                            });
+                            
+                            content.appendChild(table);
                             contentContainer.appendChild(content);
                         });
-                    })
-                    .catch(err => {
+                    } catch (err) {
                         document.getElementById('xlsx-output').innerHTML = "Không thể hiển thị file Excel.<br><small>" + err.message + "</small>";
                         console.error('Lỗi khi đọc file xlsx:', err);
-                    });
+                    }
+                });
             </script>
             <!-- END: xlsx -->
             <!-- BEGIN: excel -->

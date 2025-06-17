@@ -68,7 +68,20 @@ if (file_exists($full_path)) {
     } elseif (in_array($file_extension, ['doc', 'docx'])) {
         $file_content = NV_BASE_SITEURL . ltrim($file_path, '/');
     } elseif (in_array($file_extension, ['xls', 'xlsx'])) {
-        $file_content = NV_BASE_SITEURL . ltrim($file_path, '/');
+        if (!is_dir(NV_ROOTDIR . '/vendor/phpoffice/phpspreadsheet')) {
+            trigger_error('No phpspreadsheet lib. Run command "composer require phpoffice/phpspreadsheet" to install', 256);
+        }
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($full_path);
+            $sheetData = [];
+            foreach ($spreadsheet->getSheetNames() as $sheetName) {
+                $worksheet = $spreadsheet->getSheetByName($sheetName);
+                $sheetData[$sheetName] = $worksheet->toArray();
+            }
+            $file_content = json_encode($sheetData);
+        } catch (Exception $e) {
+            $file_content = NV_BASE_SITEURL . ltrim($file_path, '/');
+        }
     } else {
         $file_content = file_get_contents($full_path);
     }
