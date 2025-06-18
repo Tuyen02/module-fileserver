@@ -165,7 +165,7 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
             $xtpl->parse('main.has_data_content.can_delete_all');
         }
         $xtpl->parse('main.has_data_content');
-    } elseif (!empty($search_term)) {
+    } else {
         $xtpl->parse('main.no_search_result');
     }
 
@@ -228,7 +228,7 @@ function nv_fileserver_compress($row, $list, $reponse, $tree_html, $current_perm
 }
 function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $reponse, $current_permission, $back_url)
 {
-    global $module_file, $global_config, $lang_module, $allowed_create_extensions;
+    global $module_file, $global_config, $lang_module, $allowed_create_extensions, $module_name, $op;
 
     $xtpl = new XTemplate('edit.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
@@ -238,16 +238,20 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
     $xtpl->assign('FILE_NAME', $file_name);
     $xtpl->assign('url_view', $view_url);
     $xtpl->assign('BACK_URL', $back_url);
-    
+    $xtpl->assign('BASE_URL', NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name);
+    $xtpl->assign('NV_OP_VARIABLE', NV_OP_VARIABLE);
+    $xtpl->assign('OP', $op);
+    $xtpl->assign('TOKEN', md5($file_id . NV_CHECK_SESSION . $global_config['sitekey']));
 
-    $can_edit = ($current_permission >= 3 || defined('NV_IS_SPADMIN'));
+    $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+    $can_edit = ($current_permission >= 3 || defined('NV_IS_SPADMIN')) && 
+                (in_array($file_extension, $allowed_create_extensions));
+
     $xtpl->assign('DISABLE_CLASS', $can_edit ? '' : 'readonly-editor');
     $xtpl->assign('DISABLE_ATTR', $can_edit ? '' : 'readonly');
     $xtpl->assign('READONLY', $can_edit ? 'false' : 'true');
 
-    $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-
-    if ($can_edit && in_array($file_extension, $allowed_create_extensions)) {
+    if ($can_edit) {
         $xtpl->parse('main.can_save');
     } else {
         $xtpl->parse('main.cannt_save');

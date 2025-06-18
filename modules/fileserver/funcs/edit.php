@@ -7,6 +7,20 @@ $allowed_html_tags = (NV_ALLOWED_HTML_TAGS . ', html, title, meta, link, style, 
 
 $page_title = $lang_module['edit'];
 
+if ($nv_Request->get_int('download', 'get', 0) == 1) {
+    $file_id = $nv_Request->get_int('file_id', 'get', 0);
+} else {
+    if (!empty($array_op) && preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m)) {
+        $file_id = $m[2];
+    } else {
+        $file_id = $nv_Request->get_int('file_id', 'get', 0);
+    }
+}
+
+if (empty($file_id)) {
+    nv_redirect_location($base_url);
+}
+
 $sql = 'SELECT file_id, file_name, file_path, lev, alias, is_folder, uploaded_by FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE is_folder = 0 AND status = 1 AND file_id = ' . $file_id;
 $result = $db->query($sql);
 $row = $result->fetch();
@@ -18,14 +32,18 @@ if (empty($row)) {
     nv_redirect_location($base_url);
 }
 
+$current_permission = get_user_permission($file_id, $row['uploaded_by']);
+if ($current_permission <= 2) {
+    nv_redirect_location($base_url);
+}
+
+$file_extension = strtolower(pathinfo($row['file_name'], PATHINFO_EXTENSION));
+if (!in_array($file_extension, $allowed_create_extensions) && !in_array($file_extension, ['doc', 'docx', 'xls', 'xlsx'])) {
+    nv_redirect_location($base_url);
+}
+
 $status = '';
 $message = '';
-
-$current_permission = get_user_permission($file_id, $row['uploaded_by']);
-if ($current_permission < 3) {
-    $status = $lang_module['error'];
-    $message = $lang_module['not_permission_to_edit'];
-}
 
 $breadcrumbs[] = [
     'catid' => $row['lev'],
@@ -35,12 +53,12 @@ $breadcrumbs[] = [
 $current_lev = $row['lev'];
 
 while ($current_lev > 0) {
-    $sql = 'SELECT file_name, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
+    $sql = 'SELECT file_id, file_name, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
     $_row = $db->query($sql)->fetch();
     if (empty($_row)) {
         break;
     }
-    $op =  $module_info['alias']['main'] ;
+    $op = $module_info['alias']['main'];
     $breadcrumbs[] = [
         'catid' => $current_lev,
         'title' => $_row['file_name'],
@@ -59,7 +77,6 @@ $back_url = $view_url;
 $file_name = $row['file_name'];
 $file_path = $row['file_path'];
 $full_path = NV_ROOTDIR . $file_path;
-$file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
 
 $file_content = '';
 if (file_exists($full_path)) {
@@ -84,6 +101,21 @@ if (file_exists($full_path)) {
         }
     } else {
         $file_content = file_get_contents($full_path);
+    }
+}
+
+if ($nv_Request->get_int('download', 'get', 0) == 1) {
+    $token = $nv_Request->get_title('token', 'get', '');
+
+    if ($row['file_id'] == 0 || empty($token) || $token != md5($row['file_id'] . NV_CHECK_SESSION . $global_config['sitekey'])) {
+        nv_redirect_location($base_url);
+    }
+
+    $file_path = NV_ROOTDIR . $row['file_path'];
+    if (file_exists($file_path)) {
+        $_download = new NukeViet\Files\Download($file_path, NV_ROOTDIR . $base_dir, $row['file_name'], true, 0);
+        $_download->download_file();
+        exit();
     }
 }
 

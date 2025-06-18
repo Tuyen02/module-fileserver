@@ -849,11 +849,9 @@
         } else if (fileType === 'audio') {
             modalBody.append('<div class="text-center"><audio controls style="width: 100%; min-height: 50px;"><source src="' + filePath + '" type="audio/mpeg">{LANG.browser_support_audio}</audio></div>');
         } else if (fileType === 'powerpoint') {
-            modalBody.append('<div class="alert alert-warning text-center">{LANG.download_to_view}</div>');
-        } else if (fileType === 'zip') {
-            modalBody.append('<div class="alert alert-info text-center">{LANG.download_to_view_zip}</div>');
+            modalBody.append('<div class="alert alert-warning text-center">{LANG.download_to_view_ppt}</div>');
         } else {
-            modalBody.append('<p>{LANG.cannot_preview_file}</p>');
+            modalBody.append('<p>{LANG.download_to_view_ppt}</p>');
         }
 
         $('#previewModal').modal('show');

@@ -276,7 +276,11 @@
         </div>
         <!-- END: can_save -->
         <!-- BEGIN: cannt_save -->
-        <div class="alert alert-warning text-center">{LANG.download_to_view}</div>
+        <div class="alert alert-warning text-center">
+            <a href="{BASE_URL}&amp;{NV_OP_VARIABLE}={OP}&amp;file_id={FILE_ID}&amp;download=1&amp;token={TOKEN}" class="text-secondary">
+                <i class="fa fa-download"></i> {LANG.download_to_view}
+            </a>
+        </div>
         <!-- END: cannt_save -->
     </form>
 </div>

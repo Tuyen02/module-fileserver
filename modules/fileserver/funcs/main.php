@@ -315,7 +315,6 @@ if (!empty($action)) {
                 nv_jsonOutput(['status' => $status, 'message' => $lang_global['securitycodeincorrect'], 'refresh_captcha' => true]);
             }
         }
-
         if ($type == 0) {
             $extension = pathinfo($name_f, PATHINFO_EXTENSION);
             $filename = pathinfo($name_f, PATHINFO_FILENAME);
