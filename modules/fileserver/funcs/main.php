@@ -979,30 +979,38 @@ $sql_all = 'SELECT f.*, p.p_group, p.p_other
     WHERE f.status = 1';
 $result_all = $db->query($sql_all)->fetchAll(PDO::FETCH_ASSOC);
 
-$is_group_user = false;
-if (defined('NV_IS_USER') && isset($user_info['in_groups']) && !empty($module_config[$module_name]['group_admin_fileserver'])) {
-    $admin_groups = explode(',', $module_config[$module_name]['group_admin_fileserver']);
-    $is_group_user = !empty(array_intersect($user_info['in_groups'], $admin_groups));
+$admin_groups = explode(',', $module_config[$module_name]['group_admin_fileserver']);
+$user_groups = [];
+if (isset($user_info['in_groups'])) {
+    $user_groups = is_array($user_info['in_groups']) ? $user_info['in_groups'] : array_map('intval', explode(',', $user_info['in_groups']));
 }
+$is_group_user = !empty(array_intersect($user_groups, $admin_groups));
 
 $filtered = array_filter($result_all, function($item) use ($is_group_user) {
     if (defined('NV_IS_SPADMIN')) {
         return true;
     }
+    
     if ($is_group_user) {
         return isset($item['p_group']) && $item['p_group'] >= 2;
     } else {
+        if (isset($item['p_group']) && $item['p_group'] == 3) {
+            return false;
+        }
         return isset($item['p_other']) && $item['p_other'] == 2;
     }
 });
 
-$filtered = array_values($filtered);
-
 $tree = buildTree($filtered);
 $tree_html = displayAllTree($tree, $lev, true);
 
+$table_data = array_filter($filtered, function($item) use ($lev) {
+    return $item['lev'] == $lev;
+});
+
+$contents = nv_fileserver_main($table_data, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page, $tree_html);
+
 $nv_BotManager->setFollow()->setNoIndex();
-$contents = nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page, $tree_html);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

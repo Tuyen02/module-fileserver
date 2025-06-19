@@ -134,7 +134,12 @@ if ($lev > 0 && !defined('NV_IS_SPADMIN')) {
     $sql_permissions = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $lev;
     $permissions = $db->query($sql_permissions)->fetch(PDO::FETCH_ASSOC);
 
-    $is_group_user = isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty($config_value_array) && !empty(array_intersect($user_info['in_groups'], $config_value_array));
+    $admin_groups = explode(',', $module_config[$module_name]['group_admin_fileserver']);
+    $user_groups = [];
+    if (isset($user_info['in_groups'])) {
+        $user_groups = is_array($user_info['in_groups']) ? $user_info['in_groups'] : array_map('intval', explode(',', $user_info['in_groups']));
+    }
+    $is_group_user = !empty(array_intersect($user_groups, $admin_groups));
 
     $current_permission = $permissions ? ($is_group_user ? $permissions['p_group'] : $permissions['p_other']) : 1;
 
@@ -473,7 +478,6 @@ function compressFiles($fileIds, $zipFilePath)
             return ['status' => 'error', 'message' => $lang_module['zip_false'] . $lang_module['cannot_move_zip']];
         }
 
-        // Kiểm tra file zip sau khi tạo
         $testZip = new ZipArchive();
         if ($testZip->open($zipFilePath) !== TRUE) {
             unlink($zipFilePath);
@@ -661,8 +665,9 @@ function updateStat($lev)
 }
 
 /**
- * Xây dựng cây từ danh sách file/thư mục
- * @param array $list Danh sách file/thư mục
+ * Xây dựng cây từ danh sách file/thư mục đã được lọc quyền từ ngoài (main.php)
+ * Lưu ý: Không lọc lại quyền trong hàm này, chỉ xây dựng cây từ danh sách đã được phép xem
+ * @param array $list Danh sách file/thư mục đã lọc quyền
  * @return array Cây file/thư mục
  */
 function buildTree($list)
@@ -984,6 +989,11 @@ function get_user_permission($file_id, $userid)
     if (defined('NV_IS_USER')) {
         if (isset($user_info['in_groups']) && is_array($user_info['in_groups'])) {
             $admin_groups = explode(',', $module_config[$module_name]['group_admin_fileserver']);
+            $user_groups = [];
+            if (isset($user_info['in_groups'])) {
+                $user_groups = is_array($user_info['in_groups']) ? $user_info['in_groups'] : array_map('intval', explode(',', $user_info['in_groups']));
+            }
+            $is_group_user = !empty(array_intersect($user_groups, $admin_groups));
             if (!empty(array_intersect($user_info['in_groups'], $admin_groups))) {
                 return isset($perm['p_group']) ? intval($perm['p_group']) : 1;
             }

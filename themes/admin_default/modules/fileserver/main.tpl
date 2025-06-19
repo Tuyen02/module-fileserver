@@ -12,7 +12,6 @@
     <!-- END: error -->
     <form action="{NV_BASE_ADMINURL}index.php?{NV_LANG_VARIABLE}={NV_LANG_DATA}&amp;{NV_NAME_VARIABLE}={MODULE_NAME}&amp;{NV_OP_VARIABLE}={OP}"
         method="post" class="col-md-12 confirm-reload">
-        <h2>{LANG.main_title}</h2>
         <div class="form-group">
             <label for="group_ids">{LANG.group_user}</label>
             <select name="group_ids[]" id="group_ids" class="form-control" multiple style="width: 100%;">

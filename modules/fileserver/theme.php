@@ -39,7 +39,7 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
 
     if (!empty($result)) {
         foreach ($result as $row) {
-            if ($logs) {
+            if ($row['lev'] == $lev) {
                 $row['total_size'] = isset($logs[$row['lev']]['total_size']) ? nv_convertfromBytes($logs[$row['lev']]['total_size']) : '0 B';
                 $row['total_files'] = isset($logs[$row['lev']]['total_files']) ? $logs[$row['lev']]['total_files'] : 0;
                 $row['total_folders'] = isset($logs[$row['lev']]['total_folders']) ? $logs[$row['lev']]['total_folders'] : 0;
@@ -281,13 +281,18 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
     return $xtpl->text('main');
 }
 
-function nv_fileserver_perm($row, $perm, $reponse)
+function nv_fileserver_perm($row, $perm, $reponse, $group_list)
 {
     global $module_file, $global_config, $lang_module;
     $xtpl = new XTemplate('perm.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
     $xtpl->assign('FILE_NAME', $row['file_name']);
     $xtpl->assign('FILE_PATH', $row['file_path']);
+    foreach ($group_list as $group) {
+        $xtpl->assign('GROUP_ID', $group['group_id']);
+        $xtpl->assign('GROUP_TITLE', $group['title']);
+        $xtpl->parse('main.group');
+    }
     $xtpl->assign('GROUP_LEVEL_1', $perm['p_group'] == 1 ? 'selected' : '');
     $xtpl->assign('GROUP_LEVEL_2', $perm['p_group'] == 2 ? 'selected' : '');
     $xtpl->assign('GROUP_LEVEL_3', $perm['p_group'] == 3 ? 'selected' : '');

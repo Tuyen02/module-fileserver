@@ -11,7 +11,7 @@
             <thead>
                 <tr>
                     <th></th>
-                    <th class="text-center">{LANG.group}</th>
+                    <th class="text-center">{LANG.group}<br>(<!-- BEGIN: group -->{GROUP_TITLE}, <!-- END: group -->)</th>
                     <th class="text-center">{LANG.other}</th>
                 </tr>
             </thead>

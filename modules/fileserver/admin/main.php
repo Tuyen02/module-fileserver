@@ -4,7 +4,7 @@ if (!defined('NV_IS_FILE_ADMIN')) {
     exit('Stop!!!');
 }
 
-$page_title = $module_name;
+$page_title = $lang_module['choose_group'];
 $post = [];
 $mess = '';
 $err = '';

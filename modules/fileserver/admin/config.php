@@ -176,7 +176,6 @@ $xtpl->assign('NV_OP_VARIABLE', NV_OP_VARIABLE);
 $xtpl->assign('MODULE_NAME', $module_name);
 $xtpl->assign('OP', $op);
 $xtpl->assign('CONFIG', $array_config);
-// $xtpl->assign('USE_CAPTCHA_CHECKED', $array_config['use_captcha'] == 1 ? ' checked="checked"' : '');
 
 if ($message != '') {
     $xtpl->assign('MESSAGE', $message);

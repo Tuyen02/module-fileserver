@@ -103,6 +103,21 @@ if ($nv_Request->isset_request('submit', 'post')) {
     }
 }
 
+$group_ids = explode(',', $module_config[$module_name]['group_admin_fileserver']);
+$sql_user = 'SELECT group_id, title 
+    FROM ' . NV_GROUPSDETAIL_GLOBALTABLE . ' 
+    WHERE group_id IN (' . implode(',', $group_ids) . ') 
+    AND lang = ' . $db->quote(NV_LANG_DATA);
+$result_user = $db->query($sql_user);
+
+$group_list = [];
+while ($_row = $result_user->fetch()) {
+    $group_list[] = [
+        'group_id' => $_row['group_id'],
+        'title' => ($_row['group_id'] < 10 ? $lang_global['level' . $_row['group_id']] : $_row['title'])
+    ];
+}
+
 $row_perm = getParentPermissions($file_id);
 $perm = [
     'p_group' => $row_perm['p_group'],
@@ -114,7 +129,7 @@ $reponse = [
     'message' => $message,
 ];
 
-$contents = nv_fileserver_perm($row, $perm, $reponse);
+$contents = nv_fileserver_perm($row, $perm, $reponse, $group_list);
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);

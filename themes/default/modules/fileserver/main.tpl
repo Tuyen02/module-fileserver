@@ -1,5 +1,20 @@
 <!-- BEGIN: main -->
 <div class="container mt-4 mb-5 pb-5">
+    <!-- BEGIN: breadcrumbs -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{BASE_URL}">{LANG.home}</a>
+            </li>
+            <!-- BEGIN: loop -->
+            <li class="breadcrumb-item">
+                <a href="{BREADCRUMB.link}">{BREADCRUMB.title}</a>
+            </li>
+            <!-- END: loop -->
+        </ol>
+    </nav>
+    <!-- END: breadcrumbs -->
+    
     <h1 class="text-center">{LANG.module_title}</h1>
     <br>
     <!-- BEGIN: error -->
