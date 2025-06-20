@@ -986,6 +986,17 @@ function get_user_permission($file_id, $userid)
     $sql = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . intval($file_id);
     $perm = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
 
+    // Nếu không có quyền được thiết lập, trả về quyền mặc định
+    if (!$perm) {
+        return 1;
+    }
+
+    // Người dùng chưa đăng nhập (userid = 0)
+    if ($userid == 0) {
+        return isset($perm['p_other']) ? intval($perm['p_other']) : 1;
+    }
+
+    // Người dùng đã đăng nhập
     if (defined('NV_IS_USER')) {
         if (isset($user_info['in_groups']) && is_array($user_info['in_groups'])) {
             $admin_groups = explode(',', $module_config[$module_name]['group_admin_fileserver']);
@@ -994,15 +1005,23 @@ function get_user_permission($file_id, $userid)
                 $user_groups = is_array($user_info['in_groups']) ? $user_info['in_groups'] : array_map('intval', explode(',', $user_info['in_groups']));
             }
             $is_group_user = !empty(array_intersect($user_groups, $admin_groups));
+            
+            // Nếu là thành viên nhóm admin
             if (!empty(array_intersect($user_info['in_groups'], $admin_groups))) {
                 return isset($perm['p_group']) ? intval($perm['p_group']) : 1;
             }
+            
+            // Nếu là chủ sở hữu file
             if (isset($userid) && $userid == $user_info['userid']) {
                 return 3;
             }
+            
+            // Nếu là thành viên nhóm thường
             return isset($perm['p_group']) ? intval($perm['p_group']) : 1;
         }
     }
+    
+    // Người dùng đã đăng nhập nhưng không thuộc nhóm nào
     return isset($perm['p_other']) ? intval($perm['p_other']) : 1;
 }
 

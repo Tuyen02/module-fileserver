@@ -334,8 +334,10 @@ if (!empty($action)) {
             }
         }
 
-        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND is_folder = ' . $type . ' AND file_name = ' . $db->quote($name_f) . ' AND lev = ' . $lev;
-        $count = $db->query($sqlCheck)->fetchColumn();
+        $sqlCheck = 'SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE status = 1 AND is_folder = ' . $type . ' AND file_name = ? AND lev = ' . $lev;
+        $stmt = $db->prepare($sqlCheck);
+        $stmt->execute([$name_f]);
+        $count = $stmt->fetchColumn();
 
         if ($count > 0) {
             $i = 1;
@@ -346,7 +348,8 @@ if (!empty($action)) {
                 if ($extension) {
                     $suggestedName .= '.' . $extension;
                 }
-                $count = $db->query($sqlCheck)->fetchColumn();
+                $stmt->execute([$suggestedName]);
+                $count = $stmt->fetchColumn();
                 $i++;
             } while ($count > 0);
             nv_jsonOutput(['status' => $status, 'message' => sprintf($lang_module['file_name_exists_suggest'], $name_f, $suggestedName), 'refresh_captcha' => true]);
@@ -994,9 +997,6 @@ $filtered = array_filter($result_all, function($item) use ($is_group_user) {
     if ($is_group_user) {
         return isset($item['p_group']) && $item['p_group'] >= 2;
     } else {
-        if (isset($item['p_group']) && $item['p_group'] == 3) {
-            return false;
-        }
         return isset($item['p_other']) && $item['p_other'] == 2;
     }
 });
