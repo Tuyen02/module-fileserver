@@ -1004,9 +1004,13 @@ $filtered = array_filter($result_all, function($item) use ($is_group_user) {
 $tree = buildTree($filtered);
 $tree_html = displayAllTree($tree, $lev, true);
 
-$table_data = array_filter($filtered, function($item) use ($lev) {
-    return $item['lev'] == $lev;
-});
+if (!empty($search_term)) {
+    $table_data = $result;
+} else {
+    $table_data = array_filter($filtered, function($item) use ($lev) {
+        return $item['lev'] == $lev;
+    });
+}
 
 $contents = nv_fileserver_main($table_data, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page, $tree_html);
 

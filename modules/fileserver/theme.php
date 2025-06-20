@@ -6,7 +6,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 
 function nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page, $tree_html)
 {
-    global $module_file, $global_config, $lang_module, $module_name, $module_config, $lang_global, $editable_extensions, $viewable_extensions, $op, $user_info;
+    global $module_file, $global_config, $lang_module, $module_name, $module_config, $lang_global, $editable_extensions, $viewable_extensions, $op, $user_info, $allowed_create_extensions;
 
     $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
@@ -39,11 +39,9 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
 
     if (!empty($result)) {
         foreach ($result as $row) {
-            if ($row['lev'] == $lev) {
-                $row['total_size'] = isset($logs[$row['lev']]['total_size']) ? nv_convertfromBytes($logs[$row['lev']]['total_size']) : '0 B';
-                $row['total_files'] = isset($logs[$row['lev']]['total_files']) ? $logs[$row['lev']]['total_files'] : 0;
-                $row['total_folders'] = isset($logs[$row['lev']]['total_folders']) ? $logs[$row['lev']]['total_folders'] : 0;
-            }
+            $row['total_size'] = isset($logs[$row['lev']]['total_size']) ? nv_convertfromBytes($logs[$row['lev']]['total_size']) : '0 B';
+            $row['total_files'] = isset($logs[$row['lev']]['total_files']) ? $logs[$row['lev']]['total_files'] : 0;
+            $row['total_folders'] = isset($logs[$row['lev']]['total_folders']) ? $logs[$row['lev']]['total_folders'] : 0;
             $row['created_at'] = date('d/m/Y H:i:s', $row['created_at']);
             $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
             $row['icon_class'] = getFileIconClass($row);
@@ -53,9 +51,10 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
                 $row['p_other'] = isset($permissions[$row['file_id']]['p_other']) ? $permissions[$row['file_id']]['p_other'] : 1;
             }
 
-            $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
+            $row['url'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias'];
             $row['url_perm'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=perm/' . $row['alias'];
             $row['url_edit'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=edit/' . $row['alias'];
+            $row['url_view'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=view/' . $row['alias'];
             $row['url_edit_img'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=edit_img/' . $row['alias'];
             $row['url_delete'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op . '&amp;file_id=' . $row['file_id'] . '&action=delete&checksess=' . md5($row['file_id'] . NV_CHECK_SESSION);
             $row['url_download'] = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name . '&amp;' . NV_OP_VARIABLE . '=' . $op . '&amp;file_id=' . $row['file_id'] . '&download=1&token=' . md5($row['file_id'] . NV_CHECK_SESSION . $global_config['sitekey']);
@@ -68,12 +67,21 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
             $row['file_size'] = nv_convertfromBytes($row['file_size']);
             $xtpl->assign('ROW', $row);
 
-            $fileInfo = pathinfo($row['file_name'], PATHINFO_EXTENSION);
+            $fileInfo = strtolower(pathinfo($row['file_name'], PATHINFO_EXTENSION));
             $xtpl->assign('DOWNLOAD', $row['url_download']);
             $xtpl->parse('main.has_data_content.file_row.download');
+            $view_href = $row['url'];
 
-            $view_href = $row['url_view']; 
-            $preview_link_attributes = ''; 
+            if (!$row['is_folder']) {
+                if ($fileInfo === 'txt') {
+                    $view_href = $row['url_edit'];
+                } elseif (in_array($fileInfo, $editable_extensions)) {
+                    $view_href = $row['url_view'];
+                } else {
+                    $view_href = $row['url'];
+                }
+            }
+            $preview_link_attributes = '';
 
             $is_zip_uncompressed = (strtolower($fileInfo) == 'zip' && empty($row['compressed']));
 
@@ -84,10 +92,15 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
                     $xtpl->parse('main.has_data_content.file_row.share');
                 if (!$row['is_folder']) {
                     if (in_array($fileInfo, $editable_extensions)) {
+                        $view_href = $row['url_view']; 
+                    }
+
+                    if (in_array($fileInfo, $allowed_create_extensions)) {
                         $xtpl->assign('EDIT', $row['url_edit']);
                         $xtpl->parse('main.has_data_content.file_row.edit');
                         $view_href = $row['url_edit']; 
                     }
+
                     if ($row['compressed'] || $is_zip_uncompressed) {
                         $xtpl->assign('VIEW', $row['url_compress']);
                         $view_href = $row['url_compress'];
@@ -119,77 +132,39 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
                 } 
             } elseif ($current_permission == 2) {
                 if (!$row['is_folder']) {
-                    if (!isset($user_info['userid']) || $user_info['userid'] == 0) {
-                        if (in_array($fileInfo, $viewable_extensions)) {
-                            $file_type = '';
-                            if (in_array(strtolower($fileInfo), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'])) {
-                                $file_type = 'img';
-                            } elseif (in_array(strtolower($fileInfo), ['mp4', 'webm', 'ogg'])) {
-                                $file_type = 'video';
-                            } elseif (in_array(strtolower($fileInfo), ['mp3', 'wav', 'ogg'])) {
-                                $file_type = 'audio';
-                            } elseif (in_array(strtolower($fileInfo), ['ppt', 'pptx'])) {
-                                $file_type = 'powerpoint';
-                            }
-                            
-                            if ($file_type) {
-                                $xtpl->assign('FILE_TYPE', $file_type);
-                                $xtpl->assign('FILE_PATH', NV_MY_DOMAIN . NV_BASE_SITEURL . ltrim($row['file_path'], '/'));
-                                $xtpl->parse('main.has_data_content.file_row.preview');
-                                $view_href = 'javascript:void(0);';
-                                $preview_link_attributes = 'onclick="togglePreview(event, this)" data-filetype="' . $file_type . '" data-filepath="' . NV_MY_DOMAIN . NV_BASE_SITEURL . ltrim($row['file_path'], '/') . '"';
-                            }
-                        } elseif (in_array(strtolower($fileInfo), ['doc', 'docx', 'xls', 'xlsx', 'pdf'])) {
-                            $file_type = '';
-                            if (in_array(strtolower($fileInfo), ['doc', 'docx'])) {
-                                $file_type = 'docx';
-                            } elseif (in_array(strtolower($fileInfo), ['xls', 'xlsx'])) {
-                                $file_type = 'xlsx';
-                            } elseif (strtolower($fileInfo) == 'pdf') {
-                                $file_type = 'pdf';
-                            }
-                            
-                            if ($file_type) {
-                                $xtpl->assign('FILE_TYPE', $file_type);
-                                $xtpl->assign('FILE_PATH', NV_MY_DOMAIN . NV_BASE_SITEURL . ltrim($row['file_path'], '/'));
-                                $xtpl->parse('main.has_data_content.file_row.preview');
-                                $view_href = 'javascript:void(0);';
-                                $preview_link_attributes = 'onclick="togglePreview(event, this)" data-filetype="' . $file_type . '" data-filepath="' . NV_MY_DOMAIN . NV_BASE_SITEURL . ltrim($row['file_path'], '/') . '"';
-                            }
+                    if (in_array($fileInfo, $editable_extensions)) {
+                        $view_href = $row['url_view'];
+                    } elseif(in_array($fileInfo, $allowed_create_extensions)){
+                        $xtpl->assign('EDIT', $row['url_edit']);
+                        $xtpl->parse('main.has_data_content.file_row.edit');
+                        $view_href = $row['url_edit'];
+                    } elseif (in_array($fileInfo, $viewable_extensions)) {
+                        $file_type = '';
+                        if (in_array(strtolower($fileInfo), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'])) {
+                            $file_type = 'img';
+                        } elseif (in_array(strtolower($fileInfo), ['mp4', 'webm', 'ogg'])) {
+                            $file_type = 'video';
+                        } elseif (in_array(strtolower($fileInfo), ['mp3', 'wav', 'ogg'])) {
+                            $file_type = 'audio';
+                        } elseif (in_array(strtolower($fileInfo), ['ppt', 'pptx'])) {
+                            $file_type = 'powerpoint';
+                        }
+                        if ($file_type) {
+                            $xtpl->assign('FILE_TYPE', $file_type);
+                            $xtpl->assign('FILE_PATH', NV_MY_DOMAIN . NV_BASE_SITEURL . ltrim($row['file_path'], '/'));
+                            $xtpl->parse('main.has_data_content.file_row.preview');
+                            $view_href = 'javascript:void(0);';
+                            $preview_link_attributes = 'onclick="togglePreview(event, this)" data-filetype="' . $file_type . '" data-filepath="' . NV_MY_DOMAIN . NV_BASE_SITEURL . ltrim($row['file_path'], '/') . '"';
                         }
                     } else {
-                        if (in_array($fileInfo, $editable_extensions)) {
-                            $xtpl->assign('EDIT', $row['url_edit']);
-                            $xtpl->parse('main.has_data_content.file_row.edit');
-                            $view_href = $row['url_edit']; 
-                        }
-                        if ($row['compressed'] || $is_zip_uncompressed) {
-                             $xtpl->assign('VIEW', $row['url_compress']);
-                             $view_href = $row['url_compress'];
-                             $xtpl->parse('main.has_data_content.file_row.compress_btn');
-                        }
-                        if (in_array($fileInfo, $viewable_extensions)) {
-                            $file_type = '';
-                            if (in_array(strtolower($fileInfo), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'])) {
-                                $file_type = 'img';
-                            } elseif (in_array(strtolower($fileInfo), ['mp4', 'webm', 'ogg'])) {
-                                $file_type = 'video';
-                            } elseif (in_array(strtolower($fileInfo), ['mp3', 'wav', 'ogg'])) {
-                                $file_type = 'audio';
-                            } elseif (in_array(strtolower($fileInfo), ['ppt', 'pptx'])) {
-                                $file_type = 'powerpoint';
-                            }
-                            
-                            if ($file_type) {
-                                $xtpl->assign('FILE_TYPE', $file_type);
-                                $xtpl->assign('FILE_PATH', NV_MY_DOMAIN . NV_BASE_SITEURL . ltrim($row['file_path'], '/'));
-                                $xtpl->parse('main.has_data_content.file_row.preview');
-                                $view_href = 'javascript:void(0);';
-                                $preview_link_attributes = 'onclick="togglePreview(event, this)" data-filetype="' . $file_type . '" data-filepath="' . NV_MY_DOMAIN . NV_BASE_SITEURL . ltrim($row['file_path'], '/') . '"';
-                            }
-                        }
+                        $view_href = $row['url'];
                     }
-                } 
+                    if ($row['compressed'] || $is_zip_uncompressed) {
+                        $xtpl->assign('VIEW', $row['url_compress']);
+                        $view_href = $row['url_compress'];
+                        $xtpl->parse('main.has_data_content.file_row.compress_btn');
+                    }
+                }
             }
 
             $xtpl->assign('VIEW', $view_href);
@@ -303,14 +278,55 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
         $xtpl->parse('main.message');
     }
 
+    $xtpl->parse('main.text');
+
+    if (!empty($back_url)) {
+        $xtpl->parse('main.back');
+    }
+
+    $xtpl->parse('main');
+    return $xtpl->text('main');
+}
+function nv_fileserver_view($row, $file_content, $file_id, $file_name, $view_url, $reponse, $current_permission, $back_url)
+{
+    global $module_file, $global_config, $lang_module, $module_name, $op;
+
+    $xtpl = new XTemplate('view.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
+    $xtpl->assign('LANG', $lang_module);
+    $xtpl->assign('FILE_CONTENT', $file_content);
+    $xtpl->assign('FILE_URL',  NV_MY_DOMAIN . NV_BASE_SITEURL . ltrim($row['file_path'], '/'));
+    $xtpl->assign('FILE_ID', $file_id);
+    $xtpl->assign('FILE_NAME', $file_name);
+    $xtpl->assign('url_view', $view_url);
+    $xtpl->assign('BACK_URL', $back_url);
+    $xtpl->assign('BASE_URL', NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&amp;' . NV_NAME_VARIABLE . '=' . $module_name);
+    $xtpl->assign('NV_OP_VARIABLE', NV_OP_VARIABLE);
+    $xtpl->assign('OP', $op);
+    $xtpl->assign('TOKEN', md5($file_id . NV_CHECK_SESSION . $global_config['sitekey']));
+
+    $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+    $can_edit = ($current_permission >= 3 || defined('NV_IS_SPADMIN'));
+
+    $xtpl->assign('DISABLE_CLASS', $can_edit ? '' : 'readonly-editor');
+    $xtpl->assign('DISABLE_ATTR', $can_edit ? '' : 'readonly');
+    $xtpl->assign('READONLY', $can_edit ? 'false' : 'true');
+
+    if ($can_edit == false) {
+        $xtpl->parse('main.cannt_save');
+    }
+
+    if (!empty($reponse['message'])) {
+        $xtpl->assign('MESSAGE_CLASS', ($reponse['status'] == 'success') ? 'alert-success' : 'alert-danger');
+        $xtpl->assign('MESSAGE', $reponse['message']);
+        $xtpl->parse('main.message');
+    }
+
     if ($file_extension == 'pdf') {
         $xtpl->parse('main.pdf');
     } elseif (in_array($file_extension, ['doc', 'docx'])) {
         $xtpl->parse('main.docx');
     } elseif (in_array($file_extension, ['xls', 'xlsx'])) {
         $xtpl->parse('main.xlsx');
-    } else {
-        $xtpl->parse('main.text');
     }
 
     if (!empty($back_url)) {
@@ -320,7 +336,6 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
     $xtpl->parse('main');
     return $xtpl->text('main');
 }
-
 function nv_fileserver_perm($row, $perm, $reponse, $group_list)
 {
     global $module_file, $global_config, $lang_module;

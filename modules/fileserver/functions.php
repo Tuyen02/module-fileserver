@@ -106,8 +106,8 @@ if ($use_elastic == 1) {
 }
 
 $allowed_create_extensions = ['txt'];
-$allowed_rename_extensions = ['txt', 'html', 'css','png','jpg','mp3','mp4','ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx', 'pdf', 'zip', 'rar', 'gif', 'jpeg', 'xml', 'sql', 'json', 'js'];
-$editable_extensions = ['txt', 'php', 'html', 'css', 'js', 'json', 'xml', 'sql', 'doc', 'docx', 'xls', 'xlsx','pdf'];
+$allowed_rename_extensions = ['txt', 'html', 'css','png','jpg','mp3','mp4','ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx', 'pdf', 'zip', 'gif', 'jpeg'];
+$editable_extensions = ['doc', 'docx', 'xls', 'xlsx','pdf'];
 $viewable_extensions = ['png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'ppt', 'pptx'];
 $file_types = [
     'text' => ['txt', 'html', 'css'],
