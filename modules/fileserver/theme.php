@@ -135,9 +135,7 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
                     if (in_array($fileInfo, $editable_extensions)) {
                         $view_href = $row['url_view'];
                     } elseif(in_array($fileInfo, $allowed_create_extensions)){
-                        $xtpl->assign('EDIT', $row['url_edit']);
-                        $xtpl->parse('main.has_data_content.file_row.edit');
-                        $view_href = $row['url_edit'];
+                        $view_href = $row['url_view'];
                     } elseif (in_array($fileInfo, $viewable_extensions)) {
                         $file_type = '';
                         if (in_array(strtolower($fileInfo), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'])) {
@@ -327,6 +325,8 @@ function nv_fileserver_view($row, $file_content, $file_id, $file_name, $view_url
         $xtpl->parse('main.docx');
     } elseif (in_array($file_extension, ['xls', 'xlsx'])) {
         $xtpl->parse('main.xlsx');
+    } else {
+        $xtpl->parse('main.text');
     }
 
     if (!empty($back_url)) {

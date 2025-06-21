@@ -35,7 +35,10 @@ if (empty($row)) {
 $current_permission = get_user_permission($file_id, $row['uploaded_by']);
 
 $file_extension = strtolower(pathinfo($row['file_name'], PATHINFO_EXTENSION));
-if (!in_array($file_extension, $editable_extensions)) {
+
+global $editable_extensions, $allowed_create_extensions;
+$viewable_extensions_all = array_merge($editable_extensions, $allowed_create_extensions);
+if (!in_array($file_extension, $viewable_extensions_all, true)) {
     nv_redirect_location($base_url);
 }
 

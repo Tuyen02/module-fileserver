@@ -719,7 +719,7 @@ function displayTree($tree)
  * @return string HTML hiển thị cây
  */
 function displayAllTree($tree, $current_lev, $is_root = true) {
-    global $module_name, $op, $global_config, $editable_extensions, $viewable_extensions;
+    global $module_name, $op, $global_config, $editable_extensions, $viewable_extensions, $allowed_create_extensions, $user_info;
     $html = '<ul>';
     
     if ($is_root) {
@@ -755,7 +755,14 @@ function displayAllTree($tree, $current_lev, $is_root = true) {
                 $url = 'javascript:void(0);';
             } else {
                 if (in_array($fileInfo, $editable_extensions)) {
-                    $current_op = 'edit';
+                    $current_op = 'view';
+                } elseif (in_array($fileInfo, $allowed_create_extensions)) {
+                    $current_permission = get_user_permission($node['file_id'], isset($user_info['userid']) ? $user_info['userid'] : 0);
+                    if ($current_permission >= 3) {
+                        $current_op = 'edit';
+                    } else {
+                        $current_op = 'view';
+                    }
                 } elseif (in_array($fileInfo, $viewable_extensions)) {
                     $current_op = 'edit_img';
                 } else {
