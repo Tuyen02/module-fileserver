@@ -32,10 +32,13 @@ if (empty($row)) {
     nv_redirect_location($base_url);
 }
 
-$current_permission = get_user_permission($file_id, $row['uploaded_by']);
-
 $file_extension = strtolower(pathinfo($row['file_name'], PATHINFO_EXTENSION));
 if ($file_extension != 'txt') {
+    nv_redirect_location($base_url);
+}
+
+$current_permission = get_user_permission($file_id, isset($user_info['userid']) ? $user_info['userid'] : 0);
+if ($current_permission < 3) {
     nv_redirect_location($base_url);
 }
 

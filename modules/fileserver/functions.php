@@ -998,7 +998,7 @@ function get_user_permission($file_id, $userid)
     }
 
     if ($userid == 0) {
-        return isset($perm['p_other']);
+        return $perm['p_other'];
     }
 
     if (defined('NV_IS_USER')) {
