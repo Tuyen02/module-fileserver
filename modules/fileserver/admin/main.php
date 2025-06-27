@@ -12,10 +12,10 @@ $lang = NV_LANG_DATA;
 $config_name = 'group_admin_fileserver';
 
 $sql = 'SELECT group_id, title 
-        FROM ' . NV_GROUPSDETAIL_GLOBALTABLE . ' 
-        WHERE lang = ' . $db->quote(NV_LANG_DATA) . ' 
-        AND group_id != 6
-        ORDER BY group_id ASC';
+    FROM ' . NV_GROUPSDETAIL_GLOBALTABLE . ' 
+    WHERE lang = ' . $db->quote(NV_LANG_DATA) . ' 
+    AND group_id NOT IN (1,2,3,6)
+    ORDER BY group_id ASC';
 $result = $db->query($sql);
 
 $post['group_ids'] = $nv_Request->get_array('group_ids', 'post', []);

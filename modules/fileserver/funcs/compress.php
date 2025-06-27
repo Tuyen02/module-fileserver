@@ -11,9 +11,11 @@ $sql_file = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHER
 $stmt_file = $db->prepare($sql_file);
 $stmt_file->execute();
 $file_info = $stmt_file->fetch();
+$base_url = NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name;
+$page_url = $base_url . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $file_info['alias'];
 
 if (empty($file_info)) {
-    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
+    nv_redirect_location($base_url);
 }
 
 $sql_permission = 'SELECT p_group, p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $lev;
@@ -22,7 +24,7 @@ $stmt_permission->execute();
 $permission_info = $stmt_permission->fetch();
 
 if (empty($permission_info)) {
-    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
+    nv_redirect_location($base_url);
 }
 
 $row = array_merge($file_info, $permission_info);
@@ -30,13 +32,13 @@ $row = array_merge($file_info, $permission_info);
 $current_permission = get_user_permission($lev, $row['uploaded_by']);
 
 if ($current_permission < 3) {
-    nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name);
+    nv_redirect_location($base_url);
 }
 
 $breadcrumbs[] = [
     'catid' => $row['lev'],
     'title' => $row['file_name'],
-    'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias']
+    'link' => $base_url . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias']
 ];
 $current_lev = $row['lev'];
 
@@ -50,7 +52,7 @@ while ($current_lev > 0) {
     $breadcrumbs[] = [
         'catid' => $current_lev,
         'title' => $_row['file_name'],
-        'link' => NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $_row['alias']
+        'link' => $base_url . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $_row['alias']
     ];
     $current_lev = $_row['lev'];
 }
