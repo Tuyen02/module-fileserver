@@ -239,7 +239,7 @@ function nv_fileserver_compress($row, $list, $reponse, $tree_html, $current_perm
     $xtpl->parse('main');
     return $xtpl->text('main');
 }
-function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $reponse, $current_permission, $back_url)
+function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url, $reponse, $current_permission, $back_url, $use_elastic)
 {
     global $module_file, $global_config, $lang_module, $allowed_create_extensions, $module_name, $op;
 
@@ -255,7 +255,8 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
     $xtpl->assign('NV_OP_VARIABLE', NV_OP_VARIABLE);
     $xtpl->assign('OP', $op);
     $xtpl->assign('TOKEN', md5($file_id . NV_CHECK_SESSION . $global_config['sitekey']));
-
+    $xtpl->assign('USE_ELASTIC', $use_elastic);
+    
     $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
     $can_edit = ($current_permission >= 3 || defined('NV_IS_SPADMIN')) && 
                 (in_array($file_extension, $allowed_create_extensions));

@@ -135,122 +135,46 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
     }
 }
 
-if ($use_elastic == 1) {
-    try {
-        $searchParams = [
-            'index' => 'fileserver',
-            'body' => [
-                'from' => ($page - 1) * $perpage,
-                'size' => $perpage,
-                'query' => [
-                    'bool' => [
-                        'filter' => [
-                            ['term' => ['status' => 1]],
-                            ['term' => ['lev' => $lev]]
-                        ]
-                    ]
-                ],
-                'sort' => [
-                    'file_id' => ['order' => 'asc']
-                ]
-            ]
-        ];
+try {
+    $sql = 'SELECT f.* FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f';
 
-        if (!defined('NV_IS_SPADMIN')) {
-            $sql_perm = 'SELECT file_id FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE ';
-            if (isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array))) {
-                $sql_perm .= 'p_group >= 2';
-            } else {
-                $sql_perm .= 'p_other = 2';
-            }
-            $allowed_files = $db->query($sql_perm)->fetchAll(PDO::FETCH_COLUMN);
+    if (!defined('NV_IS_SPADMIN')) {
+        $sql .= ' LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id';
+    }
 
-            if (!empty($allowed_files)) {
-                $searchParams['body']['query']['bool']['filter'][] = [
-                    'terms' => ['file_id' => $allowed_files]
-                ];
-            } else {
-                $result = [];
-                $total = 0;
-            }
-        }
+    $where_conditions = [
+        'f.status = 1',
+        'f.lev = ' . $lev
+    ];
 
-        if (!empty($search_term)) {
-            $searchParams['body']['query']['bool']['filter'][] = [
-                'wildcard' => ['file_name' => '*' . $search_term . '*']
-            ];
-        }
-
-        if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
-            $is_folder = ($search_type == 'file') ? 0 : 1;
-            $searchParams['body']['query']['bool']['filter'][] = [
-                'term' => ['is_folder' => $is_folder]
-            ];
-        }
-
-        $response = $client->search($searchParams);
-        $total = $response['hits']['total']['value'];
-
-        $file_ids_from_es = [];
-        foreach ($response['hits']['hits'] as $hit) {
-            $file_ids_from_es[] = $hit['_source']['file_id'];
-        }
-
-        if (!empty($file_ids_from_es)) {
-            $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id IN (' . implode(',', array_fill(0, count($file_ids_from_es), '?')) . ') ORDER BY file_id ASC';
-            $stmt = $db->prepare($sql);
-            foreach ($file_ids_from_es as $i => $file_id) {
-                $stmt->bindValue($i + 1, $file_id, PDO::PARAM_INT);
-            }
-            $stmt->execute();
-            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if (!defined('NV_IS_SPADMIN')) {
+        if (isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array))) {
+            $where_conditions[] = 'p.p_group >= 2';
         } else {
-            $result = [];
+            $where_conditions[] = 'p.p_other = 2';
         }
-    } catch (Exception $e) {
-        error_log($lang_module['error_elastic_search'] . $e->getMessage());
     }
-} else {
-    try {
-        $sql = 'SELECT f.* FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f';
 
-        if (!defined('NV_IS_SPADMIN')) {
-            $sql .= ' LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id';
-        }
-
-        $where_conditions = [
-            'f.status = 1',
-            'f.lev = ' . $lev
-        ];
-
-        if (!defined('NV_IS_SPADMIN')) {
-            if (isset($user_info['in_groups']) && is_array($user_info['in_groups']) && !empty(array_intersect($user_info['in_groups'], $config_value_array))) {
-                $where_conditions[] = 'p.p_group >= 2';
-            } else {
-                $where_conditions[] = 'p.p_other = 2';
-            }
-        }
-
-        if (!empty($search_term)) {
-            $where_conditions[] = 'f.file_name LIKE ' . $db->quote('%' . $search_term . '%');
-        }
-
-        if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
-            $is_folder = ($search_type == 'file') ? 0 : 1;
-            $where_conditions[] = 'f.is_folder = ' . $is_folder;
-        }
-
-        $where = ' WHERE ' . implode(' AND ', $where_conditions);
-
-        $stmt = $db->query($sql . $where);
-        $total = $stmt->rowCount();
-
-        $sql .= $where . ' ORDER BY f.file_id ASC LIMIT ' . (($page - 1) * $perpage) . ', ' . $perpage;
-        $result = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        error_log($lang_module['error_db'] . $e->getMessage());
+    if (!empty($search_term)) {
+        $where_conditions[] = 'f.file_name LIKE ' . $db->quote('%' . $search_term . '%');
     }
+
+    if (!empty($search_type) && in_array($search_type, ['file', 'folder'])) {
+        $is_folder = ($search_type == 'file') ? 0 : 1;
+        $where_conditions[] = 'f.is_folder = ' . $is_folder;
+    }
+
+    $where = ' WHERE ' . implode(' AND ', $where_conditions);
+
+    $stmt = $db->query($sql . $where);
+    $total = $stmt->rowCount();
+
+    $sql .= $where . ' ORDER BY f.file_id ASC LIMIT ' . (($page - 1) * $perpage) . ', ' . $perpage;
+    $result = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log($lang_module['error_db'] . $e->getMessage());
 }
+
 
 if ($lev > 0) {
     $sql = 'SELECT f.*, p.p_group, p.p_other FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
@@ -624,7 +548,7 @@ if (!empty($action)) {
 
             $tree = buildTree($list);
             $tree_html = displayTree($tree);
-            
+
             $compressed = [];
             foreach ($fileIds as $fileId) {
                 $sql = 'SELECT file_name, compressed FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $fileId;
@@ -989,11 +913,11 @@ if (isset($user_info['in_groups'])) {
 }
 $is_group_user = !empty(array_intersect($user_groups, $admin_groups));
 
-$filtered = array_filter($result_all, function($item) use ($is_group_user) {
+$filtered = array_filter($result_all, function ($item) use ($is_group_user) {
     if (defined('NV_IS_SPADMIN')) {
         return true;
     }
-    
+
     if ($is_group_user) {
         return isset($item['p_group']) && $item['p_group'] >= 2;
     } else {
@@ -1007,15 +931,16 @@ $tree_html = displayAllTree($tree, $lev, true);
 if (!empty($search_term)) {
     $table_data = $result;
 } else {
-    $table_data = array_filter($filtered, function($item) use ($lev) {
+    $table_data = array_filter($filtered, function ($item) use ($lev) {
         return $item['lev'] == $lev;
     });
 }
 
-$contents = nv_fileserver_main($table_data, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page, $tree_html);
+$contents = nv_fileserver_main($table_data, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page, $tree_html, $use_elastic);
 
 $nv_BotManager->setFollow()->setNoIndex();
 
 include NV_ROOTDIR . '/includes/header.php';
 echo nv_site_theme($contents);
+
 include NV_ROOTDIR . '/includes/footer.php';

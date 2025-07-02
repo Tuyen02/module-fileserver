@@ -54,12 +54,10 @@ $all_deleted_items = $stmt->fetchAll();
 $pre_filtered_items = [];
 
 if ($lev > 0) {
-    // If viewing a specific deleted folder, show its direct children
     $pre_filtered_items = array_filter($all_deleted_items, function ($item) use ($lev) {
         return $item['lev'] == $lev;
     });
 } else {
-    // If viewing the root of the recycle bin, apply logic to show top-level deleted items
     $root_items = array_filter($all_deleted_items, function ($item) {
         return $item['lev'] == 0;
     });
