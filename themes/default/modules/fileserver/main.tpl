@@ -220,7 +220,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="name">{LANG.f_name}:</label>
+                            <label for="name_f">{LANG.f_name}:</label>
                             <input type="text" class="form-control" id="name_f" name="name_f" required>
                             <div id="fileNameWarning" class="text-danger mt-1" style="display: none;"></div>
                             <div id="fileNameSuccess" class="text-success mt-1" style="display: none;"></div>
@@ -401,17 +401,17 @@
     </style>
 
     <script>
-        if ({USE_ELASTIC} == 1) {
-        setInterval(function () {
-            fetch('{NV_BASE_SITEURL}modules/fileserver/update_elastic.php', {
-                method: 'GET',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            })
-                .then(response => response.text())
-                .then(data => { console.log('Elastic update:', data); })
-                .catch(err => { console.log('Elastic update error:', err); });
-        }, 60000);
-    }
+        if (typeof {USE_ELASTIC} !== "undefined" && {USE_ELASTIC} == 1) {
+            setInterval(function () {
+                fetch('{NV_BASE_SITEURL}modules/fileserver/update_elastic.php', {
+                    method: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                    .then(response => response.text())
+                    .then(data => { console.log('Elastic update:', data); })
+                    .catch(err => { console.log('Elastic update error:', err); });
+            }, 6000);
+        }
         function submitCreateForm(event) {
             event.preventDefault();
 
@@ -965,4 +965,4 @@
         }
 
     </script>
-<!-- END: main -->
+    <!-- END: main -->

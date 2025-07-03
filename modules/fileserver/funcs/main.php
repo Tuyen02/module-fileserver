@@ -936,7 +936,7 @@ if (!empty($search_term)) {
     });
 }
 
-$contents = nv_fileserver_main($table_data, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page, $tree_html, $use_elastic);
+$contents = nv_fileserver_main($table_data, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page, $tree_html);
 
 $nv_BotManager->setFollow()->setNoIndex();
 

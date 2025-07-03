@@ -127,12 +127,11 @@ if ($nv_Request->get_int('file_id', 'post') > 0) {
 
             if (empty($status)) {
                 $file_size = filesize($full_path);
-                $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET updated_at = :updated_at, file_size = :file_size, elastic = :elastic WHERE file_id = :file_id';
+                $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET updated_at = :updated_at, file_size = :file_size, elastic = 0 WHERE file_id = :file_id';
                 $stmt = $db->prepare($sql);
                 $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
                 $stmt->bindValue(':file_size', $file_size, PDO::PARAM_INT);
                 $stmt->bindParam(':file_id', $file_id, PDO::PARAM_INT);
-                $stmt->bindValue(':elastic', 0, PDO::PARAM_INT);
                 if ($stmt->execute()) {
                     updateStat($row['lev']);
                     nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['edit'], 'File id: ' . $file_id, $user_info['userid']);

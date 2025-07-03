@@ -516,7 +516,7 @@ function updateParentFolderSize($folderId)
     $newSize = calculateFolderSize($folderId);
 
     $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-            SET file_size = :file_size, updated_at = :updated_at 
+            SET file_size = :file_size, updated_at = :updated_at, elastic = 0
             WHERE file_id = :file_id';
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':file_size', $newSize, PDO::PARAM_INT);

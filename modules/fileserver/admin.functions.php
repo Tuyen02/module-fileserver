@@ -328,7 +328,7 @@ function deleteFileOrFolder($fileId)
 
             $childIds = array_column($children, 'file_id');
             $sqlUpdateChildren = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                                SET status = -1 
+                                SET status = -1, elastic = 0
                                 WHERE file_id IN (' . implode(',', $childIds) . ')';
             $db->query($sqlUpdateChildren);
         }
@@ -359,7 +359,7 @@ function deleteFileOrFolder($fileId)
     }
 
     $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-            SET status = -1 
+            SET status = -1, elastic = 0
             WHERE file_id = ' . $fileId;
 
     if ($db->query($sql)) {
