@@ -6,106 +6,10 @@ if (!defined('NV_SYSTEM')) {
 
 define('NV_IS_MOD_FILESERVER', true);
 
-use Elastic\Elasticsearch\ClientBuilder;
 $use_elastic = $module_config['fileserver']['use_elastic'];
 
-$client = null;
-
-if ($use_elastic == 1) {
-    try {
-        $elastic_config = [
-            'use_elastic' => $module_config['fileserver']['use_elastic'],
-            'elas_host' => $module_config['fileserver']['elas_host'],
-            'elas_port' => $module_config['fileserver']['elas_port'],
-            'elas_user' => $module_config['fileserver']['elas_user'],
-            'elas_pass' => $module_config['fileserver']['elas_pass']
-        ];
-
-        if (!isset($elastic_config) || !is_array($elastic_config)) {
-            error_log($lang_module['invalid_elastic_code']);
-        }
-        $client = ClientBuilder::create()
-            ->setHosts([$elastic_config['elas_host'] . ':' . $elastic_config['elas_port']])
-            ->setBasicAuthentication($elastic_config['elas_user'], $elastic_config['elas_pass'])
-            ->setSSLVerification(false)
-            ->build();
-
-        if (!$client->indices()->exists(['index' => 'fileserver'])) {
-            $client->indices()->create([
-                'index' => 'fileserver',
-                'body' => [
-                    'settings' => [
-                        'number_of_shards' => 1,
-                        'number_of_replicas' => 0
-                    ],
-                    'mappings' => [
-                        'properties' => [
-                            'file_id' => ['type' => 'keyword'],
-                            'file_name' => ['type' => 'text'],
-                            'file_path' => ['type' => 'text'],
-                            'file_size' => ['type' => 'long'],
-                            'uploaded_by' => ['type' => 'keyword'],
-                            'is_folder' => ['type' => 'boolean'],
-                            'status' => ['type' => 'integer'],
-                            'lev' => ['type' => 'integer'],
-                            'created_at' => ['type' => 'date'],
-                            'updated_at' => ['type' => 'date'],
-                            'compressed' => ['type' => 'keyword']
-                        ]
-                    ]
-                ]
-            ]);
-        }
-
-        $sql = 'SELECT * FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE elastic = 0';
-        $result = $db->query($sql);
-        $hasSynced = false;
-
-        while ($row = $result->fetch()) {
-            try {
-                $params = [
-                    'index' => 'fileserver',
-                    'id' => $row['file_id'],
-                    'body' => [
-                        'file_id' => $row['file_id'],
-                        'file_name' => $row['file_name'],
-                        'file_path' => (isset($row['file_path']) ? $row['file_path'] : ''),
-                        'file_size' => (isset($row['file_size']) ? $row['file_size'] : 0),
-                        'uploaded_by' => (isset($row['uploaded_by']) ? $row['uploaded_by'] : ''),
-                        'is_folder' => $row['is_folder'],
-                        'status' => $row['status'],
-                        'lev' => $row['lev'],
-                        'created_at' => $row['created_at'],
-                        'updated_at' => (isset($row['updated_at']) ? $row['updated_at'] : NV_CURRENTTIME),
-                        'compressed' => (isset($row['compressed']) ? $row['compressed'] : '')
-                    ]
-                ];
-                $client->index($params);
-
-                $client->indices()->refresh(['index' => 'fileserver']);
-
-                $update_sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-                               SET elastic = :elastic 
-                               WHERE file_id = :file_id';
-                $stmt = $db->prepare($update_sql);
-                $stmt->bindValue(':elastic', NV_CURRENTTIME, PDO::PARAM_INT);
-                $stmt->bindValue(':file_id', $row['file_id'], PDO::PARAM_INT);
-                $stmt->execute();
-            } catch (Exception $e) {
-                error_log($lang_module['error_update_elastic'] . $e->getMessage());
-            }
-        }
-
-        if ($hasSynced) {
-            nv_redirect_location(NV_BASE_SITEURL . 'index.php?' . NV_LANG_VARIABLE . '=' . NV_LANG_DATA . '&' . NV_NAME_VARIABLE . '=' . $module_name . '&' . NV_OP_VARIABLE . '=main');
-        }
-    } catch (Exception $e) {
-        error_log($lang_module['error_start_elastic'] . $e->getMessage());
-        $use_elastic = 0;
-    }
-}
-
 $allowed_create_extensions = ['txt'];
+$allowed_upload_extensions = ['txt', 'png','jpg','mp3','mp4','ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx', 'pdf', 'gif', 'jpeg'];
 $allowed_rename_extensions = ['txt', 'html', 'css','png','jpg','mp3','mp4','ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx', 'pdf', 'zip', 'gif', 'jpeg'];
 $editable_extensions = ['doc', 'docx', 'xls', 'xlsx','pdf'];
 $viewable_extensions = ['png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'ppt', 'pptx'];
@@ -120,7 +24,7 @@ $base_dir = '/uploads/' . $module_name;
 $tmp_dir = '/data/tmp/';
 $trash_dir = $tmp_dir . '' . $module_name . '_trash';
 
-if (!empty($array_op) && preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m)) {
+if (!empty($array_op) && preg_match('/^([a-zA-Z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m)) {
     $lev = $m[2];
     $file_id = $m[2];
 } else {
@@ -613,7 +517,7 @@ function updateParentFolderSize($folderId)
     $newSize = calculateFolderSize($folderId);
 
     $sql = 'UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files 
-            SET file_size = :file_size, updated_at = :updated_at 
+            SET file_size = :file_size, updated_at = :updated_at, elastic = 0
             WHERE file_id = :file_id';
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':file_size', $newSize, PDO::PARAM_INT);

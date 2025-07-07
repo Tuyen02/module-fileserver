@@ -6,7 +6,7 @@ if (!defined('NV_IS_MOD_FILESERVER')) {
 
 function nv_fileserver_main($result, $page_url, $error, $success, $permissions, $selected, $base_url, $lev, $search_term, $logs, $back_url, $generate_page, $tree_html)
 {
-    global $module_file, $global_config, $lang_module, $module_name, $module_config, $lang_global, $editable_extensions, $viewable_extensions, $op, $user_info, $allowed_create_extensions;
+    global $module_file, $global_config, $lang_module, $module_name, $module_config, $lang_global, $editable_extensions, $viewable_extensions, $op, $user_info, $allowed_create_extensions, $use_elastic;
 
     $xtpl = new XTemplate('main.tpl', NV_ROOTDIR . '/themes/' . $global_config['module_theme'] . '/modules/' . $module_file);
     $xtpl->assign('LANG', $lang_module);
@@ -18,6 +18,7 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
     $xtpl->assign('SELECTED_FOLDER', $selected['folder']);
     $xtpl->assign('GENERATE_PAGE', $generate_page);
     $xtpl->assign('TREE', $tree_html);
+    $xtpl->assign('USE_ELASTIC', $use_elastic);
 
     if (!empty($back_url)) {
         $xtpl->assign('BACK_URL', $back_url);
@@ -255,7 +256,7 @@ function nv_fileserver_edit($row, $file_content, $file_id, $file_name, $view_url
     $xtpl->assign('NV_OP_VARIABLE', NV_OP_VARIABLE);
     $xtpl->assign('OP', $op);
     $xtpl->assign('TOKEN', md5($file_id . NV_CHECK_SESSION . $global_config['sitekey']));
-
+    
     $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
     $can_edit = ($current_permission >= 3 || defined('NV_IS_SPADMIN')) && 
                 (in_array($file_extension, $allowed_create_extensions));

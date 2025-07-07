@@ -161,23 +161,7 @@ if (($move == 1 || $copy == 1)) {
                 }
 
                 if ($use_elastic == 1 && $client != null) {
-                    try {
-                        $client->update([
-                            'index' => 'fileserver',
-                            'id' => $file_id,
-                            'body' => [
-                                'doc' => [
-                                    'file_path' => $new_file_path,
-                                    'lev' => $target_lev,
-                                    'updated_at' => NV_CURRENTTIME
-                                ]
-                            ]
-                        ]);
-                        $client->indices()
-                            ->refresh(['index' => 'fileserver']);
-                    } catch (Exception $e) {
-                        error_log($lang_module['error_elastic_index'] . $e->getMessage());
-                    }
+                    //
                 }
 
                 nv_insert_logs(NV_LANG_DATA, $module_name, 'move', $action_note, $user_info['userid']);
@@ -239,25 +223,7 @@ if (($move == 1 || $copy == 1)) {
                 $action_note = 'Copy file_id: ' . $file_id . ' to ' . $new_file_id_inserted;
 
                 if ($use_elastic == 1 && $client != null) {
-                    try {
-                        $client->index([
-                            'index' => 'fileserver',
-                            'id' => $new_file_id_inserted,
-                            'body' => [
-                                'file_name' => $file_name_for_db,
-                                'file_path' => $actual_new_file_path,
-                                'file_size' => $row['file_size'],
-                                'uploaded_by' => $user_info['userid'],
-                                'created_at' => NV_CURRENTTIME,
-                                'lev' => $target_lev,
-                                'is_folder' => 0
-                            ]
-                        ]);
-                        $client->indices()
-                            ->refresh(['index' => 'fileserver']);
-                    } catch (Exception $e) {
-                        error_log($lang_module['error_elastic_index'] . $e->getMessage());
-                    }
+                    //
                 }
 
                 $check_permission = $db->query('SELECT COUNT(*) FROM ' . NV_PREFIXLANG . '_' . $module_data . '_permissions WHERE file_id = ' . $new_file_id_inserted)->fetchColumn();
