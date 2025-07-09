@@ -54,12 +54,10 @@ $all_deleted_items = $stmt->fetchAll();
 $pre_filtered_items = [];
 
 if ($lev > 0) {
-    // If viewing a specific deleted folder, show its direct children
     $pre_filtered_items = array_filter($all_deleted_items, function ($item) use ($lev) {
         return $item['lev'] == $lev;
     });
 } else {
-    // If viewing the root of the recycle bin, apply logic to show top-level deleted items
     $root_items = array_filter($all_deleted_items, function ($item) {
         return $item['lev'] == 0;
     });
@@ -141,6 +139,10 @@ if (!empty($action)) {
                 updateLog($lev);
                 $mess = $lang_module['delete_ok'];
                 nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . $fileId, $admin_info['userid']);
+                if (defined('USE_ELASTIC') && USE_ELASTIC) {
+                    @file_get_contents(NV_BASE_SITEURL .  'modules/fileserver/update_elastic.php');
+                }
+                $db->query('UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET elastic = 0 WHERE file_id = ' . $fileId);
             } else {
                 $mess = $lang_module['delete_false'];
             }
@@ -170,6 +172,10 @@ if (!empty($action)) {
             updateLog($lev);
             nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . implode(',', $deletedFileIds), $admin_info['userid']);
             $mess = $lang_module['delete_ok'];
+            if (defined('USE_ELASTIC') && USE_ELASTIC) {
+                @file_get_contents(NV_BASE_SITEURL . 'modules/fileserver/update_elastic.php');
+            }
+            $db->query('UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET elastic = 0 WHERE file_id IN (' . implode(',', $deletedFileIds) . ')');
         } else {
             $mess = $lang_module['delete_false'];
         }
@@ -187,6 +193,10 @@ if (!empty($action)) {
                 updateLog($lev);
                 nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . $fileId, $admin_info['userid']);
                 $mess = $lang_module['restore_ok'];
+                if (defined('USE_ELASTIC') && USE_ELASTIC) {
+                    @file_get_contents(NV_BASE_SITEURL . 'modules/fileserver/update_elastic.php?action=update&file_id=' . $fileId);
+                }
+                $db->query('UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET elastic = 0 WHERE file_id = ' . $fileId);
             } else {
                 $mess = $lang_module['restore_false'];
             }
@@ -215,6 +225,10 @@ if (!empty($action)) {
             updateLog($lev);
             nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . implode(',', $restoredFileIds), $admin_info['userid']);
             $mess = $lang_module['restore_ok'];
+            if (defined('USE_ELASTIC') && USE_ELASTIC) {
+                @file_get_contents(NV_BASE_SITEURL . 'modules/fileserver/update_elastic.php');
+            }
+            $db->query('UPDATE ' . NV_PREFIXLANG . '_' . $module_data . '_files SET elastic = 0 WHERE file_id IN (' . implode(',', $restoredFileIds) . ')');
         } else {
             $mess = $lang_module['restore_false'];
         }

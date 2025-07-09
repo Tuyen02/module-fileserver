@@ -55,34 +55,30 @@
 
     <hr>
     <div class="row">
-        <div class="col-md-6 col-lg-4 mb-3">
+        <div class="col-md-8 col-lg-8 mb-3">
             <div class="tree">
                 {TREE}
             </div>
         </div>
-        <div class="col-md-18 col-lg-20">
+        <div class="col-md-16 col-lg-16">
             <!-- BEGIN: has_data_content -->
             <table class="table table-hover">
+                <colgroup>
+                    <col style="width: 3%;">
+                    <col style="width: 45%;">
+                    <col style="width: 10%;">
+                    <col style="width: 15%;">
+                    <col style="width: 27%;">
+                </colgroup>
                 <thead class="thead-dark">
                     <tr>
-                        <th scope="col"><input class="form-check-input" type="checkbox" value="" id="defaultCheck1">
-                        </th>
-                        <th scope="col" class="sortable" data-sort="file_name">{LANG.f_name} <i class="fa fa-sort"></i>
-                        </th>
-                        <th scope="col" class="sortable" data-sort="file_size">{LANG.f_size} <i class="fa fa-sort"></i>
-                        </th>
-                        <th scope="col" class="sortable" data-sort="created_at">{LANG.created_at} <i
-                                class="fa fa-sort"></i></th>
+                        <th scope="col" style="text-align:center;"><input class="form-check-input" type="checkbox" value="" id="defaultCheck1"></th>
+                        <th scope="col" class="sortable" data-sort="file_name">{LANG.f_name} <i class="fa fa-sort"></i></th>
+                        <th scope="col" class="sortable" data-sort="file_size">{LANG.f_size} <i class="fa fa-sort"></i></th>
+                        <th scope="col" class="sortable" data-sort="created_at">{LANG.created_at} <i class="fa fa-sort"></i></th>
                         <th scope="col">{LANG.option}</th>
                     </tr>
                 </thead>
-                <colgroup>
-                    <col style="width: 5%;">
-                    <col style="width: 35%;">
-                    <col style="width: 15%;">
-                    <col style="width: 15%;">
-                    <col style="width: 30%;">
-                </colgroup>
                 <tbody>
                     <!-- BEGIN: file_row -->
                     <tr>
@@ -100,14 +96,14 @@
                         <td>{ROW.created_at}</td>
                         <td>
                             <!-- BEGIN: delete -->
-                            <button class="btn btn-sm btn-danger delete" data-file-id="{ROW.file_id}"
+                            <button class="btn btn-sm btn-danger delete function-btn" data-file-id="{ROW.file_id}"  
                                 data-checksess="{CHECK_SESS}" data-url="{ROW.url_delete}" title="{LANG.delete_btn}">
                                 <i class="fa fa-trash-o"></i>
                             </button>
                             <!-- END: delete -->
 
                             <!-- BEGIN: rename -->
-                            <button class="btn btn-sm btn-info rename" data-file-name="{ROW.file_name}"
+                            <button class="btn btn-sm btn-info rename function-btn" data-file-name="{ROW.file_name}"
                                 data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal"
                                 title="{LANG.rename_btn}">
                                 <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
@@ -115,26 +111,26 @@
                             <!-- END: rename -->
 
                             <!-- BEGIN: share -->
-                            <a href="{ROW.url_perm}" class="btn btn-sm btn-info share" title="{LANG.perm_btn}">
+                            <a href="{ROW.url_perm}" class="btn btn-sm btn-info share function-btn" title="{LANG.perm_btn}">
                                 <i class="fa fa-link"></i>
                             </a>
                             <!-- END: share -->
 
                             <!-- BEGIN: download -->
-                            <a href="{DOWNLOAD}" class="btn btn-sm btn-success download" data-file-id="{ROW.file_id}"
+                            <a href="{DOWNLOAD}" class="btn btn-sm btn-success download function-btn" data-file-id="{ROW.file_id}"
                                 title="{LANG.download_btn}">
                                 <i class="fa fa-download" aria-hidden="true"></i>
                             </a>
                             <!-- END: download -->
 
                             <!-- BEGIN: edit -->
-                            <a href="{EDIT}" class="btn btn-sm btn-info" title="{LANG.edit_btn}">
+                            <a href="{EDIT}" class="btn btn-sm btn-info function-btn" title="{LANG.edit_btn}">
                                 <i class="fa fa-pencil-square"></i>
                             </a>
                             <!-- END: edit -->
 
                             <!-- BEGIN: copy -->
-                            <a href="{COPY}" class="btn btn-sm btn-info" title="{LANG.copy}">
+                            <a href="{COPY}" class="btn btn-sm btn-info function-btn" title="{LANG.copy}">
                                 <i class="fa fa-clone"></i>
                             </a>
                             <!-- END: copy -->
@@ -326,7 +322,7 @@
     <style>
         .tree {
             list-style-type: none;
-            padding: 0 20px 0 5px;
+            padding: 0 5px 0 5px;
             margin: 0 5px 0 5px;
             border-right: 1px solid #ccc;
             overflow-x: auto;
@@ -368,7 +364,7 @@
 
         .tree ul {
             margin-left: 5px;
-            padding-left: 10px;
+            padding-left: 5px;
             border-left: 1px dashed #ccc;
         }
 
@@ -386,6 +382,17 @@
             max-height: 500px;
         }
 
+        thead th {
+        vertical-align: middle !important;
+        text-align: center;
+        padding-top: 5px !important;
+        padding-bottom: 5px !important;
+        white-space: nowrap;
+    }
+    .table thead tr {
+        height: 48px; /* hoặc giá trị phù hợp */
+    }
+
         .sortable {
             cursor: pointer;
         }
@@ -398,9 +405,30 @@
         .fa-sort-down {
             margin-left: 5px;
         }
+
+        .function-btn {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 5px;
+        }
     </style>
 
     <script>
+        if (typeof {USE_ELASTIC} !== "undefined" && {USE_ELASTIC} == 1) {
+            setInterval(function () {
+                fetch('{NV_BASE_SITEURL}modules/fileserver/update_elastic.php', {
+                    method: 'GET',
+                    headers: {'X-Requested-With': 'XMLHttpRequest'}
+                })
+                    .then(response => response.text())
+                    .then(data => {console.log('Elastic update:', data);})
+                    .catch(err => {console.log('Elastic update error:', err);});
+            }, 6000);
+        }
         function submitCreateForm(event) {
             event.preventDefault();
 
