@@ -55,8 +55,8 @@ $admin_info['allow_files_type'][] = 'text';
 
 if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['uploadfile']) && is_uploaded_file($_FILES['uploadfile']['tmp_name'])) {
     $file_extension = strtolower(pathinfo($_FILES['uploadfile']['name'], PATHINFO_EXTENSION));
-    if ($file_extension == 'zip') {
-        $error = $lang_module['not_allow_zip'];
+    if (!in_array($file_extension, $allowed_upload_extensions)) {
+        $error = $lang_module['not_allow_file'];
     } else {
         if (!defined('NV_IS_SPADMIN')) {
             if (empty($arr_full_per)) {

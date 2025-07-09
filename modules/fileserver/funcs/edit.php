@@ -10,7 +10,7 @@ $page_title = $lang_module['edit'];
 if ($nv_Request->get_int('download', 'get', 0) == 1) {
     $file_id = $nv_Request->get_int('file_id', 'get', 0);
 } else {
-    if (!empty($array_op) && preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m)) {
+    if (!empty($array_op) && preg_match('/^([a-zA-Z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m)) {
         $file_id = $m[2];
     } else {
         $file_id = $nv_Request->get_int('file_id', 'get', 0);

@@ -6,9 +6,7 @@ if (!defined('NV_ROOTDIR')) {
 define('NV_SYSTEM', true);
 require NV_ROOTDIR . '/includes/mainfile.php';
 
-$module_name = 'fileserver';
 $module_data = 'fileserver';
-$module_file = 'fileserver';
 
 $use_elastic = isset($module_config['fileserver']['use_elastic']) ? $module_config['fileserver']['use_elastic'] : 0;
 

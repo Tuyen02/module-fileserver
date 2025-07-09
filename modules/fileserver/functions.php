@@ -9,6 +9,7 @@ define('NV_IS_MOD_FILESERVER', true);
 $use_elastic = $module_config['fileserver']['use_elastic'];
 
 $allowed_create_extensions = ['txt'];
+$allowed_upload_extensions = ['txt', 'png','jpg','mp3','mp4','ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx', 'pdf', 'gif', 'jpeg'];
 $allowed_rename_extensions = ['txt', 'html', 'css','png','jpg','mp3','mp4','ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx', 'pdf', 'zip', 'gif', 'jpeg'];
 $editable_extensions = ['doc', 'docx', 'xls', 'xlsx','pdf'];
 $viewable_extensions = ['png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'ppt', 'pptx'];
@@ -23,7 +24,7 @@ $base_dir = '/uploads/' . $module_name;
 $tmp_dir = '/data/tmp/';
 $trash_dir = $tmp_dir . '' . $module_name . '_trash';
 
-if (!empty($array_op) && preg_match('/^([a-z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m)) {
+if (!empty($array_op) && preg_match('/^([a-zA-Z0-9\_\-]+)\-([0-9]+)$/', $array_op[1], $m)) {
     $lev = $m[2];
     $file_id = $m[2];
 } else {
