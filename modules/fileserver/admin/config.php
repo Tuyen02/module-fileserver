@@ -27,6 +27,21 @@ if ($nv_Request->isset_request('submit', 'post')) {
         ];
     }
 
+    $elastic_error = false;
+    try {
+        $client = ClientBuilder::create()
+            ->setHosts([$array_config['elas_host'] . ':' . $array_config['elas_port']])
+            ->setBasicAuthentication($array_config['elas_user'], $array_config['elas_pass'])
+            ->setSSLVerification(false)
+            ->build();
+        $client->info();
+    } catch (Exception $e) {
+        $message = $lang_module['elastic_connection_error'] . ': ' . $e->getMessage();
+        $message_type = 'danger';
+        $array_config['use_elastic'] = 0;
+        $elastic_error = true;
+    }
+
     $sql = 'UPDATE ' . NV_CONFIG_GLOBALTABLE . ' 
             SET config_value = :config_value 
             WHERE lang = :lang 
@@ -48,13 +63,11 @@ if ($nv_Request->isset_request('submit', 'post')) {
             }
         }
 
-        if ($status) {
+        if (!$elastic_error) {
             $message = $lang_module['config_updated'];
             $message_type = 'success';
             nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['config'], $lang_module['config_elastic'], $admin_info['userid']);
             $nv_Cache->delAll();
-        } else {
-            throw new Exception($lang_module['config_update_failed']);
         }
     } catch (Exception $e) {
         $message = $e->getMessage();

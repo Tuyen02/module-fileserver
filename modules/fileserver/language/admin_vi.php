@@ -108,3 +108,4 @@ $lang_module['update_config_false'] = 'Cập nhật cấu hình thất bại';
 $lang_module['active'] = 'Hoạt động';
 $lang_module['deactive'] = 'Ngừng hoạt động';
 $lang_module['supported_file_types'] = 'Các định dạng file được hỗ trợ: xlsx, xls';
+$lang_module['elastic_connection_error'] = 'Lỗi kết nối tới Elasticsearch';
