@@ -23,27 +23,29 @@
     <!-- BEGIN: success -->
     <div class="alert alert-success">{SUCCESS}</div>
     <!-- END: success -->
-    <div class="d-flex align-items-center flex-wrap">
-        <form action="" method="get" id="searchForm" class="form-inline my-2 my-lg-0">
+    <div class="d-flex align-items-center flex-wrap flex-column flex-md-row w-100">
+        <form action="" method="get" id="searchForm" class="form-inline my-2 my-lg-0 w-100 flex-wrap">
             <input type="hidden" name="lev" value="{ROW.lev}">
-            <input type="text" class="form-control" placeholder="{LANG.search}" id="searchInput" name="search"
-                value="{SEARCH_TERM}">
-            <select class="form-control ml-2" name="search_type">
+            <input type="text" class="form-control mb-2 mb-md-0 w-100 w-md-auto" placeholder="{LANG.search}"
+                id="searchInput" name="search" value="{SEARCH_TERM}">
+            <select class="form-control ml-0 ml-md-2 mb-2 mb-md-0 w-100 w-md-auto" name="search_type">
                 <option value="all" {SELECTED_ALL}>{LANG.all}</option>
                 <option value="file" {SELECTED_FILE}>{LANG.file}</option>
                 <option value="folder" {SELECTED_FOLDER}>{LANG.folder}</option>
             </select>
-            <button type="submit" class="btn btn-primary ml-2">{LANG.search_btn}</button>
+            <button type="submit"
+                class="btn btn-primary ml-0 ml-md-2 mb-2 mb-md-0 w-100 w-md-auto">{LANG.search_btn}</button>
         </form>
-
         <br>
-        <form action="" method="post" enctype="multipart/form-data" id="uploadForm" class="form-inline my-2 my-lg-0">
+        <form action="" method="post" enctype="multipart/form-data" id="uploadForm"
+            class="form-inline my-2 my-lg-0 w-100 flex-wrap">
             <!-- BEGIN: can_create -->
-            <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModal">{LANG.create_btn}</a>
-            <button type="button" class="btn btn-success" id="uploadButton">{LANG.upload_btn}</button>
+            <a href="#" class="btn btn-primary mb-2 mb-md-0" data-toggle="modal"
+                data-target="#createModal">{LANG.create_btn}</a>
+            <button type="button" class="btn btn-success mb-2 mb-md-0 mr-2" id="uploadButton">{LANG.upload_btn}</button>
             <!-- END: can_create -->
             <!-- BEGIN: back -->
-            <a href="{BACK_URL}" class="btn btn btn-info">
+            <a href="{BACK_URL}" class="btn btn-info mb-2 mb-md-0 mr-2">
                 <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
             </a>
             <!-- END: back -->
@@ -55,27 +57,31 @@
 
     <hr>
     <div class="row">
-        <div class="col-md-8 col-lg-8 mb-3">
+        <div class="col-12 col-md-6 col-lg-6 col-sm-6 mb-3">
             <div class="tree">
                 {TREE}
             </div>
         </div>
-        <div class="col-md-16 col-lg-16">
+        <div class="col-12 col-md-18 col-lg-18 col-sm-18 table-responsive">
             <!-- BEGIN: has_data_content -->
             <table class="table table-hover">
                 <colgroup>
                     <col style="width: 3%;">
-                    <col style="width: 45%;">
+                    <col style="width: 40%;">
                     <col style="width: 10%;">
                     <col style="width: 15%;">
-                    <col style="width: 27%;">
+                    <col style="width: 32%;">
                 </colgroup>
                 <thead class="thead-dark">
                     <tr>
-                        <th scope="col" style="text-align:center;"><input class="form-check-input" type="checkbox" value="" id="defaultCheck1"></th>
-                        <th scope="col" class="sortable" data-sort="file_name">{LANG.f_name} <i class="fa fa-sort"></i></th>
-                        <th scope="col" class="sortable" data-sort="file_size">{LANG.f_size} <i class="fa fa-sort"></i></th>
-                        <th scope="col" class="sortable" data-sort="created_at">{LANG.created_at} <i class="fa fa-sort"></i></th>
+                        <th scope="col" style="text-align:center;"><input class="form-check-input" type="checkbox"
+                                value="" id="defaultCheck1"></th>
+                        <th scope="col" class="sortable" data-sort="file_name">{LANG.f_name} <i class="fa fa-sort"></i>
+                        </th>
+                        <th scope="col" class="sortable" data-sort="file_size">{LANG.f_size} <i class="fa fa-sort"></i>
+                        </th>
+                        <th scope="col" class="sortable" data-sort="created_at">{LANG.created_at} <i
+                                class="fa fa-sort"></i></th>
                         <th scope="col">{LANG.option}</th>
                     </tr>
                 </thead>
@@ -96,7 +102,7 @@
                         <td>{ROW.created_at}</td>
                         <td>
                             <!-- BEGIN: delete -->
-                            <button class="btn btn-sm btn-danger delete function-btn" data-file-id="{ROW.file_id}"  
+                            <button class="btn btn-sm btn-danger delete function-btn" data-file-id="{ROW.file_id}"
                                 data-checksess="{CHECK_SESS}" data-url="{ROW.url_delete}" title="{LANG.delete_btn}">
                                 <i class="fa fa-trash-o"></i>
                             </button>
@@ -111,14 +117,15 @@
                             <!-- END: rename -->
 
                             <!-- BEGIN: share -->
-                            <a href="{ROW.url_perm}" class="btn btn-sm btn-info share function-btn" title="{LANG.perm_btn}">
+                            <a href="{ROW.url_perm}" class="btn btn-sm btn-info share function-btn"
+                                title="{LANG.perm_btn}">
                                 <i class="fa fa-link"></i>
                             </a>
                             <!-- END: share -->
 
                             <!-- BEGIN: download -->
-                            <a href="{DOWNLOAD}" class="btn btn-sm btn-success download function-btn" data-file-id="{ROW.file_id}"
-                                title="{LANG.download_btn}">
+                            <a href="{DOWNLOAD}" class="btn btn-sm btn-success download function-btn"
+                                data-file-id="{ROW.file_id}" title="{LANG.download_btn}">
                                 <i class="fa fa-download" aria-hidden="true"></i>
                             </a>
                             <!-- END: download -->
@@ -383,15 +390,17 @@
         }
 
         thead th {
-        vertical-align: middle !important;
-        text-align: center;
-        padding-top: 5px !important;
-        padding-bottom: 5px !important;
-        white-space: nowrap;
-    }
-    .table thead tr {
-        height: 48px; /* hoặc giá trị phù hợp */
-    }
+            vertical-align: middle !important;
+            text-align: center;
+            padding-top: 5px !important;
+            padding-bottom: 5px !important;
+            white-space: nowrap;
+        }
+
+        .table thead tr {
+            height: 48px;
+            /* hoặc giá trị phù hợp */
+        }
 
         .sortable {
             cursor: pointer;
@@ -415,18 +424,78 @@
             justify-content: center;
             margin-bottom: 5px;
         }
+
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                max-width: 98% !important;
+                padding: 10px !important;
+            }
+
+            .table th,
+            .table td {
+                font-size: 15px;
+                padding: 8px 6px;
+            }
+
+            .function-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 15px;
+            }
+
+            .tree {
+                font-size: 15px;
+            }
+
+            .btn,
+            .form-control {
+                font-size: 15px;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .modal-dialog {
+                max-width: 98vw;
+                margin: 10px auto;
+            }
+
+            .modal-content {
+                padding: 5px;
+            }
+
+            .modal-body,
+            .modal-header,
+            .modal-footer {
+                padding-left: 8px;
+                padding-right: 8px;
+            }
+
+            .form-inline .form-control,
+            .form-inline .btn,
+            .form-inline select {
+                width: 100% !important;
+                margin-bottom: 8px;
+                margin-right: 0 !important;
+            }
+
+            .form-inline {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+        }
     </style>
 
     <script>
-        if (typeof {USE_ELASTIC} !== "undefined" && {USE_ELASTIC} == 1) {
+        var USE_ELASTIC = {USE_ELASTIC};
+        if (typeof USE_ELASTIC !== "undefined" && USE_ELASTIC == 1) {
             setInterval(function () {
                 fetch('{NV_BASE_SITEURL}modules/fileserver/update_elastic.php', {
                     method: 'GET',
-                    headers: {'X-Requested-With': 'XMLHttpRequest'}
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 })
                     .then(response => response.text())
-                    .then(data => {console.log('Elastic update:', data);})
-                    .catch(err => {console.log('Elastic update error:', err);});
+                    .then(data => { console.log('Elastic update:', data); })
+                    .catch(err => { console.log('Elastic update error:', err); });
             }, 6000);
         }
         function submitCreateForm(event) {
@@ -469,7 +538,7 @@
                         } else if (res.refresh_captcha) {
                             if ($("#createForm").data('recaptcha3')) {
                                 grecaptcha.ready(function () {
-                                    grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', {action: 'create'});
+                                    grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', { action: 'create' });
                                 });
                             } else if ($(".g-recaptcha").length) {
                                 grecaptcha.reset();
@@ -483,7 +552,7 @@
                         alert(xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Đã có lỗi xảy ra.');
                         if ($("#createForm").data('recaptcha3')) {
                             grecaptcha.ready(function () {
-                                grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', {action: 'create'});
+                                grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', { action: 'create' });
                             });
                         } else if ($(".g-recaptcha").length) {
                             grecaptcha.reset();
@@ -497,7 +566,7 @@
             if (typeof grecaptcha !== 'undefined') {
                 if ($("#createForm").data('recaptcha3')) {
                     grecaptcha.ready(function () {
-                        grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', {action: 'create'}).then(function (token) {
+                        grecaptcha.execute('{GLOBAL_CONFIG.recaptcha_sitekey}', { action: 'create' }).then(function (token) {
                             sendRequest(token);
                         });
                     });
@@ -987,4 +1056,4 @@
 
     </script>
 </div>
-    <!-- END: main -->
+<!-- END: main -->
