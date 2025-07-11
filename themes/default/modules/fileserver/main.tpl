@@ -171,7 +171,9 @@
                 <i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}
             </button>
             <!-- END: can_delete_all -->
+            <!-- BEGIN: generate_page -->
             <div class="text-center">{GENERATE_PAGE}</div>
+            <!-- END: generate_page -->
             <!-- END: has_data_content -->
             <!-- BEGIN: no_search_result -->
             <div class="text-center">
