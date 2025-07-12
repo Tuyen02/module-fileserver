@@ -178,6 +178,12 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
             $xtpl->parse('main.has_data_content.can_compress');
             $xtpl->parse('main.has_data_content.can_delete_all');
         }
+        
+        // Parse phân trang nếu có
+        if (!empty($generate_page)) {
+            $xtpl->parse('main.has_data_content.generate_page');
+        }
+        
         $xtpl->parse('main.has_data_content');
     } else {
         $xtpl->parse('main.no_search_result');

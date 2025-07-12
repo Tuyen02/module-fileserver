@@ -57,8 +57,8 @@ $lang_module['caution'] = '📌 <strong>Lưu ý khi nhập dữ liệu:</strong>
 - Chỉ hỗ trợ <strong>tập tin Excel (.xlsx)</strong> đúng theo cấu trúc mẫu bên dưới.<br>
 - File Excel cần chứa:<br>
 &nbsp;&nbsp;• <strong>Tên tệp/thư mục</strong><br>
-&nbsp;&nbsp;• <strong>Đường dẫn Google Drive</strong> (ở chế độ <em>public</em>)<br>
-- Hệ thống sẽ đọc các đường dẫn này và xử lý tự động.';
+&nbsp;&nbsp;• <strong>Đường dẫn tới file trên Google Drive </strong> (Cần phân quyền file ở chế độ <em>public</em>)<br>
+- Hệ thống sẽ đọc các đường dẫn này và xử lý download về website tự động.';
 $lang_module['demo_title'] = '📥 File mẫu:';
 $lang_module['demo_file'] = 'import_file.xlsx';
 $lang_module['update_success'] = 'Cập nhật thành công';

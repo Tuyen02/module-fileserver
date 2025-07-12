@@ -110,7 +110,7 @@
             lineNumbers: true,
             mode: 'htmlmixed',
             theme: 'monokai',
-            readOnly: { READONLY },
+            readOnly: '{READONLY}' == 'true',
             lineWrapping: true,
             viewportMargin: Infinity,
             autoCloseTags: true,
