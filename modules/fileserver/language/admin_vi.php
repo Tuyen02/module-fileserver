@@ -52,7 +52,7 @@ $lang_module['export_title'] = 'Xuất dữ liệu hệ thống';
 $lang_module['list_items_root'] = 'Danh sách file/folder gốc';
 $lang_module['export_file'] = 'Xuất file';
 $lang_module['import_file'] = 'Nhập dữ liệu vào hệ thống';
-$lang_module['choose_file'] = 'Chọn file';
+$lang_module['choose_file'] = 'Chọn file dữ liệu';
 $lang_module['caution'] = '📌 <strong>Lưu ý khi nhập dữ liệu:</strong><br>
 - Chỉ hỗ trợ <strong>tập tin Excel (.xlsx)</strong> đúng theo cấu trúc mẫu bên dưới.<br>
 - File Excel cần chứa:<br>
