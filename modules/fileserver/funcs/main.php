@@ -8,7 +8,7 @@ $page_title = $module_info['site_title'];
 $key_words = $module_info['keywords'];
 $description = $module_info['description'];
 
-$perpage = 20;
+$perpage = 5;
 $page = $nv_Request->get_int('page', 'get', 1);
 $generate_page = '';
 $search_term = $nv_Request->get_title('search', 'get', '');
