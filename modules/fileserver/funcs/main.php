@@ -835,52 +835,8 @@ $selected = [
     'folder' => ($search_type == 'folder') ? ' selected' : ''
 ];
 
-$sql_all = 'SELECT f.*, p.p_group, p.p_other 
-    FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files f
-    LEFT JOIN ' . NV_PREFIXLANG . '_' . $module_data . '_permissions p ON f.file_id = p.file_id 
-    WHERE f.status = 1';
-$result_all = $db->query($sql_all)->fetchAll(PDO::FETCH_ASSOC);
-
-$admin_groups = explode(',', $module_config[$module_name]['group_admin_fileserver']);
-$user_groups = [];
-if (isset($user_info['in_groups'])) {
-    $user_groups = is_array($user_info['in_groups']) ? $user_info['in_groups'] : array_map('intval', explode(',', $user_info['in_groups']));
-}
-$is_group_user = !empty(array_intersect($user_groups, $admin_groups));
-
-$filtered = array_filter($result_all, function ($item) use ($is_group_user) {
-    if (defined('NV_IS_SPADMIN')) {
-        return true;
-    }
-    if ($is_group_user) {
-        return isset($item['p_group']) && $item['p_group'] >= 2;
-    } else {
-        return isset($item['p_other']) && $item['p_other'] == 2;
-    }
-});
-
-
-$tree_html = '';
-
-if (!empty($search_term)) {
-    $table_data = $result;
-    $total_for_pagination = $total;
-} else {
-    $table_data = array_filter($filtered, function ($item) use ($lev) {
-        return $item['lev'] == $lev;
-    });
-    
-    usort($table_data, function($a, $b) {
-        return $a['file_id'] - $b['file_id'];
-    });
-    
-    $total_for_pagination = count($table_data);
-    
-    $table_data = array_slice($table_data, ($page - 1) * $perpage, $perpage);
-}
-
-if (!empty($table_data)) {
-    $file_ids = array_column($table_data, 'file_id');
+if (!empty($result)) {
+    $file_ids = array_column($result, 'file_id');
 
     $sql_logs = 'SELECT *
             FROM ' . NV_PREFIXLANG . '_' . $module_data . '_stats 

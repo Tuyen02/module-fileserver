@@ -53,13 +53,8 @@ $lang_module['list_items_root'] = 'Danh sách file/folder gốc';
 $lang_module['export_file'] = 'Xuất file';
 $lang_module['import_file'] = 'Nhập dữ liệu vào hệ thống';
 $lang_module['choose_file'] = 'Chọn file';
-$lang_module['caution'] = '📌 <strong>Lưu ý khi nhập dữ liệu:</strong><br>
-- Chỉ hỗ trợ <strong>tập tin Excel (.xlsx)</strong> đúng theo cấu trúc mẫu bên dưới.<br>
-- File Excel cần chứa:<br>
-&nbsp;&nbsp;• <strong>Tên tệp/thư mục</strong><br>
-&nbsp;&nbsp;• <strong>Đường dẫn Google Drive</strong> (ở chế độ <em>public</em>)<br>
-- Hệ thống sẽ đọc các đường dẫn này và xử lý tự động.';
-$lang_module['demo_title'] = '📥 File mẫu:';
+$lang_module['caution'] = 'Lưu ý dạng file tải lên phải là file excel có các đuôi như: xlsx, xls. Trước khi tải file lên hệ thống bạn phải gửi danh sách các folder/file trong file excel lên Google Drive và đảm bảo đường dẫn của các folder/file là đường dẫn trên internet và có quyền chia sẻ với mọi người';
+$lang_module['demo_title'] = 'File mẫu có dạng như sau:';
 $lang_module['demo_file'] = 'import_file.xlsx';
 $lang_module['update_success'] = 'Cập nhật thành công';
 $lang_module['update_error'] = 'Cập nhật thất bại';

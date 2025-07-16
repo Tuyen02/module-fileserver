@@ -18,8 +18,6 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
     $xtpl->assign('SELECTED_FOLDER', $selected['folder']);
     $xtpl->assign('GENERATE_PAGE', $generate_page);
     $xtpl->assign('TREE', $tree_html);
-    $xtpl->assign('USE_ELASTIC', $use_elastic);
-    $xtpl->assign('LEV', $lev);
 
     if (!empty($back_url)) {
         $xtpl->assign('BACK_URL', $back_url);
@@ -179,12 +177,6 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
             $xtpl->parse('main.has_data_content.can_compress');
             $xtpl->parse('main.has_data_content.can_delete_all');
         }
-        
-        // Parse phân trang nếu có
-        if (!empty($generate_page)) {
-            $xtpl->parse('main.has_data_content.generate_page');
-        }
-        
         $xtpl->parse('main.has_data_content');
     } else {
         $xtpl->parse('main.no_search_result');

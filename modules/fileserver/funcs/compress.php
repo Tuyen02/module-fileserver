@@ -35,30 +35,7 @@ if ($current_permission < 3) {
     nv_redirect_location($base_url);
 }
 
-$breadcrumbs[] = [
-    'catid' => $row['lev'],
-    'title' => $row['file_name'],
-    'link' => $base_url . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $row['alias']
-];
-$current_lev = $row['lev'];
-
-while ($current_lev > 0) {
-    $sql = 'SELECT file_name, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
-    $_row = $db->query($sql)->fetch();
-    if (empty($_row)) {
-        break;
-    }
-    $op = $_row['is_folder'] == 1 ? $module_info['alias']['main'] : $op;
-    $breadcrumbs[] = [
-        'catid' => $current_lev,
-        'title' => $_row['file_name'],
-        'link' => $base_url . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $_row['alias']
-    ];
-    $current_lev = $_row['lev'];
-}
-
-$breadcrumbs = array_reverse($breadcrumbs);
-$array_mod_title =  $breadcrumbs;
+$array_mod_title = build_breadcrumbs($row, $page_url, $base_url);
 
 $status = 'error';
 $message = '';
