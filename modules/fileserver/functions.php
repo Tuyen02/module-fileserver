@@ -616,7 +616,7 @@ function displayTree($tree)
 }
 
 /**
- * Hiển thị toàn bộ cây file/thư mục
+ * Hiển thị toàn bộ cây file/thư mục theo Bootstrap 4 Tree style
  * @param array $tree Cây file/thư mục
  * @param int $current_lev ID của thư mục hiện tại
  * @param bool $is_root True nếu là nút gốc
@@ -1058,47 +1058,8 @@ function getFileIconClass($file)
     }
 }
 
-/**
- * Xây dựng breadcrumbs cho file/thư mục
- * @param array $row Dữ liệu của file/thư mục
- * @param string $page_url URL của trang hiện tại
- * @param string $base_url URL cơ sở để xây dựng breadcrumbs
- * @return array Mảng chứa breadcrumbs
- */
-function build_breadcrumbs($row, $page_url, $base_url)
-{
-    global $module_info, $module_data, $db, $lang_module;
-    $breadcrumbs = [];
-    $breadcrumbs[] = [
-        'catid' => $row['lev'],
-        'title' => $row['file_name'],
-        'link' => $page_url
-    ];
-    $current_lev = $row['lev'];
-
-    while ($current_lev > 0) {
-        $sql = 'SELECT file_name, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
-        $_row = $db->query($sql)->fetch();
-        if (empty($_row)) {
-            break;
-        }
-        $breadcrumbs[] = [
-            'catid' => $current_lev,
-            'title' => $_row['file_name'],
-            'link' => $base_url . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '/' . $_row['alias']
-        ];
-        $current_lev = $_row['lev'];
-    }
-
-    $breadcrumbs = array_reverse($breadcrumbs);
-    $array_mod_title = [];
-    foreach ($breadcrumbs as $breadcrumb) {
-        $array_mod_title[] = $breadcrumb;
-    }
-    return $array_mod_title;
-}
-
 // function pr($a)
 // {
 //     exit('<pre><code>' . htmlspecialchars(print_r($a, true)) . '</code></pre>');
 // }
+

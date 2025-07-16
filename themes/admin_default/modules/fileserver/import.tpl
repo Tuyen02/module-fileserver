@@ -12,11 +12,12 @@
     <!-- END: success -->
     <div class="card border border-primary border-2">
         <div class="card-header">
-            <h2 class="card-title">{LANG.choose_file}</h2>
+            <h2 class="card-title">{LANG.import_file}</h2>
         </div>
         <div class="card-body">
             <form action="{FORM_ACTION}" method="post" enctype="multipart/form-data">
                 <div class="form-group">
+                    <label>{LANG.import_file}</label>
                     <input type="file" name="excel_file" accept=".xlsx,.xls" required>
                 </div>
                 <button type="submit" name="submit_upload" class="btn btn-primary">{LANG.submit}</button>

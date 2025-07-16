@@ -1,5 +1,5 @@
 <!-- BEGIN: main -->
-<div class="container mt-4 mb-5 pb-5">
+<div class="container">
     <!-- BEGIN: breadcrumbs -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -56,13 +56,7 @@
     </div>
 
     <hr>
-    <div class="row">
-        <div class="col-12 col-md-6 col-lg-6 col-sm-6 mb-3">
-            <div class="tree">
-                {TREE}
-            </div>
-        </div>
-        <div class="col-12 col-md-18 col-lg-18 col-sm-18 table-responsive">
+    <div class="row table-responsive">
             <!-- BEGIN: has_data_content -->
             <table class="table table-hover">
                 <colgroup>
@@ -180,7 +174,6 @@
                 <p><i class="fa fa-info-circle"></i> {LANG.no_data}</p>
             </div>
             <!-- END: no_search_result -->
-        </div>
     </div>
     <br>
 
@@ -329,58 +322,6 @@
     </div>
 
     <style>
-        .tree {
-            list-style-type: none;
-            padding: 0 5px 0 5px;
-            margin: 0 5px 0 5px;
-            border-right: 1px solid #ccc;
-            overflow-x: auto;
-            word-break: break-all;
-            white-space: pre-line;
-        }
-
-        .tree li {
-            margin: 5px 0;
-            cursor: pointer;
-        }
-
-        .tree li a {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        .tree li a:hover {
-            color: #007bff;
-        }
-
-        .tree li.active {
-            background-color: #f8f9fa;
-            border-radius: 4px;
-            padding: 2px 5px;
-        }
-
-        .tree li.active>a {
-            color: #007bff;
-            font-weight: bold;
-        }
-
-        .tree li span {
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .tree ul {
-            margin-left: 5px;
-            padding-left: 5px;
-            border-left: 1px dashed #ccc;
-        }
-
-        .tree i {
-            font-size: 14px;
-        }
-
         #previewModalBody img,
         #previewModalBody video,
         #previewModalBody audio {
@@ -401,7 +342,6 @@
 
         .table thead tr {
             height: 48px;
-            /* hoặc giá trị phù hợp */
         }
 
         .sortable {
@@ -429,8 +369,7 @@
 
         @media (min-width: 768px) and (max-width: 1024px) {
             .container {
-                max-width: 98% !important;
-                padding: 10px !important;
+                max-width: 100% !important;
             }
 
             .table th,
@@ -455,7 +394,7 @@
             }
         }
 
-        @media (max-width: 767.98px) {
+        @media (max-width: 768px) {
             .modal-dialog {
                 max-width: 98vw;
                 margin: 10px auto;
@@ -1058,4 +997,5 @@
 
     </script>
 </div>
+<!-- END: main -->
 <!-- END: main -->

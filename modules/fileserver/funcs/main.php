@@ -852,7 +852,6 @@ $filtered = array_filter($result_all, function ($item) use ($is_group_user) {
     if (defined('NV_IS_SPADMIN')) {
         return true;
     }
-
     if ($is_group_user) {
         return isset($item['p_group']) && $item['p_group'] >= 2;
     } else {
@@ -860,8 +859,8 @@ $filtered = array_filter($result_all, function ($item) use ($is_group_user) {
     }
 });
 
-$tree = buildTree($filtered);
-$tree_html = displayAllTree($tree, $lev, true);
+
+$tree_html = '';
 
 if (!empty($search_term)) {
     $table_data = $result;

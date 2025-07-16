@@ -25,7 +25,36 @@ if (empty($row)) {
 $status = '';
 $message = '';
 
-$array_mod_title = build_breadcrumbs($row, $page_url, $base_url);
+$breadcrumbs[] = [
+    'catid' => $row['lev'],
+    'title' => $row['file_name'],
+    'link' => $page_url
+];
+
+$current_lev = $row['lev'];
+while ($current_lev > 0) {
+    $sql = 'SELECT file_name, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
+    $stmt = $db->prepare($sql);
+    $stmt->execute();
+    $_row = $stmt->fetch();
+    
+    if (empty($_row)) {
+        break;
+    }
+    
+    $op = $_row['is_folder'] == 1 ? $module_info['alias']['main'] : $op;
+    $breadcrumbs[] = [
+        'catid' => $current_lev,
+        'title' => $_row['file_name'],
+        'link' => $base_url . '&' . NV_OP_VARIABLE . '=' . $op . '/' . $_row['alias']
+    ];  
+    $current_lev = $_row['lev'];
+}
+
+$breadcrumbs = array_reverse($breadcrumbs);
+foreach ($breadcrumbs as $breadcrumb) {
+    $array_mod_title[] = $breadcrumb;
+}
 
 if ($nv_Request->isset_request('submit', 'post')) {
     $group_permission = $nv_Request->get_int('group_permission', 'post', 0);
