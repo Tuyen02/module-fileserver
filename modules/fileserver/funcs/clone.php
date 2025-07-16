@@ -41,7 +41,31 @@ $message = '';
 $action_note = '';
 $target_url = '';
 
-$array_mod_title = build_breadcrumbs($row, $page_url, $base_url);
+$breadcrumbs[] = [
+    'catid' => $row['lev'],
+    'title' => $row['file_name'],
+    'link' => $page_url
+];
+$current_lev = $row['lev'];
+
+while ($current_lev > 0) {
+    $sql = 'SELECT file_name, lev, alias, is_folder FROM ' . NV_PREFIXLANG . '_' . $module_data . '_files WHERE file_id = ' . $current_lev;
+    $_row = $db->query($sql)->fetch();
+    if (empty($_row)) {
+        break;
+    }
+    $breadcrumbs[] = [
+        'catid' => $current_lev,
+        'title' => $_row['file_name'],
+        'link' => $base_url . '&' . NV_OP_VARIABLE . '=' . $module_info['alias']['main'] . '/' . $_row['alias']
+    ];
+    $current_lev = $_row['lev'];
+}
+
+$breadcrumbs = array_reverse($breadcrumbs);
+foreach ($breadcrumbs as $breadcrumb) {
+    $array_mod_title[] = $breadcrumb;
+}
 
 $folder_tree = buildFolderTree($user_info, $page_url, 0);
 

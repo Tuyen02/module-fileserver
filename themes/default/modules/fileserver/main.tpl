@@ -56,13 +56,7 @@
     </div>
 
     <hr>
-    <div class="row">
-        <div class="col-md-6 col-lg-4 mb-3">
-            <div class="tree">
-                {TREE}
-            </div>
-        </div>
-        <div class="col-md-18 col-lg-20">
+    <div class="row table-responsive">
             <!-- BEGIN: has_data_content -->
             <table class="table table-hover">
                 <colgroup>
@@ -327,79 +321,110 @@
         </div>
     </div>
 
-<style>
-    .tree {
-        list-style-type: none;
-        padding: 0 20px 0 5px;
-        margin: 0 5px 0 5px;
-        border-right: 1px solid #ccc;
-        overflow-x: auto;
-        word-break: break-all;
-        white-space: pre-line;
-    }
+    <style>
+        #previewModalBody img,
+        #previewModalBody video,
+        #previewModalBody audio {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            max-height: 500px;
+        }
 
-    .tree li {
-        margin: 5px 0;
-        cursor: pointer;
-    }
+        thead th {
+            vertical-align: middle !important;
+            text-align: center;
+            padding-top: 5px !important;
+            padding-bottom: 5px !important;
+            white-space: nowrap;
+        }
 
-    .tree li a {
-        color: inherit;
-        text-decoration: none;
-    }
+        .table thead tr {
+            height: 48px;
+        }
 
-    .tree li a:hover {
-        color: #007bff;
-    }
+        .sortable {
+            cursor: pointer;
+        }
 
-    .tree li.active {
-        background-color: #f8f9fa;
-        border-radius: 4px;
-        padding: 2px 5px;
-    }
+        .sortable:hover {
+            background-color: #f8f9fa;
+        }
 
-    .tree li.active > a {
-        color: #007bff;
-        font-weight: bold;
-    }
+        .fa-sort-up,
+        .fa-sort-down {
+            margin-left: 5px;
+        }
 
-    .tree li span {
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
+        .function-btn {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 5px;
+        }
 
-    .tree ul {
-        margin-left: 5px;
-        padding-left: 10px;
-        border-left: 1px dashed #ccc;
-    }
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                max-width: 100% !important;
+            }
 
-    .tree i {
-        font-size: 14px;
-    }
+            .table th,
+            .table td {
+                font-size: 15px;
+                padding: 8px 6px;
+            }
 
-    #previewModalBody img,
-    #previewModalBody video,
-    #previewModalBody audio {
-        max-width: 100%;
-        height: auto;
-        display: block; 
-        margin: 0 auto; 
-        max-height: 500px;
-    }
+            .function-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 15px;
+            }
 
-    .sortable {
-        cursor: pointer;
-    }
-    .sortable:hover {
-        background-color: #f8f9fa;
-    }
-    .fa-sort-up, .fa-sort-down {
-        margin-left: 5px;
-    }
-</style>
+            .tree {
+                font-size: 15px;
+            }
+
+            .btn,
+            .form-control {
+                font-size: 15px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .modal-dialog {
+                max-width: 98vw;
+                margin: 10px auto;
+            }
+
+            .modal-content {
+                padding: 5px;
+            }
+
+            .modal-body,
+            .modal-header,
+            .modal-footer {
+                padding-left: 8px;
+                padding-right: 8px;
+            }
+
+            .form-inline .form-control,
+            .form-inline .btn,
+            .form-inline select {
+                width: 100% !important;
+                margin-bottom: 8px;
+                margin-right: 0 !important;
+            }
+
+            .form-inline {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+        }
+    </style>
 
     <script>
         var USE_ELASTIC = {USE_ELASTIC};
@@ -970,5 +995,7 @@
             return 0;
         }
 
-</script>
+    </script>
+</div>
+<!-- END: main -->
 <!-- END: main -->
