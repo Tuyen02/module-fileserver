@@ -616,7 +616,7 @@ function displayTree($tree)
 }
 
 /**
- * Hiển thị toàn bộ cây file/thư mục theo Bootstrap 4 Tree style
+ * Hiển thị toàn bộ cây file/thư mục
  * @param array $tree Cây file/thư mục
  * @param int $current_lev ID của thư mục hiện tại
  * @param bool $is_root True nếu là nút gốc
@@ -1056,6 +1056,13 @@ function getFileIconClass($file)
             return isset($file_icons[$extension]) ? $file_icons[$extension] : 'fa-file-o';
         }
     }
+}
+
+function get_user_info($user_id) {
+    global $db;
+    $sql = "SELECT username FROM nv4_users WHERE userid = " . intval($user_id);
+    $row = $db->query($sql)->fetch();
+    return $row ? $row : ['username' => ''] ;
 }
 
 // function pr($a)

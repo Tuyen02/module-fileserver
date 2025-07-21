@@ -182,5 +182,10 @@ $lang_module['file_has_exit_1'] = 'File đã tồn tại không cho phép sao ch
 $lang_module['confirm_overwrite'] = 'Xác nhận ghi đè';
 $lang_module['file_exists_confirm'] = 'File đích đã tồn tại. Bạn có muốn ghi đè không?';
 $lang_module['file_already_in_location'] = 'File đã tồn tại tại vị trí này. Vui lòng chọn vị trí khác.';
+$lang_module['properties_title'] = 'Thông tin chi tiết file';
+$lang_module['file_name'] = 'Tên file';
+$lang_module['file_type'] = 'Loại file';
+$lang_module['uploaded_by'] = 'Người tải lên';
+
 
 

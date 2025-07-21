@@ -92,8 +92,28 @@
                                 {ROW.file_name}
                             </a>
                         </td>
-                        <td>{ROW.file_size}</td>
-                        <td>{ROW.created_at}</td>
+                        <td class="file-properties" style="cursor:pointer;" 
+                            data-file-name="{ROW.file_name}"
+                            data-file-size="{ROW.file_size}"
+                            data-file-created="{ROW.created_at}"
+                            data-file-type="{ROW.icon_class}"
+                            data-file-id="{ROW.file_id}"
+                            data-file-path="{ROW.file_path}"
+                            data-file-url="{ROW.url_view}"
+                            data-file-upload-by="{ROW.uploaded_by}">
+                            {ROW.file_size}
+                        </td>
+                        <td class="file-properties" style="cursor:pointer;"
+                            data-file-name="{ROW.file_name}"
+                            data-file-size="{ROW.file_size}"
+                            data-file-created="{ROW.created_at}"
+                            data-file-type="{ROW.icon_class}"
+                            data-file-id="{ROW.file_id}"
+                            data-file-path="{ROW.file_path}"
+                            data-file-url="{ROW.url_view}"
+                            data-file-upload-by="{ROW.uploaded_by}">
+                            {ROW.created_at}
+                        </td>
                         <td>
                             <!-- BEGIN: delete -->
                             <button class="btn btn-sm btn-danger delete function-btn" data-file-id="{ROW.file_id}"
@@ -316,6 +336,29 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">{LANG.close_btn}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="propertiesModal" tabindex="-1" role="dialog" aria-labelledby="propertiesModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="propertiesModalLabel">{LANG.properties_title}</h3>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group">
+                        <li class="list-group-item"><strong>{LANG.file_name}:</strong> <span id="propFileName"></span></li>
+                        <li class="list-group-item"><strong>{LANG.f_size}:</strong> <span id="propFileSize"></span></li>
+                        <li class="list-group-item"><strong>{LANG.created_at}:</strong> <span id="propFileCreated"></span></li>
+                        <li class="list-group-item"><strong>{LANG.file_type}:</strong> <i id="propFileIcon" class="fa" aria-hidden="true"></i></li>
+                        <li class="list-group-item"><strong>{LANG.f_path}:</strong> <span id="propFilePath"></span></li>
+                        <li class="list-group-item"><strong>{LANG.uploaded_by}:</strong> <span id="propFileUploadBy"></span></li>
+                    </ul>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -995,7 +1038,26 @@
             return 0;
         }
 
+        $(document).on('click', '.file-properties', function () {
+            var fileName = $(this).data('file-name');
+            var fileSize = $(this).data('file-size');
+            var fileCreated = $(this).data('file-created');
+            var fileType = $(this).data('file-type');
+            var fileId = $(this).data('file-id');
+            var filePath = $(this).data('file-path');
+            var fileUrl = $(this).data('file-url');
+            var fileUploadBy = $(this).data('file-upload-by');
+            $('#propFileName').text(fileName);
+            $('#propFileSize').text(fileSize);
+            $('#propFileCreated').text(fileCreated);
+            $('#propFileType').text(fileType);
+            $('#propFileIcon').attr('class', 'fa ' + fileType);
+            $('#propFileId').text(fileId);
+            $('#propFilePath').text(filePath);
+            $('#propFileUploadBy').text(fileUploadBy);
+            $('#propertiesModal').modal('show');
+        });
+
     </script>
 </div>
-<!-- END: main -->
 <!-- END: main -->

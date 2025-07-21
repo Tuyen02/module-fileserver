@@ -47,6 +47,7 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
             $row['created_at'] = date('d/m/Y H:i:s', $row['created_at']);
             $row['checksess'] = md5($row['file_id'] . NV_CHECK_SESSION);
             $row['icon_class'] = getFileIconClass($row);
+            $row['file_path'] = isset($row['file_path']) ? $row['file_path'] : '';
 
             if ($permissions) {
                 $row['p_group'] = isset($permissions[$row['file_id']]['p_group']) ? $permissions[$row['file_id']]['p_group'] : 1;
@@ -67,6 +68,14 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
 
             $current_permission = get_user_permission($row['file_id'], isset($user_info['userid']) ? $user_info['userid'] : 0);
             $row['file_size'] = nv_convertfromBytes($row['file_size']);
+            $row['uploaded_by'] = $row['uploaded_by'] ? $row['uploaded_by'] : $row['user_id'];
+            $user_id = $row['uploaded_by'] ? $row['uploaded_by'] : (isset($row['user_id']) ? $row['user_id'] : 0);
+            $row['uploaded_by'] = '';
+            if ($user_id) {
+                $user_info_db = get_user_info($user_id);
+                $row['uploaded_by'] = isset($user_info_db['username']) ? $user_info_db['username'] : $user_id;
+            }
+
             $xtpl->assign('ROW', $row);
 
             $fileInfo = strtolower(pathinfo($row['file_name'], PATHINFO_EXTENSION));
@@ -180,7 +189,6 @@ function nv_fileserver_main($result, $page_url, $error, $success, $permissions, 
             $xtpl->parse('main.has_data_content.can_delete_all');
         }
         
-        // Parse phân trang nếu có
         if (!empty($generate_page)) {
             $xtpl->parse('main.has_data_content.generate_page');
         }
