@@ -153,6 +153,7 @@ $lang_module['create_ok_detail'] = '%s "%s" được tạo mới thành công.';
 $lang_module['file_name_exists_suggest'] = 'Tên "%s" đã tồn tại. Bạn có thể sử dụng tên "%s"';
 $lang_module['error_reading_ppt'] = 'Hiện tại module chưa phát triển tính năng xem nội dung file PowerPoint.';
 $lang_module['not_allow_file'] = 'Chỉ cho phép tải lên các loại file như txt, png, jpg, mp3, mp4, pptx, doc, docx, xls, xlsx, pdf, jpeg';
+$lang_module['cannot_copy_file'] = 'Không thể tạo bản sao file tạm để xử lý.';
 $lang_module['cannot_open_word_file'] = 'Không thể đọc file Word: ';
 $lang_module['cannot_open_excel_file'] = 'Không thể đọc file Excel: ';
 $lang_module['cannot_edit_excel_file_'] = 'Không hỗ trợ chỉnh sửa file Excel, chỉ cho phép xem nội dung.';
@@ -186,6 +187,7 @@ $lang_module['properties_title'] = 'Thông tin chi tiết file';
 $lang_module['file_name'] = 'Tên file';
 $lang_module['file_type'] = 'Loại file';
 $lang_module['uploaded_by'] = 'Người tải lên';
+$lang_module['download_btn'] = 'Tải xuống';
 
 
 

@@ -49,7 +49,7 @@
                 <i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {LANG.back_btn}
             </a>
             <!-- END: back -->
-            <input type="file" name="uploadfile" id="uploadfile" required style="display: none;">
+            <input type="file" name="uploadfile[]" id="uploadfile" required style="display: none;" multiple>
             <input type="hidden" name="lev" id="lev" value="{ROW.lev}">
             <input type="hidden" name="submit_upload" value="1">
         </form>
@@ -179,7 +179,6 @@
                 <i class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}
             </a>
             <!-- END: can_compress -->
-
             <!-- BEGIN: can_delete_all -->
             <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll">
                 <i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}
