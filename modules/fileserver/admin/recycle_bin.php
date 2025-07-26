@@ -138,7 +138,7 @@ if (!empty($action)) {
                 $status = 'success';
                 updateLog($lev);
                 $mess = $lang_module['delete_ok'];
-                nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . $fileId, $admin_info['userid']);
+                nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['delete'], 'File id: ' . $fileId, $admin_info['userid']);
                 if (defined('USE_ELASTIC') && USE_ELASTIC) {
                     @file_get_contents(NV_BASE_SITEURL .  'modules/fileserver/update_elastic.php');
                 }
@@ -170,7 +170,7 @@ if (!empty($action)) {
         if (!empty($deletedFileIds)) {
             $status = 'success';
             updateLog($lev);
-            nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . implode(',', $deletedFileIds), $admin_info['userid']);
+            nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['delete_all'], 'File id: ' . implode(',', $deletedFileIds), $admin_info['userid']);
             $mess = $lang_module['delete_ok'];
             if (defined('USE_ELASTIC') && USE_ELASTIC) {
                 @file_get_contents(NV_BASE_SITEURL . 'modules/fileserver/update_elastic.php');
@@ -191,7 +191,7 @@ if (!empty($action)) {
             if ($restored) {
                 $status = 'success';
                 updateLog($lev);
-                nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . $fileId, $admin_info['userid']);
+                nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['restore'], 'File id: ' . $fileId, $admin_info['userid']);
                 $mess = $lang_module['restore_ok'];
                 if (defined('USE_ELASTIC') && USE_ELASTIC) {
                     @file_get_contents(NV_BASE_SITEURL . 'modules/fileserver/update_elastic.php?action=update&file_id=' . $fileId);
@@ -223,7 +223,7 @@ if (!empty($action)) {
         if (!empty($restoredFileIds)) {
             $status = 'success';
             updateLog($lev);
-            nv_insert_logs(NV_LANG_DATA, $module_name, $action, 'File id: ' . implode(',', $restoredFileIds), $admin_info['userid']);
+            nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['restore_all'], 'File id: ' . implode(',', $restoredFileIds), $admin_info['userid']);
             $mess = $lang_module['restore_ok'];
             if (defined('USE_ELASTIC') && USE_ELASTIC) {
                 @file_get_contents(NV_BASE_SITEURL . 'modules/fileserver/update_elastic.php');

@@ -363,7 +363,6 @@ function deleteFileOrFolder($fileId)
             WHERE file_id = ' . $fileId;
 
     if ($db->query($sql)) {
-        nv_insert_logs(NV_LANG_DATA, $module_name, 'Delete from trash', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
         return true;
     }
 
@@ -619,8 +618,6 @@ function restoreFileOrFolder($fileId)
     $stmt->bindValue(':file_id', $fileId, PDO::PARAM_INT);
     $stmt->bindValue(':updated_at', NV_CURRENTTIME, PDO::PARAM_INT);
     $stmt->execute();
-
-    nv_insert_logs(NV_LANG_DATA, $module_name, 'Restore from trash', 'ID: ' . $fileId . ' | File: ' . $row['file_name'], $admin_info['userid']);
 
     return true;
 }

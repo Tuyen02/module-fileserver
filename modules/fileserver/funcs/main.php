@@ -128,8 +128,7 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
                     updateStat($lev);
                     updateParentFolderSize($lev);
 
-                    nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['upload_btn'], 'File id: ' . $file_id, $user_info['userid']);
-                    $upload_success[] = $file_name;
+                    $upload_success[] = $file_id;
                 } else {
                     $upload_errors[] = $upload_info['error'];
                 }
@@ -139,7 +138,8 @@ if ($nv_Request->isset_request('submit_upload', 'post') && isset($_FILES['upload
         }
     }
     if (!empty($upload_success)) {
-        $success = $lang_module['upload_ok'] . ': ' . implode(', ', $upload_success);
+        $success = $lang_module['upload_ok'];
+        nv_insert_logs(NV_LANG_DATA, $module_name, $lang_module['upload_btn'], 'File id: ' . implode(', ', $upload_success), $user_info['userid']);
     }
     if (!empty($upload_errors)) {
         $error = implode('<br>', $upload_errors);

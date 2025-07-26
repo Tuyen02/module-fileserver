@@ -57,142 +57,130 @@
 
     <hr>
     <div class="row table-responsive">
-            <!-- BEGIN: has_data_content -->
-            <table class="table table-hover">
-                <colgroup>
-                    <col style="width: 3%;">
-                    <col style="width: 40%;">
-                    <col style="width: 10%;">
-                    <col style="width: 15%;">
-                    <col style="width: 32%;">
-                </colgroup>
-                <thead class="thead-dark">
-                    <tr>
-                        <th scope="col" style="text-align:center;"><input class="form-check-input" type="checkbox"
-                                value="" id="defaultCheck1"></th>
-                        <th scope="col" class="sortable" data-sort="file_name">{LANG.f_name} <i class="fa fa-sort"></i>
-                        </th>
-                        <th scope="col" class="sortable" data-sort="file_size">{LANG.f_size} <i class="fa fa-sort"></i>
-                        </th>
-                        <th scope="col" class="sortable" data-sort="created_at">{LANG.created_at} <i
-                                class="fa fa-sort"></i></th>
-                        <th scope="col">{LANG.option}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- BEGIN: file_row -->
-                    <tr>
-                        <td>
-                            <input type="checkbox" name="files[]" value="{ROW.file_id}"
-                                data-checksess="{ROW.checksess}">
-                        </td>
-                        <td class="text-break" style="max-width:220px; word-break:break-all;">
-                            <a href="{VIEW}" {PREVIEW_LINK_ATTRIBUTES}>
-                                <i class="fa {ROW.icon_class}" aria-hidden="true"></i>
-                                {ROW.file_name}
-                            </a>
-                        </td>
-                        <td class="file-properties" style="cursor:pointer;" 
-                            data-file-name="{ROW.file_name}"
-                            data-file-size="{ROW.file_size}"
-                            data-file-created="{ROW.created_at}"
-                            data-file-type="{ROW.icon_class}"
-                            data-file-id="{ROW.file_id}"
-                            data-file-path="{ROW.file_path}"
-                            data-file-url="{ROW.url_view}"
-                            data-file-upload-by="{ROW.uploaded_by}">
-                            {ROW.file_size}
-                        </td>
-                        <td class="file-properties" style="cursor:pointer;"
-                            data-file-name="{ROW.file_name}"
-                            data-file-size="{ROW.file_size}"
-                            data-file-created="{ROW.created_at}"
-                            data-file-type="{ROW.icon_class}"
-                            data-file-id="{ROW.file_id}"
-                            data-file-path="{ROW.file_path}"
-                            data-file-url="{ROW.url_view}"
-                            data-file-upload-by="{ROW.uploaded_by}">
-                            {ROW.created_at}
-                        </td>
-                        <td>
-                            <!-- BEGIN: delete -->
-                            <button class="btn btn-sm btn-danger delete function-btn" data-file-id="{ROW.file_id}"
-                                data-checksess="{CHECK_SESS}" data-url="{ROW.url_delete}" title="{LANG.delete_btn}">
-                                <i class="fa fa-trash-o"></i>
-                            </button>
-                            <!-- END: delete -->
+        <!-- BEGIN: has_data_content -->
+        <table class="table table-hover">
+            <colgroup>
+                <col style="width: 3%;">
+                <col style="width: 40%;">
+                <col style="width: 10%;">
+                <col style="width: 15%;">
+                <col style="width: 32%;">
+            </colgroup>
+            <thead class="thead-dark">
+                <tr>
+                    <th scope="col" style="text-align:center;"><input class="form-check-input" type="checkbox" value=""
+                            id="defaultCheck1"></th>
+                    <th scope="col" class="sortable" data-sort="file_name">{LANG.f_name} <i class="fa fa-sort"></i>
+                    </th>
+                    <th scope="col" class="sortable" data-sort="file_size">{LANG.f_size} <i class="fa fa-sort"></i>
+                    </th>
+                    <th scope="col" class="sortable" data-sort="created_at">{LANG.created_at} <i class="fa fa-sort"></i>
+                    </th>
+                    <th scope="col">{LANG.option}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- BEGIN: file_row -->
+                <tr>
+                    <td>
+                        <input type="checkbox" name="files[]" value="{ROW.file_id}" data-checksess="{ROW.checksess}">
+                    </td>
+                    <td class="text-break" style="max-width:220px; word-break:break-all;">
+                        <a href="{VIEW}" {PREVIEW_LINK_ATTRIBUTES}>
+                            <i class="fa {ROW.icon_class}" aria-hidden="true"></i>
+                            {ROW.file_name}
+                        </a>
+                    </td>
+                    <td class="file-properties" style="cursor:pointer;" data-file-name="{ROW.file_name}"
+                        data-file-size="{ROW.file_size}" data-file-created="{ROW.created_at}"
+                        data-file-type="{ROW.icon_class}" data-file-id="{ROW.file_id}" data-file-path="{ROW.file_path}"
+                        data-file-url="{ROW.url_view}" data-file-upload-by="{ROW.uploaded_by}">
+                        {ROW.file_size}
+                    </td>
+                    <td class="file-properties" style="cursor:pointer;" data-file-name="{ROW.file_name}"
+                        data-file-size="{ROW.file_size}" data-file-created="{ROW.created_at}"
+                        data-file-type="{ROW.icon_class}" data-file-id="{ROW.file_id}" data-file-path="{ROW.file_path}"
+                        data-file-url="{ROW.url_view}" data-file-upload-by="{ROW.uploaded_by}">
+                        {ROW.created_at}
+                    </td>
+                    <td>
+                        <!-- BEGIN: delete -->
+                        <button class="btn btn-sm btn-danger delete function-btn" data-file-id="{ROW.file_id}"
+                            data-checksess="{CHECK_SESS}" data-url="{ROW.url_delete}" title="{LANG.delete_btn}">
+                            <i class="fa fa-trash-o"></i>
+                        </button>
+                        <!-- END: delete -->
 
-                            <!-- BEGIN: rename -->
-                            <button class="btn btn-sm btn-info rename function-btn" data-file-name="{ROW.file_name}"
-                                data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal"
-                                title="{LANG.rename_btn}">
-                                <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
-                            </button>
-                            <!-- END: rename -->
+                        <!-- BEGIN: rename -->
+                        <button class="btn btn-sm btn-info rename function-btn" data-file-name="{ROW.file_name}"
+                            data-file-id="{ROW.file_id}" data-toggle="modal" data-target="#renameModal"
+                            title="{LANG.rename_btn}">
+                            <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+                        </button>
+                        <!-- END: rename -->
 
-                            <!-- BEGIN: share -->
-                            <a href="{ROW.url_perm}" class="btn btn-sm btn-info share function-btn"
-                                title="{LANG.perm_btn}">
-                                <i class="fa fa-link"></i>
-                            </a>
-                            <!-- END: share -->
+                        <!-- BEGIN: share -->
+                        <a href="{ROW.url_perm}" class="btn btn-sm btn-info share function-btn" title="{LANG.perm_btn}">
+                            <i class="fa fa-link"></i>
+                        </a>
+                        <!-- END: share -->
 
-                            <!-- BEGIN: download -->
-                            <a href="{DOWNLOAD}" class="btn btn-sm btn-success download function-btn"
-                                data-file-id="{ROW.file_id}" title="{LANG.download_btn}">
-                                <i class="fa fa-download" aria-hidden="true"></i>
-                            </a>
-                            <!-- END: download -->
+                        <!-- BEGIN: download -->
+                        <a href="{DOWNLOAD}" class="btn btn-sm btn-success download function-btn"
+                            data-file-id="{ROW.file_id}" title="{LANG.download_btn}">
+                            <i class="fa fa-download" aria-hidden="true"></i>
+                        </a>
+                        <!-- END: download -->
 
-                            <!-- BEGIN: edit -->
-                            <a href="{EDIT}" class="btn btn-sm btn-info function-btn" title="{LANG.edit_btn}">
-                                <i class="fa fa-pencil-square"></i>
-                            </a>
-                            <!-- END: edit -->
+                        <!-- BEGIN: edit -->
+                        <a href="{EDIT}" class="btn btn-sm btn-info function-btn" title="{LANG.edit_btn}">
+                            <i class="fa fa-pencil-square"></i>
+                        </a>
+                        <!-- END: edit -->
 
-                            <!-- BEGIN: copy -->
-                            <a href="{COPY}" class="btn btn-sm btn-info function-btn" title="{LANG.copy}">
-                                <i class="fa fa-clone"></i>
-                            </a>
-                            <!-- END: copy -->
-                        </td>
-                    </tr>
-                    <!-- END: file_row -->
-                </tbody>
-                <!-- BEGIN: stats -->
-                <tfoot>
-                    <tr>
-                        <td class="gray" colspan="7">
-                            <strong>{LANG.full_size}</strong>
-                            <span class="badge badge-light">{ROW.total_size}</span>
-                            <strong>- {LANG.file}:</strong>
-                            <span class="badge badge-secondary">{ROW.total_files}</span>
-                            <strong>- {LANG.folder}:</strong>
-                            <span class="badge badge-secondary">{ROW.total_folders}</span>
-                        </td>
-                    </tr>
-                </tfoot>
-                <!-- END: stats -->
-            </table>
-            <!-- BEGIN: can_compress -->
-            <a href="#" class="btn btn-primary" id="compressButton" data-toggle="modal" data-target="#compressModal">
-                <i class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}
-            </a>
-            <!-- END: can_compress -->
-            <!-- BEGIN: can_delete_all -->
-            <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll">
-                <i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}
-            </button>
-            <!-- END: can_delete_all -->
-            <!-- BEGIN: generate_page -->
-            <div class="text-center">{GENERATE_PAGE}</div>
-            <!-- END: generate_page -->
-            <!-- END: has_data_content -->
-            <!-- BEGIN: no_search_result -->
-            <div class="text-center">
-                <p><i class="fa fa-info-circle"></i> {LANG.no_data}</p>
-            </div>
-            <!-- END: no_search_result -->
+                        <!-- BEGIN: copy -->
+                        <a href="{COPY}" class="btn btn-sm btn-info function-btn" title="{LANG.copy}">
+                            <i class="fa fa-clone"></i>
+                        </a>
+                        <!-- END: copy -->
+                    </td>
+                </tr>
+                <!-- END: file_row -->
+            </tbody>
+            <!-- BEGIN: stats -->
+            <tfoot>
+                <tr>
+                    <td class="gray" colspan="7">
+                        <strong>{LANG.full_size}</strong>
+                        <span class="badge badge-light">{ROW.total_size}</span>
+                        <strong>- {LANG.file}:</strong>
+                        <span class="badge badge-secondary">{ROW.total_files}</span>
+                        <strong>- {LANG.folder}:</strong>
+                        <span class="badge badge-secondary">{ROW.total_folders}</span>
+                    </td>
+                </tr>
+            </tfoot>
+            <!-- END: stats -->
+        </table>
+        <!-- BEGIN: can_compress -->
+        <a href="#" class="btn btn-primary" id="compressButton" data-toggle="modal" data-target="#compressModal">
+            <i class="fa fa-file-archive-o" aria-hidden="true"></i> {LANG.zip_btn}
+        </a>
+        <!-- END: can_compress -->
+        <!-- BEGIN: can_delete_all -->
+        <button type="submit" name="deleteAll" class="btn btn-danger mt-2 deleteAll" id="deleteAll">
+            <i class="fa fa-trash" aria-hidden="true"></i> {LANG.delete_btn}
+        </button>
+        <!-- END: can_delete_all -->
+        <!-- BEGIN: generate_page -->
+        <div class="text-center">{GENERATE_PAGE}</div>
+        <!-- END: generate_page -->
+        <!-- END: has_data_content -->
+        <!-- BEGIN: no_search_result -->
+        <div class="text-center">
+            <p><i class="fa fa-info-circle"></i> {LANG.no_data}</p>
+        </div>
+        <!-- END: no_search_result -->
     </div>
     <br>
 
@@ -340,7 +328,8 @@
         </div>
     </div>
 
-    <div class="modal fade" id="propertiesModal" tabindex="-1" role="dialog" aria-labelledby="propertiesModalLabel" aria-hidden="true">
+    <div class="modal fade" id="propertiesModal" tabindex="-1" role="dialog" aria-labelledby="propertiesModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -348,12 +337,16 @@
                 </div>
                 <div class="modal-body">
                     <ul class="list-group">
-                        <li class="list-group-item"><strong>{LANG.file_name}:</strong> <span id="propFileName"></span></li>
+                        <li class="list-group-item"><strong>{LANG.file_name}:</strong> <span id="propFileName"></span>
+                        </li>
                         <li class="list-group-item"><strong>{LANG.f_size}:</strong> <span id="propFileSize"></span></li>
-                        <li class="list-group-item"><strong>{LANG.created_at}:</strong> <span id="propFileCreated"></span></li>
-                        <li class="list-group-item"><strong>{LANG.file_type}:</strong> <i id="propFileIcon" class="fa" aria-hidden="true"></i></li>
+                        <li class="list-group-item"><strong>{LANG.created_at}:</strong> <span
+                                id="propFileCreated"></span></li>
+                        <li class="list-group-item"><strong>{LANG.file_type}:</strong> <i id="propFileIcon" class="fa"
+                                aria-hidden="true"></i></li>
                         <li class="list-group-item"><strong>{LANG.f_path}:</strong> <span id="propFilePath"></span></li>
-                        <li class="list-group-item"><strong>{LANG.uploaded_by}:</strong> <span id="propFileUploadBy"></span></li>
+                        <li class="list-group-item"><strong>{LANG.uploaded_by}:</strong> <span
+                                id="propFileUploadBy"></span></li>
                     </ul>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
@@ -469,7 +462,7 @@
     </style>
 
     <script>
-        var USE_ELASTIC = {USE_ELASTIC};
+        var USE_ELASTIC = { USE_ELASTIC };
         if (typeof USE_ELASTIC !== "undefined" && USE_ELASTIC == 1) {
             setInterval(function () {
                 fetch('{NV_BASE_SITEURL}modules/fileserver/update_elastic.php', {

@@ -616,7 +616,7 @@ function displayTree($tree)
 }
 
 /**
- * Hiển thị toàn bộ cây file/thư mục
+ * Hiển thị toàn bộ cây file/thư mục theo Bootstrap 4 Tree style
  * @param array $tree Cây file/thư mục
  * @param int $current_lev ID của thư mục hiện tại
  * @param bool $is_root True nếu là nút gốc
